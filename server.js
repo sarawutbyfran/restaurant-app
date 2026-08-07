@@ -10,13 +10,10 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// ตั้งค่าการเชื่อมต่อ PostgreSQL / pgAdmin 4
+// ตั้งค่าการเชื่อมต่อ PostgreSQL (รองรับทั้งบนเครื่องและบน Cloud)
 const pool = new Pool({
-    user: 'postgres',         // ชื่อผู้ใช้ของคุณ
-    host: 'localhost',        // หรือ IP ของฐานข้อมูล
-    database: 'restaurant_db',// ชื่อฐานข้อมูลที่คุณสร้างไว้
-    password: '136120',       // รหัสผ่านของ pgAdmin 4 คุณ
-    port: 21715,              // พอร์ตมาตรฐานของ PostgreSQL
+  connectionString: process.env.DATABASE_URL,
+  ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false
 });
 
 // ตรวจสอบการเชื่อมต่อฐานข้อมูล
