@@ -1,0 +1,1068 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - ระบบจัดการร้านอาหาร</title>
+    <style>
+        :root {
+            --primary: #ff4757;
+            --primary-hover: #ff6b81;
+            --bg: #f4f6f8;
+            --text: #2f3542;
+            --gray: #747d8c;
+            --light-gray: #f1f2f6;
+            --success: #2ed573;
+            --warning: #ffa502;
+            --occupied-bg: #ffeaa7;
+            --occupied-border: #fdcb6e;
+        }
+
+        body {
+            font-family: 'Prompt', 'Segoe UI', Tahoma, sans-serif;
+            background-color: var(--bg);
+            margin: 0;
+            padding: 0;
+            color: var(--text);
+            display: grid;
+            grid-template-columns: 160px 1.2fr 1fr 340px;
+            height: 100vh;
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+
+        .sidebar-left {
+            background: white;
+            border-right: 1px solid #ddd;
+            padding: 15px 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            overflow-y: auto;
+            position: relative;
+        }
+        .sidebar-left h2 { font-size: 14px; color: var(--primary); margin-bottom: 10px; text-align: center; }
+        
+        .cat-menu-btn {
+            background: var(--light-gray);
+            border: none;
+            padding: 8px 10px;
+            border-radius: 8px;
+            text-align: left;
+            font-weight: 500;
+            cursor: pointer;
+            font-size: 12px;
+            width: 100%;
+            box-sizing: border-box;
+            transition: 0.2s;
+        }
+        .cat-menu-btn.active {
+            background: var(--primary);
+            color: white;
+            font-weight: bold;
+        }
+
+        .btn-manage-menu-corner {
+            margin-top: auto;
+            background: #2f3542;
+            color: white;
+            border: none;
+            padding: 10px 8px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            text-align: center;
+            font-size: 11px;
+            width: 100%;
+            box-sizing: border-box;
+            transition: 0.2s;
+        }
+        .btn-manage-menu-corner:hover {
+            background: #57606f;
+        }
+
+        .content-middle {
+            padding: 15px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            border-right: 1px solid #ddd;
+            background: #fff;
+        }
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .menu-grid-admin {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+        .admin-menu-card {
+            background: var(--light-gray);
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 2px solid transparent;
+        }
+        .admin-menu-card:hover {
+            border-color: var(--success);
+            transform: translateY(-2px);
+        }
+        .admin-menu-card img { width: 100%; height: 80px; object-fit: cover; border-radius: 6px; margin-bottom: 6px; }
+
+        .tables-column {
+            padding: 15px;
+            overflow-y: auto;
+            background: #fdfdfd;
+            border-right: 1px solid #ddd;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .table-summary-box {
+            background: white;
+            border: 1px solid #ced6e0;
+            border-radius: 8px;
+            padding: 10px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            flex: 1;
+            min-height: 220px; 
+        }
+        
+        .selection-group {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 10px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+        }
+        .group-title {
+            font-size: 12px;
+            font-weight: bold;
+            color: var(--primary);
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            border-bottom: 1px dashed #edf2f7;
+            padding-bottom: 4px;
+        }
+        
+        .table-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 6px;
+        }
+        .table-box {
+            background: var(--light-gray);
+            border: 1px solid #ced6e0;
+            padding: 10px 8px;
+            border-radius: 6px;
+            text-align: center;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: bold;
+            transition: 0.1s;
+        }
+        .table-box:hover {
+            background: #dfe4ea;
+        }
+        .table-box.occupied {
+            background: var(--occupied-bg);
+            border-color: var(--occupied-border);
+            color: #d35400;
+        }
+        .table-box.active-tab {
+            background: var(--primary) !important;
+            color: white !important;
+            border-color: var(--primary) !important;
+        }
+        
+        .queue-box {
+            background: #e1f5fe;
+            border: 1px solid #b3e5fc;
+            color: #0277bd;
+            padding: 8px 10px;
+            border-radius: 6px;
+            text-align: center;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .queue-box:hover {
+            background: #b3e5fc;
+        }
+        .queue-box.active-tab {
+            background: #0288d1 !important;
+            color: white !important;
+            border-color: #01579b !important;
+        }
+
+        .sidebar-right {
+            background: white;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+        .kitchen-section {
+            flex: 1;
+            padding: 15px;
+            overflow-y: auto;
+            background: #fafbfc;
+        }
+        .kitchen-card {
+            background: white;
+            padding: 8px;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            border-left: 4px solid var(--warning);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+            font-size: 12px;
+        }
+        .kitchen-card.completed {
+            border-left-color: var(--success);
+            background: #f0fdf4;
+            opacity: 0.8;
+        }
+        .btn-action {
+            background: var(--success);
+            color: white;
+            border: none;
+            padding: 3px 6px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 10px;
+            margin-top: 4px;
+            font-weight: bold;
+        }
+        .btn-print {
+            background: #3742fa;
+            color: white;
+            border: none;
+            padding: 3px 6px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 10px;
+            margin-top: 4px;
+        }
+        .right-action-panel {
+            padding: 10px 15px;
+            border-top: 1px solid #ddd;
+            background: #fff;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .btn-walkin {
+            background: var(--success);
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            text-align: center;
+            font-size: 13px;
+            width: 100%;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background: white;
+            width: 650px;
+            max-height: 85vh;
+            border-radius: 15px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+        .modal-body-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            flex: 1;
+            overflow-y: auto;
+            margin: 10px 0;
+        }
+
+        .form-group {
+            margin-bottom: 10px;
+        }
+        .form-group label {
+            display: block;
+            font-size: 11px;
+            font-weight: bold;
+            margin-bottom: 3px;
+        }
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 6px;
+            box-sizing: border-box;
+            border: 1px solid #ced6e0;
+            border-radius: 6px;
+            font-size: 12px;
+        }
+
+        #print-area {
+            display: none;
+        }
+
+        @media print {
+            @page { margin: 0; }
+            body * { visibility: hidden; }
+            #print-area, #print-area * { visibility: visible; }
+            #print-area {
+                display: block;
+                position: absolute;
+                left: 0; top: 0;
+                width: 80mm;
+                font-family: 'Prompt', sans-serif;
+                font-size: 14px;
+                color: #000;
+                padding: 5mm;
+                box-sizing: border-box;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar-left">
+        <h2>🍲 ประเภท</h2>
+        <div id="category-list-admin" style="display: flex; flex-direction: column; gap: 6px;">
+            <button class="cat-menu-btn active" onclick="selectCategory('ทั้งหมด', this)">ทั้งหมด</button>
+            <button class="cat-menu-btn" onclick="selectCategory('เมนูแนะนำ', this)">⭐ แนะนำ</button>
+            <button class="cat-menu-btn" onclick="selectCategory('อาหารป่า', this)">🌿 อาหารป่า</button>
+            <button class="cat-menu-btn" onclick="selectCategory('ทอด', this)">🍳 ทอด</button>
+            <button class="cat-menu-btn" onclick="selectCategory('ผัด', this)">🔥 ผัด</button>
+            <button class="cat-menu-btn" onclick="selectCategory('ต้มยำ', this)">🍲 ต้มยำ</button>
+            <button class="cat-menu-btn" onclick="selectCategory('ยำ', this)">🥗 ยำ</button>
+            <button class="cat-menu-btn" onclick="selectCategory('อาหารตามสั่ง', this)">🍛 ตามสั่ง</button>
+            <button class="cat-menu-btn" onclick="selectCategory('เครื่องดื่ม', this)">🧋 เครื่องดื่ม</button>
+        </div>
+
+        <button class="btn-manage-menu-corner" onclick="openMenuManagerModal()">⚙️ จัดการเมนูอาหาร</button>
+    </div>
+
+    <div class="content-middle">
+        <div class="section-header">
+            <h3 id="current-cat-title" style="margin:0; font-size:15px;">รายการอาหาร (คลิกเพื่อใส่ตะกร้า)</h3>
+        </div>
+        <div class="menu-grid-admin" id="admin-menu-grid"></div>
+    </div>
+
+    <div class="tables-column">
+        <div class="selection-group">
+            <div class="group-title">🪑 โซนโต๊ะหลัก (1 - 12)</div>
+            <div class="table-grid" id="tables-grid-container"></div>
+        </div>
+
+        <div class="selection-group">
+            <div class="group-title">⛺ โซนซุ้มส่วนตัว (1 - 6)</div>
+            <div class="table-grid" id="zones-grid-container"></div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; flex: 1;">
+            <h3 style="margin:4px 0 6px 0; font-size:13px; color:var(--primary);">📋 ตะกร้าและรายการอาหารของโต๊ะ</h3>
+            <div class="table-summary-box" id="tableSummaryBox">
+                <div style="font-size:11px; color:var(--gray); text-align:center; padding:40px 0;">ยังไม่ได้เลือกโต๊ะหรือคิว<br>(กรุณาคลิกเลือกจากด้านบน)</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="sidebar-right">
+        <div class="kitchen-section">
+            <h3 style="margin:0 0 8px 0; font-size:14px; color:var(--primary);">👨‍🍳 ออเดอร์ในครัวล่าสุด</h3>
+            <div id="kitchen-orders-list" style="max-height: calc(100vh - 180px); overflow-y: auto; padding-right: 4px;">
+                <p style="color:var(--gray); font-size:12px;">กำลังโหลดออเดอร์...</p>
+            </div>
+        </div>
+
+        <div class="right-action-panel">
+            <div id="queue-group-container" style="display:none; flex-direction:column; gap:4px;">
+                <div style="font-size:11px; font-weight:bold; color:var(--primary);">🛍️ คิวหน้าร้าน (Active Queues)</div>
+                <div class="table-grid" id="queues-grid-container" style="grid-template-columns: repeat(3, 1fr);"></div>
+            </div>
+            <button class="btn-walkin" onclick="openWalkInOrder()">➕ สั่งอาหารหน้าร้าน (สร้างคิวใหม่)</button>
+        </div>
+    </div>
+
+    <div class="modal" id="tableModal">
+        <div class="modal-content">
+            <h3 id="modalTableTitle" style="margin-top:0;">จัดการโต๊ะ/คิว</h3>
+            <div class="modal-body-grid">
+                <div>
+                    <h4 style="margin:0 0 8px 0; font-size:13px; color:var(--primary);">📋 รายการอาหารในคิวนี้ทั้งหมด</h4>
+                    <div id="tableOrderItemsList" style="background:var(--light-gray); padding:8px; border-radius:6px; min-height:180px; max-height:250px; overflow-y:auto; font-size:12px;">
+                        <p style="color:var(--gray);">ไม่มีรายการอาหาร</p>
+                    </div>
+                </div>
+                <div>
+                    <h4 style="margin:0 0 8px 0; font-size:13px; color:var(--text);">ℹ️ คำแนะนำ</h4>
+                    <p style="font-size:12px; color:var(--gray); line-height: 1.5;">คลิกเลือกเมนูจากตรงกลางเพื่อเพิ่มลงตะกร้าชั่วคราว จากนั้นกดปุ่ม "ยืนยันการสั่งอาหาร" เพื่อส่งเข้าครัวพร้อมกันในบิลเดียว</p>
+                </div>
+            </div>
+            <div style="display:flex; justify-content:space-between; margin-top:10px; border-top:1px solid #ddd; padding-top:8px;">
+                <button onclick="closeTableModal()" style="background:#ddd; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:12px;">ปิด</button>
+                <button onclick="checkoutTable()" style="background:var(--primary); color:white; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; font-weight:bold; font-size:13px;">💰 เช็คบิล / เคลียร์คิว</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="menuManagerModal">
+        <div class="modal-content" style="width: 700px;">
+            <h3 style="margin-top:0; color:var(--primary);">⚙️ ระบบจัดการเมนูอาหาร</h3>
+            <div class="modal-body-grid">
+                <div style="background:var(--light-gray); padding:10px; border-radius:8px;">
+                    <h4 style="margin:0 0 8px 0; font-size:12px;">➕ เพิ่มเมนูอาหารใหม่</h4>
+                    <form id="addMenuForm" onsubmit="addNewMenu(event)">
+                        <div class="form-group">
+                            <label>ชื่อเมนูอาหาร</label>
+                            <input type="text" id="newMenuName" required placeholder="เช่น ผัดเผ็ดหมูป่า">
+                        </div>
+                        <div class="form-group">
+                            <label>ราคา (บาท)</label>
+                            <input type="number" step="0.01" id="newMenuPrice" required placeholder="80">
+                        </div>
+                        <div class="form-group">
+                            <label>หมวดหมู่</label>
+                            <select id="newMenuCategory">
+                                <option value="เมนูแนะนำ">⭐ แนะนำ</option>
+                                <option value="อาหารป่า">🌿 อาหารป่า</option>
+                                <option value="ทอด">🍳 ทอด</option>
+                                <option value="ผัด">🔥 ผัด</option>
+                                <option value="ต้มยำ">🍲 ต้มยำ</option>
+                                <option value="ยำ">🥗 ยำ</option>
+                                <option value="อาหารตามสั่ง">🍛 ตามสั่ง</option>
+                                <option value="เครื่องดื่ม">🧋 เครื่องดื่ม</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>ลิงก์รูปภาพ (Image URL)</label>
+                            <input type="text" id="newMenuImage" placeholder="https://...">
+                        </div>
+                        <button type="submit" style="background:var(--success); color:white; border:none; padding:8px; width:100%; border-radius:6px; font-weight:bold; cursor:pointer; font-size:12px; margin-top:5px;">บันทึกเมนูใหม่</button>
+                    </form>
+                </div>
+                <div>
+                    <h4 style="margin:0 0 8px 0; font-size:12px;">📋 รายการเมนูที่มีทั้งหมด</h4>
+                    <div id="manageMenuList" style="background:var(--light-gray); padding:8px; border-radius:6px; min-height:220px; max-height:300px; overflow-y:auto; font-size:11px;">
+                        <p style="color:var(--gray);">กำลังโหลด...</p>
+                    </div>
+                </div>
+            </div>
+            <div style="display:flex; justify-content:flex-end; margin-top:10px; border-top:1px solid #ddd; padding-top:8px;">
+                <button onclick="closeMenuManagerModal()" style="background:#ddd; border:none; padding:6px 14px; border-radius:6px; cursor:pointer; font-size:12px;">ปิดหน้าต่าง</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="print-area"></div>
+
+    <script>
+        let allMenus = [];
+        let currentSelectedCategory = 'ทั้งหมด';
+        let activeTableId = null;
+        let activeTableTitleText = '';
+        let currentActiveOrders = [];
+        let currentCart = [];
+
+        const categoryMap = {
+            1: 'อาหารตามสั่ง', 
+            2: 'อาหารป่า',
+            3: 'ทอด',
+            4: 'ผัด',
+            5: 'ต้มยำ',
+            6: 'ยำ',
+            7: 'เครื่องดื่ม',
+            8: 'เมนูแนะนำ'
+        };
+
+        async function fetchAdminData() {
+            try {
+                const res = await fetch('http://192.168.1.109:3000/api/menu');
+                allMenus = await res.json();
+                renderAdminMenus();
+                renderTablesAndZones();
+                fetchKitchenOrders();
+            } catch (err) {
+                console.error('Error loading data');
+            }
+        }
+
+        function selectCategory(catName, element) {
+            currentSelectedCategory = catName;
+            document.querySelectorAll('.cat-menu-btn').forEach(btn => btn.classList.remove('active'));
+            element.classList.add('active');
+            document.getElementById('current-cat-title').innerText = `รายการ: ${catName}`;
+            renderAdminMenus();
+        }
+
+        function renderAdminMenus() {
+            const grid = document.getElementById('admin-menu-grid');
+            grid.innerHTML = '';
+            
+            const filtered = currentSelectedCategory === 'ทั้งหมด' 
+                ? allMenus 
+                : allMenus.filter(m => {
+                    const catName = m.category_name || categoryMap[m.category_id] || '';
+                    return catName === currentSelectedCategory;
+                });
+
+            if (filtered.length === 0) {
+                grid.innerHTML = '<p style="grid-column: span 2; text-align:center; color:var(--gray); padding:20px; font-size:12px;">ไม่พบเมนูในหมวดหมู่นี้</p>';
+                return;
+            }
+
+            filtered.forEach(item => {
+                grid.innerHTML += `
+                    <div class="admin-menu-card" onclick="addToCart(${item.id}, '${item.name}', ${item.price})">
+                        <div>
+                            <img src="${item.image_url || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c'}" alt="">
+                            <div style="font-weight:bold; font-size:12px; margin-bottom:2px;">${item.name}</div>
+                            <div style="color:var(--primary); font-size:11px; font-weight:bold;">${parseFloat(item.price).toFixed(2)} ฿</div>
+                        </div>
+                        <div style="font-size:10px; color:var(--success); text-align:center; margin-top:4px; font-weight:bold;">➕ เพิ่มลงตะกร้า</div>
+                    </div>
+                `;
+            });
+        }
+
+        function addToCart(menuItemId, menuName, itemPrice) {
+            if(!activeTableId) {
+                alert('กรุณาคลิกเลือกโต๊ะ ซุ้ม หรือคิวหน้าร้านก่อนเลือกรายการอาหารครับ!');
+                return;
+            }
+            const existing = currentCart.find(i => i.menu_item_id === menuItemId);
+            if (existing) {
+                existing.quantity += 1;
+            } else {
+                currentCart.push({ menu_item_id: menuItemId, name: menuName, price: itemPrice, quantity: 1 });
+            }
+            renderSummaryBox();
+        }
+
+        function updateCartQuantity(index, delta) {
+            currentCart[index].quantity += delta;
+            if (currentCart[index].quantity <= 0) {
+                currentCart.splice(index, 1);
+            }
+            renderSummaryBox();
+        }
+
+        async function confirmAndSubmitOrder() {
+            if (!activeTableId || currentCart.length === 0) return;
+
+            try {
+                const res = await fetch('http://192.168.1.109:3000/api/orders', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        table_id: activeTableId,
+                        items: currentCart.map(i => ({ menu_item_id: i.menu_item_id, quantity: i.quantity, price: i.price }))
+                    })
+                });
+
+                if(res.ok) {
+                    currentCart = []; 
+                    renderSummaryBox();
+                    fetchKitchenOrders();
+                    alert('ส่งออเดอร์เข้าครัวสำเร็จ!');
+                } else {
+                    alert('ส่งออเดอร์ไม่สำเร็จ');
+                }
+            } catch(err) {
+                alert('เกิดข้อผิดพลาดในการเชื่อมต่อ');
+            }
+        }
+
+        async function fetchKitchenOrders() {
+            try {
+                const res = await fetch('http://192.168.1.109:3000/api/admin/orders');
+                const orders = await res.json();
+                currentActiveOrders = orders;
+                
+                renderActiveQueues(orders);
+                renderTablesAndZones(); // โต๊ะจะยังคงเช็คจาก currentActiveOrders ทั้งหมด ทำให้สีส้มยังอยู่
+
+                const container = document.getElementById('kitchen-orders-list');
+                container.innerHTML = '';
+
+                // กรองเฉพาะออเดอร์ที่ยังไม่เสร็จมาแสดงในจอครัว
+                const pendingKitchenOrders = orders.filter(ord => ord.status !== 'เสร็จสิ้น');
+
+                if (pendingKitchenOrders.length === 0) {
+                    container.innerHTML = '<p style="color:var(--gray); font-size:12px;">ไม่มีออเดอร์ค้างในครัว</p>';
+                    return;
+                }
+
+                pendingKitchenOrders.forEach(ord => {
+                    let tableStr = String(ord.table_id);
+                    let locationLabel = tableStr.startsWith('Z') ? `ซุ้ม ${tableStr}` : (isNaN(tableStr) ? `คิว ${tableStr}` : `โต๊ะ ${tableStr}`);
+
+                    let itemsHtml = '';
+                    if (ord.items) {
+                        ord.items.forEach(i => {
+                            itemsHtml += `<div>• ${i.name} x${i.quantity}</div>`;
+                        });
+                    }
+                    
+                    const isPrinted = ord.status === 'พิมพ์แล้ว'; 
+                    let cardStyle = isPrinted ? 'border-left-color: #3742fa; background: #f0f4ff;' : '';
+
+                    container.innerHTML += `
+                        <div class="kitchen-card" style="${cardStyle}">
+                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                                <span style="font-weight:bold; color:var(--primary);">${locationLabel}</span>
+                                <span style="font-size:10px; color:var(--gray);">
+                                    ${isPrinted ? '🖨️ พิมพ์แล้ว' : new Date(ord.created_at).toLocaleTimeString()}
+                                </span>
+                            </div>
+                            <div style="color:var(--text); margin:4px 0;">${itemsHtml}</div>
+                            <div style="display:flex; justify-content:flex-end; gap:3px; margin-top:4px;">
+                                <button class="btn-action" onclick="completeSingleOrder('${ord.id}')">✔️ ทำเสร็จแล้ว</button>
+                                <button class="btn-print" onclick="printKitchenOrderOnly('${ord.id}', '${locationLabel}', '${encodeURIComponent(JSON.stringify(ord.items))}', '${ord.created_at}')">🖨️ พิมพ์</button>
+                            </div>
+                        </div>
+                    `;
+                });
+            } catch (err) {}
+        }0
+
+        function renderActiveQueues(orders) {
+            const queueGroupContainer = document.getElementById('queue-group-container');
+            const qContainer = document.getElementById('queues-grid-container');
+            qContainer.innerHTML = '';
+
+            const activeQueueIds = [...new Set(orders.map(o => String(o.table_id)))].filter(id => isNaN(id) && !id.startsWith('Z') && o.status !== 'เสร็จสิ้น');
+
+            if (activeQueueIds.length > 0) {
+                queueGroupContainer.style.display = 'flex';
+                activeQueueIds.forEach(qId => {
+                    const isActive = String(activeTableId) === String(qId) ? 'active-tab' : '';
+                    qContainer.innerHTML += `<div class="queue-box ${isActive}" id="tbl-${qId}" onclick="selectTableInline('คิว ${qId}', '${qId}')">${qId}</div>`;
+                });
+            } else {
+                queueGroupContainer.style.display = 'none';
+            }
+        }
+
+        async function completeSingleOrder(orderId) {
+            try {
+                await fetch(`http://192.168.1.109:3000/api/admin/orders/${orderId}/status`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: 'เสร็จสิ้น' })
+                });
+                fetchKitchenOrders();
+            } catch(err) {
+                alert('เกิดข้อผิดพลาดในการอัปเดตสถานะ');
+            }
+        }
+
+        async function printKitchenOrderOnly(orderId, locationLabel, encodedItems, createdAt) {
+            const items = JSON.parse(decodeURIComponent(encodedItems));
+            let itemsListHtml = '';
+            items.forEach(i => {
+                itemsListHtml += `<div style="display:flex; justify-content:space-between; margin: 4px 0;"><span>- ${i.name}</span><strong>x${i.quantity}</strong></div>`;
+            });
+
+            const printArea = document.getElementById('print-area');
+            printArea.innerHTML = `
+                <div style="text-align:center; font-weight:bold; font-size:16px; margin-bottom:5px;">[ ใบออเดอร์ครัว ]</div>
+                <div style="text-align:center; font-size:14px; margin-bottom:10px; border-bottom:1px dashed #000; padding-bottom:5px;">ตำแหน่ง: <b>${locationLabel}</b></div>
+                <div style="margin-bottom:10px;">${itemsListHtml}</div>
+                <div style="text-align:center; font-size:11px; border-top:1px dashed #000; padding-top:5px; margin-top:10px;">เวลาสั่ง: ${new Date(createdAt).toLocaleTimeString()}</div>
+            `;
+            window.print();
+
+            try {
+                await fetch(`http://192.168.1.109:3000/api/admin/orders/${orderId}/status`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: 'พิมพ์แล้ว' })
+                });
+                fetchKitchenOrders();
+            } catch(e) {
+                console.error('ไม่สามารถอัปเดตสถานะการพิมพ์ได้');
+            }
+        }
+
+        async function printReceiptAndCheckout(tableId, titleText) {
+            try {
+                const res = await fetch(`http://192.168.1.109:3000/api/orders/table/${tableId}`);
+                const orders = await res.json();
+                
+                if (orders.length === 0) {
+                    alert('ไม่มีรายการอาหารให้เช็คบิล');
+                    return;
+                }
+
+                let totalPrice = 0;
+                let receiptItemsHtml = '';
+
+                orders.forEach(ord => {
+                    if (ord.items) {
+                        ord.items.forEach(i => {
+                            let sumItemPrice = Number(i.price) * Number(i.quantity);
+                            totalPrice += sumItemPrice;
+                            receiptItemsHtml += `
+                                <div style="display:flex; justify-content:space-between; margin:3px 0; font-size:13px;">
+                                    <span>${i.name} x${i.quantity}</span>
+                                    <span>${sumItemPrice.toFixed(2)} ฿</span>
+                                </div>
+                            `;
+                        });
+                    }
+                });
+
+                const printArea = document.getElementById('print-area');
+                printArea.innerHTML = `
+                    <div style="text-align:center; margin-bottom:6px;">
+                        <img src="/logo.png" alt="Logo" style="width: 55px; height: 55px; object-fit: contain; border-radius: 50%;">
+                    </div>
+                    <div style="text-align:center; font-weight:bold; font-size:16px; margin-bottom:2px;">ร้านร่มทาง อาหารป่า</div>
+                    <div style="text-align:center; font-size:12px; margin-bottom:8px;">ใบเสร็จรับเงิน / Receipt</div>
+                    <div style="border-bottom:1px dashed #000; margin-bottom:8px; padding-bottom:4px; font-size:12px;">
+                        <div>โต๊ะ/คิว: <b>${titleText}</b></div>
+                        <div>เวลา: ${new Date().toLocaleString()}</div>
+                    </div>
+                    <div style="margin-bottom:10px;">${receiptItemsHtml}</div>
+                    <div style="border-top:1px dashed #000; margin-top:8px; padding-top:6px; display:flex; justify-content:space-between; font-weight:bold; font-size:15px;">
+                        <span>ยอดรวมทั้งสิ้น:</span>
+                        <span>${totalPrice.toFixed(2)} ฿</span>
+                    </div>
+                    <div style="text-align:center; font-size:11px; margin-top:15px;">*** ขอบคุณที่ใช้บริการ ***</div>
+                `;
+
+                window.print();
+
+                await fetch(`http://192.168.1.109:3000/api/orders/table/${tableId}`, {
+                    method: 'DELETE'
+                });
+
+                alert('เช็คบิลและพิมพ์ใบเสร็จเรียบร้อยแล้ว');
+                activeTableId = null;
+                currentCart = [];
+                document.getElementById('tableSummaryBox').innerHTML = `<div style="font-size:11px; color:var(--gray); text-align:center; padding:40px 0;">ยังไม่ได้เลือกโต๊ะหรือคิว<br>(กรุณาคลิกเลือกจากด้านบน)</div>`;
+                fetchKitchenOrders();
+
+            } catch(e) {
+                alert('เกิดข้อผิดพลาดในการเช็คบิล');
+            }
+        }
+
+        function renderTablesAndZones() {
+            const tContainer = document.getElementById('tables-grid-container');
+            const zContainer = document.getElementById('zones-grid-container');
+            tContainer.innerHTML = '';
+            zContainer.innerHTML = '';
+
+            // ขอแค่มีออเดอร์ค้างอยู่ในระบบของโต๊ะนั้นๆ (ไม่ว่าจะทำอาหารเสร็จหรือยัง) ให้ถือว่าโต๊ะไม่ว่าง (สีส้ม)
+            // จะหายเป็นสีปกติก็ต่อเมื่อกดเช็คบิลลบข้อมูลออกแล้วเท่านั้น
+            const occupiedTableIds = currentActiveOrders.map(o => String(o.table_id));
+
+            for (let i = 1; i <= 12; i++) {
+                const isOccupied = occupiedTableIds.includes(String(i)) ? 'occupied' : '';
+                const isActive = String(activeTableId) === String(i) ? 'active-tab' : '';
+                tContainer.innerHTML += `<div class="table-box ${isOccupied} ${isActive}" id="tbl-${i}" onclick="selectTableInline('โต๊ะ ${i}', ${i})">${i}</div>`;
+            }
+            for (let i = 1; i <= 6; i++) {
+                const zKey = `Z${i}`;
+                const isOccupied = occupiedTableIds.includes(zKey) ? 'occupied' : '';
+                const isActive = String(activeTableId) === zKey ? 'active-tab' : '';
+                zContainer.innerHTML += `<div class="table-box ${isOccupied} ${isActive}" id="tbl-${zKey}" onclick="selectTableInline('ซุ้ม ${zKey}', '${zKey}')">${zKey}</div>`;
+            }
+        }
+
+        async function selectTableInline(title, id) {
+            activeTableId = id;
+            activeTableTitleText = title;
+            currentCart = []; 
+
+            renderTablesAndZones();
+            document.querySelectorAll('.queue-box').forEach(el => el.classList.remove('active-tab'));
+            const targetEl = document.getElementById(`tbl-${id}`);
+            if(targetEl && targetEl.classList.contains('queue-box')) {
+                targetEl.classList.add('active-tab');
+            }
+
+            renderSummaryBox();
+        }
+
+        async function renderSummaryBox() {
+            const summaryBox = document.getElementById('tableSummaryBox');
+            if(!activeTableId) {
+                summaryBox.innerHTML = `<div style="font-size:11px; color:var(--gray); text-align:center; padding:40px 0;">ยังไม่ได้เลือกโต๊ะหรือคิว<br>(กรุณาคลิกเลือกจากด้านบน)</div>`;
+                return;
+            }
+
+            try {
+                const res = await fetch(`http://192.168.1.109:3000/api/orders/table/${activeTableId}`);
+                const orders = await res.json();
+
+                let submittedItemsHtml = '';
+                orders.forEach(ord => {
+                    if (ord.items) {
+                        ord.items.forEach((i, itemIndex) => {
+                            submittedItemsHtml += `
+                                <div style="display:flex; justify-content:space-between; align-items:center; padding:2px 0; border-bottom:1px solid #f8f9fa;">
+                                    <span>${i.name} x ${i.quantity} (${(i.price * i.quantity).toFixed(2)}฿)</span>
+                                    <button onclick="deleteSingleOrderItem('${ord.id}', ${itemIndex})" style="background:#ff4757; color:white; border:none; padding:2px 5px; border-radius:3px; cursor:pointer; font-size:9px;">❌ ลบ</button>
+                                </div>
+                            `;
+                        });
+                    }
+                });
+
+                let cartItemsHtml = '';
+                let cartTotal = 0;
+                currentCart.forEach((item, idx) => {
+                    cartTotal += item.price * item.quantity;
+                    cartItemsHtml += `
+                        <div style="display:flex; justify-content:space-between; align-items:center; background:#fff3cd; padding:3px 6px; margin-bottom:2px; border-radius:4px; font-size:11px;">
+                            <span>${item.name}</span>
+                            <div style="display:flex; align-items:center; gap:4px;">
+                                <button onclick="updateCartQuantity(${idx}, -1)" style="padding:1px 4px; font-size:10px;">-</button>
+                                <span>${item.quantity}</span>
+                                <button onclick="updateCartQuantity(${idx}, 1)" style="padding:1px 4px; font-size:10px;">+</button>
+                                <span>${(item.price * item.quantity).toFixed(2)}฿</span>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                summaryBox.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee; padding-bottom:4px;">
+                        <strong style="font-size:12px; color:var(--primary);">เลือกแล้ว: ${activeTableTitleText}</strong>
+                        <button onclick="openTableModalFromSummary()" style="background:var(--light-gray); border:none; padding:2px 5px; border-radius:4px; font-size:10px; cursor:pointer;">🔍 ขยาย</button>
+                    </div>
+                    <div style="flex:1; overflow-y: auto; font-size:11px; margin:4px 0; padding-right: 4px; min-height:100px;">
+                        <div style="font-weight:bold; color:var(--success); font-size:10px; margin-bottom:2px;">🛒 ตะกร้าชั่วคราว (รอส่งเข้าครัว):</div>
+                        ${cartItemsHtml || '<div style="color:var(--gray); font-size:10px; margin-bottom:4px;">(ยังไม่มีรายการในตะกร้า)</div>'}
+                        
+                        <div style="font-weight:bold; color:var(--gray); font-size:10px; margin: 6px 0 2px 0;">📦 รายการที่สั่งไปแล้ว:</div>
+                        ${submittedItemsHtml || '<div style="color:var(--gray); font-size:10px;">(ไม่มีรายการค้าง)</div>'}
+                    </div>
+                    ${currentCart.length > 0 ? `<button onclick="confirmAndSubmitOrder()" style="background:var(--success); color:white; border:none; padding:8px; border-radius:4px; font-size:12px; cursor:pointer; font-weight:bold; width:100%; margin-bottom:2px;">🚀 ยืนยันการสั่งอาหาร (${cartTotal.toFixed(2)} ฿)</button>` : ''}
+                    <div style="display:flex; gap:5px; margin-top:2px;">
+                        <button onclick="cancelActiveTableOrder()" style="flex:1; background:#ffeaa7; color:#d63031; border:none; padding:6px; border-radius:4px; font-size:11px; cursor:pointer; font-weight:bold;">❌ ยกเลิกทั้งหมด</button>
+                        <button onclick="checkoutInlineTable()" style="flex:1; background:var(--primary); color:white; border:none; padding:6px; border-radius:4px; font-size:11px; cursor:pointer; font-weight:bold;">💰 เช็คบิล / พิมพ์</button>
+                    </div>
+                `;
+            } catch (e) {
+                summaryBox.innerHTML = '<p style="color:var(--primary);">โหลดข้อมูลไม่สำเร็จ</p>';
+            }
+        }
+
+        async function deleteSingleOrderItem(orderId, itemIndex) {
+            if(!confirm('ต้องการลบรายการอาหารนี้ใช่หรือไม่?')) return;
+            try {
+                const res = await fetch(`http://192.168.1.109:3000/api/orders/${orderId}/item/${itemIndex}`, {
+                    method: 'DELETE'
+                });
+                if(res.ok) {
+                    renderSummaryBox();
+                    if(document.getElementById('tableModal').style.display === 'flex') {
+                        loadTableOrders(activeTableId);
+                    }
+                    fetchKitchenOrders();
+                } else {
+                    alert('ไม่สามารถลบรายการได้');
+                }
+            } catch(e) {
+                alert('เกิดข้อผิดพลาดในการเชื่อมต่อ');
+            }
+        }
+
+        function openTableModalFromSummary() {
+            if(!activeTableId) return;
+            document.getElementById('modalTableTitle').innerText = `จัดการ ${activeTableTitleText}`;
+            document.getElementById('tableModal').style.display = 'flex';
+            loadTableOrders(activeTableId);
+        }
+
+        async function loadTableOrders(tableId) {
+            try {
+                const res = await fetch(`http://192.168.1.109:3000/api/orders/table/${tableId}`);
+                const orders = await res.json();
+                const container = document.getElementById('tableOrderItemsList');
+                container.innerHTML = '';
+
+                if (orders.length === 0) {
+                    container.innerHTML = '<p style="color:var(--gray);">ยังไม่มีรายการอาหาร</p>';
+                    return;
+                }
+
+                orders.forEach(ord => {
+                    let itemsHtml = '';
+                    if (ord.items) {
+                        ord.items.forEach((i, itemIndex) => {
+                            itemsHtml += `
+                                <div style="display:flex; justify-content:space-between; align-items:center; padding:3px 0; border-bottom:1px solid #f0f0f0;">
+                                    <span>${i.name} x ${i.quantity} (${(i.price * i.quantity).toFixed(2)}฿)</span>
+                                    <button onclick="deleteSingleOrderItem('${ord.id}', ${itemIndex})" style="background:#ff4757; color:white; border:none; padding:2px 6px; border-radius:3px; cursor:pointer; font-size:10px;">❌ ลบ</button>
+                                </div>
+                            `;
+                        });
+                    }
+                    container.innerHTML += `
+                        <div style="margin-bottom:8px; border:1px solid #ddd; padding:6px; border-radius:4px; background:white;">
+                            <div style="font-size:10px; color:var(--gray); margin-bottom:4px;">สถานะ: ${ord.status} | เวลา: ${new Date(ord.created_at).toLocaleTimeString()}</div>
+                            ${itemsHtml}
+                        </div>
+                    `;
+                });
+            } catch (e) {
+                document.getElementById('tableOrderItemsList').innerHTML = '<p style="color:var(--primary);">ไม่สามารถโหลดข้อมูลได้</p>';
+            }
+        }
+
+        function closeTableModal() {
+            document.getElementById('tableModal').style.display = 'none';
+        }
+
+        async function cancelActiveTableOrder() {
+            if(!activeTableId) return;
+            if(confirm(`ต้องการยกเลิกออเดอร์ทั้งหมดของ ${activeTableTitleText} ใช่หรือไม่?`)) {
+                try {
+                    await fetch(`http://192.168.1.109:3000/api/orders/table/${activeTableId}`, {
+                        method: 'DELETE'
+                    });
+                } catch(e) {}
+
+                alert('ยกเลิกและล้างออเดอร์เรียบร้อยแล้ว');
+                activeTableId = null;
+                currentCart = [];
+                document.getElementById('tableSummaryBox').innerHTML = `<div style="font-size:11px; color:var(--gray); text-align:center; padding:40px 0;">ยังไม่ได้เลือกโต๊ะหรือคิว<br>(กรุณาคลิกเลือกจากด้านบน)</div>`;
+                fetchKitchenOrders();
+            }
+        }
+
+        function checkoutInlineTable() {
+            if(!activeTableId) return;
+            if(confirm(`ยืนยันการเช็คบิลและพิมพ์ใบเสร็จสำหรับ ${activeTableTitleText}?`)) {
+                printReceiptAndCheckout(activeTableId, activeTableTitleText);
+            }
+        }
+
+        function checkoutTable() {
+            if(!activeTableId) return;
+            printReceiptAndCheckout(activeTableId, activeTableTitleText);
+            closeTableModal();
+        }
+
+        function openWalkInOrder() {
+            const queueNum = 'Q' + Math.floor(100 + Math.random() * 900);
+            selectTableInline(`${queueNum}`, queueNum);
+        }
+
+        function openMenuManagerModal() {
+            document.getElementById('menuManagerModal').style.display = 'flex';
+            loadManageMenuList();
+        }
+
+        function closeMenuManagerModal() {
+            document.getElementById('menuManagerModal').style.display = 'none';
+        }
+
+        async function loadManageMenuList() {
+            const container = document.getElementById('manageMenuList');
+            container.innerHTML = '<p style="color:var(--gray);">กำลังโหลด...</p>';
+            try {
+                const res = await fetch('http://192.168.1.109:3000/api/menu');
+                const menus = await res.json();
+                container.innerHTML = '';
+
+                if(menus.length === 0) {
+                    container.innerHTML = '<p style="color:var(--gray);">ไม่มีเมนูอาหาร</p>';
+                    return;
+                }
+
+                menus.forEach(m => {
+                    const cName = m.category_name || categoryMap[m.category_id] || 'ไม่ระบุ';
+                    container.innerHTML += `
+                        <div style="display:flex; justify-content:space-between; align-items:center; background:white; padding:6px; margin-bottom:4px; border-radius:4px;">
+                            <div>
+                                <strong style="font-size:11px;">${m.name}</strong><br>
+                                <span style="color:var(--primary); font-size:10px;">${parseFloat(m.price).toFixed(2)}฿ (${cName})</span>
+                            </div>
+                            <button onclick="deleteMenuItem(${m.id})" style="background:#ff4757; color:white; border:none; padding:3px 6px; border-radius:4px; cursor:pointer; font-size:10px;">🗑️ ลบ</button>
+                        </div>
+                    `;
+                });
+            } catch(e) {
+                container.innerHTML = '<p style="color:red;">โหลดรายการไม่สำเร็จ</p>';
+            }
+        }
+
+        async function addNewMenu(event) {
+            event.preventDefault();
+            const name = document.getElementById('newMenuName').value;
+            const price = document.getElementById('newMenuPrice').value;
+            const category_name = document.getElementById('newMenuCategory').value;
+            const image_url = document.getElementById('newMenuImage').value;
+
+            try {
+                const res = await fetch('http://192.168.1.109:3000/api/menu', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, price, category_name, image_url })
+                });
+
+                if(res.ok) {
+                    alert('เพิ่มเมนูสำเร็จ!');
+                    document.getElementById('addMenuForm').reset();
+                    loadManageMenuList();
+                    fetchAdminData();
+                } else {
+                    alert('ไม่สามารถเพิ่มเมนูได้');
+                }
+            } catch(e) {
+                alert('เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์');
+            }
+        }
+
+        async function deleteMenuItem(id) {
+            if(confirm('คุณต้องการลบเมนูนี้ใช่หรือไม่?')) {
+                try {
+                    const res = await fetch(`http://192.168.1.109:3000/api/menu/${id}`, {
+                        method: 'DELETE'
+                    });
+                    if(res.ok) {
+                        loadManageMenuList();
+                        fetchAdminData();
+                    } else {
+                        alert('ลบเมนูไม่สำเร็จ');
+                    }
+                } catch(e) {
+                    alert('เกิดข้อผิดพลาด');
+                }
+            }
+        }
+
+        setInterval(fetchKitchenOrders, 5000);
+        fetchAdminData();
+    </script>
+</body>
+</html>
