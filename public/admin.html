@@ -500,7 +500,7 @@
 
         async function fetchAdminData() {
             try {
-                const res = await fetch('http://192.168.1.109:3000/api/menu');
+                const res = await fetch('/api/menu');
                 allMenus = await res.json();
                 renderAdminMenus();
                 renderTablesAndZones();
@@ -574,7 +574,7 @@
             if (!activeTableId || currentCart.length === 0) return;
 
             try {
-                const res = await fetch('http://192.168.1.109:3000/api/orders', {
+                const res = await fetch('/api/orders', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -598,17 +598,16 @@
 
         async function fetchKitchenOrders() {
             try {
-                const res = await fetch('http://192.168.1.109:3000/api/admin/orders');
+                const res = await fetch('/api/admin/orders');
                 const orders = await res.json();
                 currentActiveOrders = orders;
                 
                 renderActiveQueues(orders);
-                renderTablesAndZones(); // โต๊ะจะยังคงเช็คจาก currentActiveOrders ทั้งหมด ทำให้สีส้มยังอยู่
+                renderTablesAndZones();
 
                 const container = document.getElementById('kitchen-orders-list');
                 container.innerHTML = '';
 
-                // กรองเฉพาะออเดอร์ที่ยังไม่เสร็จมาแสดงในจอครัว
                 const pendingKitchenOrders = orders.filter(ord => ord.status !== 'เสร็จสิ้น');
 
                 if (pendingKitchenOrders.length === 0) {
@@ -647,7 +646,7 @@
                     `;
                 });
             } catch (err) {}
-        }0
+        }
 
         function renderActiveQueues(orders) {
             const queueGroupContainer = document.getElementById('queue-group-container');
@@ -669,7 +668,7 @@
 
         async function completeSingleOrder(orderId) {
             try {
-                await fetch(`http://192.168.1.109:3000/api/admin/orders/${orderId}/status`, {
+                await fetch(`/api/admin/orders/${orderId}/status`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ status: 'เสร็จสิ้น' })
@@ -697,7 +696,7 @@
             window.print();
 
             try {
-                await fetch(`http://192.168.1.109:3000/api/admin/orders/${orderId}/status`, {
+                await fetch(`/api/admin/orders/${orderId}/status`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ status: 'พิมพ์แล้ว' })
@@ -710,7 +709,7 @@
 
         async function printReceiptAndCheckout(tableId, titleText) {
             try {
-                const res = await fetch(`http://192.168.1.109:3000/api/orders/table/${tableId}`);
+                const res = await fetch(`/api/orders/table/${tableId}`);
                 const orders = await res.json();
                 
                 if (orders.length === 0) {
@@ -757,7 +756,7 @@
 
                 window.print();
 
-                await fetch(`http://192.168.1.109:3000/api/orders/table/${tableId}`, {
+                await fetch(`/api/orders/table/${tableId}`, {
                     method: 'DELETE'
                 });
 
@@ -778,8 +777,6 @@
             tContainer.innerHTML = '';
             zContainer.innerHTML = '';
 
-            // ขอแค่มีออเดอร์ค้างอยู่ในระบบของโต๊ะนั้นๆ (ไม่ว่าจะทำอาหารเสร็จหรือยัง) ให้ถือว่าโต๊ะไม่ว่าง (สีส้ม)
-            // จะหายเป็นสีปกติก็ต่อเมื่อกดเช็คบิลลบข้อมูลออกแล้วเท่านั้น
             const occupiedTableIds = currentActiveOrders.map(o => String(o.table_id));
 
             for (let i = 1; i <= 12; i++) {
@@ -818,7 +815,7 @@
             }
 
             try {
-                const res = await fetch(`http://192.168.1.109:3000/api/orders/table/${activeTableId}`);
+                const res = await fetch(`/api/orders/table/${activeTableId}`);
                 const orders = await res.json();
 
                 let submittedItemsHtml = '';
@@ -878,7 +875,7 @@
         async function deleteSingleOrderItem(orderId, itemIndex) {
             if(!confirm('ต้องการลบรายการอาหารนี้ใช่หรือไม่?')) return;
             try {
-                const res = await fetch(`http://192.168.1.109:3000/api/orders/${orderId}/item/${itemIndex}`, {
+                const res = await fetch(`/api/orders/${orderId}/item/${itemIndex}`, {
                     method: 'DELETE'
                 });
                 if(res.ok) {
@@ -904,7 +901,7 @@
 
         async function loadTableOrders(tableId) {
             try {
-                const res = await fetch(`http://192.168.1.109:3000/api/orders/table/${tableId}`);
+                const res = await fetch(`/api/orders/table/${tableId}`);
                 const orders = await res.json();
                 const container = document.getElementById('tableOrderItemsList');
                 container.innerHTML = '';
@@ -946,7 +943,7 @@
             if(!activeTableId) return;
             if(confirm(`ต้องการยกเลิกออเดอร์ทั้งหมดของ ${activeTableTitleText} ใช่หรือไม่?`)) {
                 try {
-                    await fetch(`http://192.168.1.109:3000/api/orders/table/${activeTableId}`, {
+                    await fetch(`/api/orders/table/${activeTableId}`, {
                         method: 'DELETE'
                     });
                 } catch(e) {}
@@ -990,7 +987,7 @@
             const container = document.getElementById('manageMenuList');
             container.innerHTML = '<p style="color:var(--gray);">กำลังโหลด...</p>';
             try {
-                const res = await fetch('http://192.168.1.109:3000/api/menu');
+                const res = await fetch('/api/menu');
                 const menus = await res.json();
                 container.innerHTML = '';
 
@@ -1024,7 +1021,7 @@
             const image_url = document.getElementById('newMenuImage').value;
 
             try {
-                const res = await fetch('http://192.168.1.109:3000/api/menu', {
+                const res = await fetch('/api/menu', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ name, price, category_name, image_url })
@@ -1046,7 +1043,7 @@
         async function deleteMenuItem(id) {
             if(confirm('คุณต้องการลบเมนูนี้ใช่หรือไม่?')) {
                 try {
-                    const res = await fetch(`http://192.168.1.109:3000/api/menu/${id}`, {
+                    const res = await fetch(`/api/menu/${id}`, {
                         method: 'DELETE'
                     });
                     if(res.ok) {
