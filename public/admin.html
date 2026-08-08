@@ -340,20 +340,25 @@
 
         /* ปรับปรุงการพิมพ์สำหรับเครื่องพิมพ์ 80mm ให้กระดาษยาวพอดี ไม่ถูกปุรอยตัดกินข้อความ */
         @media print {
-  @page {
-    size: 80mm auto; /* กำหนดความกว้าง 80 มม. ส่วนความสูงให้ปรับตามเนื้อหาจริง (auto) */
-    margin: 0;       /* ตัดขอบกระดาษส่วนเกินออก */
-  }
-  
-  body {
-    margin: 0;
-  }
-
-  /* กำหนดพื้นที่ท้ายบิลให้เว้นว่างนิดหน่อยก่อนสั่งตัด */
-  .print-container {
-    padding-bottom: 20px; 
-  }
-}
+            @page { 
+                margin: 0; 
+                size: 80mm auto; 
+            }
+            body * { visibility: hidden; }
+            #print-area, #print-area * { visibility: visible; }
+            #print-area {
+                display: block !important;
+                position: absolute;
+                left: 0; top: 0;
+                width: 76mm; 
+                font-family: 'Sarabun', 'Prompt', sans-serif;
+                font-size: 13px;
+                line-height: 1.4;
+                color: #000;
+                padding: 2mm 4mm 15mm 4mm; /* เพิ่ม Padding ด้านล่าง 15mm เพื่อเว้นระยะให้พ้นรอยปรบ/รอยฉีก */
+                box-sizing: border-box;
+            }
+        }
     </style>
 </head>
 <body>
