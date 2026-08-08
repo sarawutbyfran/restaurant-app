@@ -103,14 +103,21 @@ app.post('/api/orders', async (req, res) => {
 
         const orderResult = await client.query(
             'INSERT INTO orders (table_id) VALUES ($1) RETURNING id',
-            [String(table_id).toUpperCase()] // แปลงเป็นตัวพิมพ์ใหญ่ป้องกัน Error
+            [String(table_id).toUpperCase()]
         );
         const orderId = orderResult.rows[0].id;
 
         for (const item of items) {
             await client.query(
                 'INSERT INTO order_items (order_id, menu_item_id, quantity, price, notes, options) VALUES ($1, $2, $3, $4, $5, $6)',
-                [orderId, item.menu_item_id, item.quantity, item.price, item.notes || null, item.options || null]
+                [
+                    orderId, 
+                    item.menu_item_id, 
+                    item.quantity, 
+                    item.price, 
+                    item.notes || null, 
+                    item.options ? JSON.stringify(item.options) : (item.options_str || null)
+                ]
             );
         }
 
@@ -191,7 +198,64 @@ app.put('/api/admin/orders/:id/status', async (req, res) => {
     }
 });
 
-// 6. ลบ/เคลียร์ออเดอร์ของโต๊ะ (เช็คตัวพิมพ์ใหญ่-เล็ก)
+// 6. ลบรายการอาหารเฉพาะชิ้นในออเดอร์
+app.delete('/api/orders/:orderId/item/:itemIndex', async (mainReq, mainRes) => {
+    const orderId = mainReq.params.orderId;
+    const itemIndex = parseInt(mainReq.params.itemIndex);
+
+    try {
+        const itemsResult = await pool.query(
+            'SELECT id FROM order_items WHERE order_id = $1 ORDER BY id ASC',
+            [orderId]
+        );
+
+        if (itemsResult.rows.length <= itemIndex) {
+            return mainRes.status(404).json({ error: 'ไม่พบรายการอาหารที่ต้องการลบ' });
+        }
+
+        const targetItemId = itemsResult.rows[itemIndex].id;
+
+        await pool.query('DELETE FROM order_items WHERE id = $1', [targetItemId]);
+
+        const checkRemaining = await pool.query('SELECT COUNT(*) FROM order_items WHERE order_id = $1', [orderId]);
+        if (parseInt(checkRemaining.rows[0].count) === 0) {
+            await pool.query('DELETE FROM orders WHERE id = $1', [orderId]);
+        }
+
+        mainRes.json({ success: true, message: 'ลบรายการอาหารสำเร็จ' });
+    } catch (err) {
+        mainRes.status(500).json({ error: err.message });
+    }
+});
+
+// 7. ย้ายออเดอร์ทั้งหมดจากโต๊ะเดิมไปโต๊ะใหม่
+app.put('/api/orders/table/:tableId/move', async (req, res) => {
+    const oldTableId = String(req.params.tableId).toUpperCase();
+    const { new_table_id } = req.body;
+
+    if (!new_table_id) {
+        return res.status(400).json({ error: 'กรุณาระบุโต๊ะปลายทาง' });
+    }
+
+    const targetNewId = String(new_table_id).toUpperCase();
+
+    try {
+        const updateResult = await pool.query(
+            'UPDATE orders SET table_id = $1 WHERE UPPER(table_id) = $2',
+            [targetNewId, oldTableId]
+        );
+
+        if (updateResult.rowCount === 0) {
+            return res.status(404).json({ error: 'ไม่พบออเดอร์ของโต๊ะต้นทางที่ต้องการย้าย' });
+        }
+
+        res.json({ success: true, message: `ย้ายออเดอร์จาก ${oldTableId} ไปยัง ${targetNewId} สำเร็จ` });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// 8. ลบ/เคลียร์ออเดอร์ของโต๊ะ
 app.delete('/api/orders/table/:tableId', async (req, res) => {
     const tableId = String(req.params.tableId).toUpperCase();
     try {
@@ -213,7 +277,7 @@ app.delete('/api/orders/table/:tableId', async (req, res) => {
     }
 });
 
-// 7. เพิ่มเมนูอาหารใหม่
+// 9. เพิ่มเมนูอาหารใหม่
 app.post('/api/menu', async (req, res) => {
     const { name, price, category_name, image_url, category_id } = req.body;
     try {
@@ -228,7 +292,7 @@ app.post('/api/menu', async (req, res) => {
     }
 });
 
-// 8. ลบเมนูอาหาร
+// 10. ลบเมนูอาหาร
 app.delete('/api/menu/:id', async (req, res) => {
     const menuId = req.params.id;
     try {
