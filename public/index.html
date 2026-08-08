@@ -361,10 +361,9 @@
     </div>
 
     <script>
-        // ดึงเลขโต๊ะหรือรหัสซุ้มจาก URL (รองรับ z1, Z1 ฯลฯ และแปลงเป็นตัวพิมพ์ใหญ่อัตโนมัติ)
         const urlParams = new URLSearchParams(window.location.search);
         let tableId = urlParams.get('table') || '1';
-        tableId = tableId.toUpperCase(); // แปลงพิมพ์เล็กเป็นพิมพ์ใหญ่ เช่น z1 -> Z1
+        tableId = tableId.toUpperCase();
         document.getElementById('table-badge').innerText = `โต๊ะ: ${tableId}`;
 
         let allMenus = [];
@@ -447,7 +446,6 @@
             const extraContainer = document.getElementById('customizeExtraOptions');
             extraContainer.innerHTML = '';
 
-            // แสดงตัวเลือกเสริม (ไข่ดาว / ไข่เจียว) เฉพาะหมวดอาหารตามสั่ง
             const catName = selectedItemForCustom.category_name || categoryMap[selectedItemForCustom.category_id] || '';
             if (catName === 'อาหารตามสั่ง') {
                 extraContainer.innerHTML = `
@@ -635,17 +633,17 @@
                 return;
             }
 
+            // แก้ไขจุดนี้ให้ส่ง notes ไปแบบชัดเจน (ถ้าไม่มีให้เป็น null)
             let orderItems = cart.map(item => ({
                 menu_item_id: item.id,
-                name: item.name, // <-- เพิ่มบรรทัดนี้ เพื่อส่งชื่อเมนู (รวมถึงตัวเลือกเสริม เช่น ไข่ดาว/ไข่เจียว) ไปบันทึกด้วย
+                name: item.name, 
                 quantity: item.quantity,
                 price: item.price,
-                notes: item.notes || null,
+                notes: item.notes && item.notes.trim() !== '' ? item.notes.trim() : null,
                 options: item.optionsText || null
             }));
 
             try {
-                // ส่ง table_id เป็น String เพื่อรองรับทั้งตัวเลขและรหัสซุ้ม เช่น "Z1"
                 const res = await fetch('/api/orders', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
