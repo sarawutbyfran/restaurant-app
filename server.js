@@ -2,13 +2,32 @@ const express = require('express');
 const { Pool } = require('pg');
 const cors = require('cors');
 const path = require('path');
+const multer = require('multer'); // 1. เรียกใช้งาน multer สำหรับจัดการไฟล์รูปภาพ
 
 const app = express();
 const PORT = 3000;
 
 app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true })); // รองรับ form-urlencoded
 app.use(express.static(path.join(__dirname, 'public')));
+
+// ตั้งค่าการจัดเก็บไฟล์รูปภาพด้วย Multer
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        const uploadDir = path.join(__dirname, 'public', 'uploads');
+        const fs = require('fs');
+        if (!fs.existsSync(uploadDir)){
+            fs.mkdirSync(uploadDir, { recursive: true });
+        }
+        cb(null, uploadDir);
+    },
+    filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, uniqueSuffix + path.extname(file.originalname));
+    }
+});
+const upload = multer({ storage: storage });
 
 // ตั้งค่าการเชื่อมต่อ PostgreSQL (รองรับทั้งบนเครื่องและบน Cloud)
 const pool = new Pool({
@@ -278,15 +297,42 @@ app.delete('/api/orders/table/:tableId', async (req, res) => {
     }
 });
 
-app.post('/api/menu', async (req, res) => {
-    const { name, price, category_name, image_url, category_id } = req.body;
+// --- API เพิ่มเมนูอาหาร (รองรับอัปโหลดรูปภาพผ่าน Multer) ---
+app.post('/api/menu', upload.single('image'), async (req, res) => {
+    const { name, price, category_name, category_id } = req.body;
+    const image_url = req.file ? `/uploads/${req.file.filename}` : (req.body.image_url || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c');
+    
     try {
         const result = await pool.query(
             `INSERT INTO menu_items (name, price, category_name, image_url, category_id) 
              VALUES ($1, $2, $3, $4, $5) RETURNING id`,
-            [name, price, category_name, image_url || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c', category_id || 1]
+            [name, price, category_name, image_url, category_id || 1]
         );
         res.json({ success: true, id: result.rows[0].id });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// --- API อัปเดตข้อมูลเมนูอาหาร (รองรับอัปโหลดรูปภาพใหม่ผ่าน Multer) ---
+app.put('/api/menu/:id', upload.single('image'), async (req, res) => {
+    const menuId = req.params.id;
+    const { name, price } = req.body;
+
+    try {
+        if (req.file) {
+            const image_url = `/uploads/${req.file.filename}`;
+            await pool.query(
+                'UPDATE menu_items SET name = $1, price = $2, image_url = $3 WHERE id = $4',
+                [name, price, image_url, menuId]
+            );
+        } else {
+            await pool.query(
+                'UPDATE menu_items SET name = $1, price = $2 WHERE id = $3',
+                [name, price, menuId]
+            );
+        }
+        res.json({ success: true, message: 'Updated menu successfully' });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
