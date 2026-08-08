@@ -479,8 +479,8 @@
                             </select>
                         </div>
                         <div class="form-group">
-                            <label>ลิงก์รูปภาพ (Image URL)</label>
-                            <input type="text" id="newMenuImage" placeholder="https://...">
+                            <label>รูปภาพอาหาร (อัปโหลดไฟล์)</label>
+                            <input type="file" id="newMenuImageFile" accept="image/*" style="background: white; padding: 4px;">
                         </div>
                         <button type="submit" style="background:var(--success); color:white; border:none; padding:8px; width:100%; border-radius:6px; font-weight:bold; cursor:pointer; font-size:12px; margin-top:5px;">บันทึกเมนูใหม่</button>
                     </form>
@@ -1333,18 +1333,26 @@
             }
         }
 
+        // --- ปรับปรุงให้รองรับการอัปโหลดไฟล์รูปภาพส่งเข้า Backend ---
         async function addNewMenu(event) {
             event.preventDefault();
             const name = document.getElementById('newMenuName').value;
             const price = document.getElementById('newMenuPrice').value;
             const category_name = document.getElementById('newMenuCategory').value;
-            const image_url = document.getElementById('newMenuImage').value;
+            const imageFile = document.getElementById('newMenuImageFile').files[0];
+
+            const formData = new FormData();
+            formData.append('name', name);
+            formData.append('price', price);
+            formData.append('category_name', category_name);
+            if (imageFile) {
+                formData.append('image', imageFile); // ส่งไฟล์รูปภาพเข้า Backend (Multer จะรับด้วยชื่อ field 'image')
+            }
 
             try {
                 const res = await fetch('/api/menu', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name, price, category_name, image_url })
+                    body: formData // ส่งแบบ FormData (ไม่ต้องกำหนด Content-Type เพิ่ม fetch จะจัดการให้อัตโนมัติ)
                 });
 
                 if(res.ok) {
