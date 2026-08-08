@@ -223,7 +223,6 @@
             background: #fafbfc;
         }
         
-        /* Animation กระพริบสำหรับออเดอร์ที่ยังไม่พิมพ์ */
         @keyframes blink-animation {
             0% { opacity: 1; border-left-color: var(--warning); }
             50% { opacity: 0.4; border-left-color: #ff4757; }
@@ -423,7 +422,6 @@
         <div class="modal-content">
             <h3 id="modalTableTitle" style="margin-top:0;">จัดการโต๊ะ/คิว</h3>
             
-            <!-- ส่วนปุ่มย้ายโต๊ะ -->
             <div style="background: var(--light-gray); padding: 8px; border-radius: 6px; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
                 <span style="font-size: 11px; font-weight: bold;">🔄 ย้ายไปโต๊ะ/ซุ้ม/คิวอื่น:</span>
                 <input type="text" id="targetMoveInput" placeholder="เช่น 5, Z2, Q123" style="padding: 4px; font-size: 11px; width: 120px; border: 1px solid #ccc; border-radius: 4px;">
@@ -557,7 +555,6 @@
 
             filtered.forEach(item => {
                 const catName = item.category_name || categoryMap[item.category_id] || '';
-                // เช็คว่าเป็นหมวด "อาหารตามสั่ง" หรือไม่ เพื่อแสดงตัวเลือก ไข่ดาว / ไข่เจียว
                 let optionsHtml = '';
                 if (catName === 'อาหารตามสั่ง') {
                     optionsHtml = `
@@ -630,8 +627,8 @@
                     name: displayName, 
                     price: finalPrice, 
                     quantity: 1,
-                    note: note,
-                    options: optionsStr
+                    notes: note || null,
+                    options: optionsStr.length > 0 ? optionsStr.join(', ') : null
                 });
             }
             renderSummaryBox();
@@ -658,7 +655,9 @@
                             menu_item_id: i.menu_item_id, 
                             name: i.name,
                             quantity: i.quantity, 
-                            price: i.price 
+                            price: i.price,
+                            notes: i.notes,
+                            options: i.options
                         }))
                     })
                 });
@@ -707,7 +706,6 @@
                     }
                     
                     const isPrinted = ord.status === 'พิมพ์แล้ว'; 
-                    // ถ้ายังไม่พิมพ์ ให้ใส่คลาสกระพริบ unprinted-blink
                     let cardClass = isPrinted ? 'kitchen-card' : 'kitchen-card unprinted-blink';
                     let cardStyle = isPrinted ? 'border-left-color: #3742fa; background: #f0f4ff;' : '';
 
@@ -1021,7 +1019,6 @@
             document.getElementById('tableModal').style.display = 'none';
         }
 
-        // ระบบย้ายโต๊ะ / ซุ้ม / คิว
         async function executeMoveTable() {
             const targetNewId = document.getElementById('targetMoveInput').value.trim();
             if (!targetNewId) {
