@@ -637,6 +637,7 @@
 
             let orderItems = cart.map(item => ({
                 menu_item_id: item.id,
+                name: item.name, // <-- เพิ่มบรรทัดนี้ เพื่อส่งชื่อเมนู (รวมถึงตัวเลือกเสริม เช่น ไข่ดาว/ไข่เจียว) ไปบันทึกด้วย
                 quantity: item.quantity,
                 price: item.price,
                 notes: item.notes || null,
