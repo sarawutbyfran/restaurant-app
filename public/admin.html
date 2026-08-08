@@ -501,15 +501,46 @@
         </div>
     </div>
 
-    <!-- Modal สรุปยอดขาย -->
+    <!-- Modal สรุปยอดขาย (ฉบับอัปเกรด: เลือกวันที่ + ดูบิลย้อนหลัง) -->
     <div class="modal" id="salesReportModal">
-        <div class="modal-content" style="width: 500px;">
-            <h3 style="margin-top:0; color:var(--primary);">📊 สรุปยอดขายของร้าน</h3>
-            <div style="background: var(--light-gray); padding: 12px; border-radius: 8px; margin-bottom: 15px; text-align: center;">
-                <div style="font-size: 13px; color: var(--gray);">ยอดขายรวมทั้งสิ้น (จากประวัติการเช็คบิลทั้งหมด)</div>
-                <div id="totalSalesAmount" style="font-size: 26px; font-weight: bold; color: var(--success); margin-top: 5px;">0.00 ฿</div>
+        <div class="modal-content" style="width: 750px; max-height: 90vh;">
+            <h3 style="margin-top:0; color:var(--primary);">📊 สรุปยอดขายและประวัติใบเสร็จ</h3>
+            
+            <div style="background: var(--light-gray); padding: 10px; border-radius: 8px; margin-bottom: 10px; display: flex; align-items: center; gap: 10px; font-size: 12px;">
+                <div>
+                    <label><b>จากวันที่:</b></label>
+                    <input type="date" id="startDate" style="padding: 4px; border: 1px solid #ccc; border-radius: 4px;">
+                </div>
+                <div>
+                    <label><b>ถึงวันที่:</b></label>
+                    <input type="date" id="endDate" style="padding: 4px; border: 1px solid #ccc; border-radius: 4px;">
+                </div>
+                <button onclick="loadSalesReport()" style="background: var(--success); color: white; border: none; padding: 6px 12px; border-radius: 4px; font-weight: bold; cursor: pointer; margin-top: 15px;">🔍 กรองข้อมูล</button>
+                <button onclick="resetSalesFilter()" style="background: #ccc; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; margin-top: 15px;">รีเซ็ต</button>
             </div>
-            <div style="display:flex; justify-content:flex-end; border-top:1px solid #ddd; padding-top:8px;">
+
+            <div style="background: #e1f5fe; padding: 10px; border-radius: 8px; margin-bottom: 10px; text-align: center; border: 1px solid #b3e5fc;">
+                <div style="font-size: 12px; color: #0277bd;">ยอดขายรวมในช่วงเวลาที่เลือก</div>
+                <div id="totalSalesAmount" style="font-size: 22px; font-weight: bold; color: var(--success); margin-top: 2px;">0.00 ฿</div>
+            </div>
+
+            <div style="flex: 1; overflow-y: auto; max-height: 320px; border: 1px solid #ddd; border-radius: 6px; background: white;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+                    <thead>
+                        <tr style="background: var(--light-gray); text-align: left; border-bottom: 1px solid #ddd; position: sticky; top: 0;">
+                            <th style="padding: 8px;">เวลาเช็คบิล</th>
+                            <th style="padding: 8px;">โต๊ะ/คิว</th>
+                            <th style="padding: 8px;">รายการอาหาร</th>
+                            <th style="padding: 8px; text-align: right;">ยอดเงิน</th>
+                        </tr>
+                    </thead>
+                    <tbody id="salesHistoryTableBody">
+                        <tr><td colspan="4" style="text-align:center; padding:20px; color:var(--gray);">กำลังโหลดข้อมูล...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div style="display:flex; justify-content:flex-end; border-top:1px solid #ddd; padding-top:8px; margin-top: 10px;">
                 <button onclick="closeSalesReportModal()" style="background:#ddd; border:none; padding:6px 14px; border-radius:6px; cursor:pointer; font-size:12px;">ปิดหน้าต่าง</button>
             </div>
         </div>
@@ -828,7 +859,6 @@
             }
         }
 
-        // --- ฟังก์ชันเช็คบิลพร้อมบันทึกลง sales_history ---
         async function printReceiptAndCheckout(tableId, titleText) {
             try {
                 const res = await fetch(`/api/orders/table/${tableId}`);
@@ -880,7 +910,6 @@
 
                 window.print();
 
-                // บันทึกประวัติยอดขายลง Backend (ตาราง sales_history)
                 await fetch('/api/admin/sales-history', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -892,7 +921,6 @@
                     })
                 });
 
-                // ลบออเดอร์ของโต๊ะนี้ทิ้งหลังเช็คบิลเสร็จ
                 await fetch(`/api/orders/table/${tableId}`, {
                     method: 'DELETE'
                 });
@@ -1153,27 +1181,76 @@
             document.getElementById('menuManagerModal').style.display = 'none';
         }
 
-        // --- ระบบสรุปยอดขาย (ดึงจากตาราง sales_history) ---
-        async function openSalesReportModal() {
+        // --- ระบบสรุปยอดขาย (รองรับดูบิลย้อนหลัง & กรองตามวันที่) ---
+        function openSalesReportModal() {
             document.getElementById('salesReportModal').style.display = 'flex';
-            document.getElementById('totalSalesAmount').innerText = 'กำลังคำนวณ...';
-            try {
-                const res = await fetch('/api/admin/sales-history');
-                const historyList = await res.json();
-                let totalSum = 0;
-
-                historyList.forEach(record => {
-                    totalSum += Number(record.total_price || 0);
-                });
-
-                document.getElementById('totalSalesAmount').innerText = totalSum.toFixed(2) + ' ฿';
-            } catch (e) {
-                document.getElementById('totalSalesAmount').innerText = '0.00 ฿';
-            }
+            loadSalesReport();
         }
 
         function closeSalesReportModal() {
             document.getElementById('salesReportModal').style.display = 'none';
+        }
+
+        function resetSalesFilter() {
+            document.getElementById('startDate').value = '';
+            document.getElementById('endDate').value = '';
+            loadSalesReport();
+        }
+
+        async function loadSalesReport() {
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            
+            document.getElementById('totalSalesAmount').innerText = 'กำลังคำนวณ...';
+            
+            try {
+                let url = '/api/admin/sales-history';
+                let params = [];
+                if (startDate) params.push(`start_date=${startDate}`);
+                if (endDate) params.push(`end_date=${endDate}`);
+                if (params.length > 0) {
+                    url += `?${params.join('&')}`;
+                }
+
+                const res = await fetch(url);
+                const historyList = await res.json();
+                
+                let totalSum = 0;
+                const tbody = document.getElementById('salesHistoryTableBody');
+                tbody.innerHTML = '';
+
+                if (historyList.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:20px; color:var(--gray);">ไม่พบประวัติยอดขายในช่วงเวลานี้</td></tr>`;
+                    document.getElementById('totalSalesAmount').innerText = '0.00 ฿';
+                    return;
+                }
+
+                historyList.forEach(record => {
+                    totalSum += Number(record.total_price || 0);
+                    
+                    let itemsSummary = '';
+                    if (record.items && Array.isArray(record.items)) {
+                        itemsSummary = record.items.map(i => `${i.name} x${i.quantity}`).join(', ');
+                    }
+
+                    const formattedDate = new Date(record.checked_out_at).toLocaleString('th-TH');
+
+                    tbody.innerHTML += `
+                        <tr style="border-bottom: 1px solid #f1f2f6;">
+                            <td style="padding: 6px 8px; color: var(--gray);">${formattedDate}</td>
+                            <td style="padding: 6px 8px; font-weight: bold; color: var(--primary);">${record.title}</td>
+                            <td style="padding: 6px 8px; max-width: 250px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${itemsSummary}">${itemsSummary}</td>
+                            <td style="padding: 6px 8px; text-align: right; font-weight: bold; color: var(--success);">${Number(record.total_price).toFixed(2)} ฿</td>
+                        </tr>
+                    `;
+                });
+
+                document.getElementById('totalSalesAmount').innerText = totalSum.toFixed(2) + ' ฿';
+            } catch (e) {
+                console.error(e);
+                document.getElementById('totalSalesAmount').innerText = '0.00 ฿';
+                document.getElementById('salesHistoryTableBody').innerHTML = `<tr><td colspan="4" style="text-align:center; color:red; padding:20px;">เกิดข้อผิดพลาดในการโหลดข้อมูล</td></tr>`;
+            }
         }
 
         // --- ระบบจัดการเมนู (ค้นหา & แก้ไข) ---

@@ -27,7 +27,7 @@ pool.connect((err, client, release) => {
     }
 });
 
-// สร้างตารางโครงสร้างเริ่มต้นอัตโนมัติ (รวมถึงตาราง sales_history สำหรับเก็บบันทึกยอดขาย)
+// สร้างตารางโครงสร้างเริ่มต้นอัตโนมัติ (รวมถึง sales_history)
 async function initDatabase() {
     try {
         await pool.query(`
@@ -49,7 +49,6 @@ async function initDatabase() {
             );
         `);
 
-        // ตาราง orders รองรับ table_id เป็น VARCHAR (รองรับ Z1, Z2, ฯลฯ)
         await pool.query(`
             CREATE TABLE IF NOT EXISTS orders (
                 id SERIAL PRIMARY KEY,
@@ -59,7 +58,6 @@ async function initDatabase() {
             );
         `);
 
-        // ตาราง order_items เก็บหมายเหตุ ตัวเลือกเสริม และชื่อเมนูที่เลือก
         await pool.query(`
             CREATE TABLE IF NOT EXISTS order_items (
                 id SERIAL PRIMARY KEY,
@@ -73,7 +71,6 @@ async function initDatabase() {
             );
         `);
 
-        // 🌟 ตารางเก็บบันทึกประวัติยอดขายหลังเช็คบิล (สำหรับระบบสรุปยอดขายสะสม)
         await pool.query(`
             CREATE TABLE IF NOT EXISTS sales_history (
                 id SERIAL PRIMARY KEY,
@@ -93,7 +90,6 @@ async function initDatabase() {
 
 // --- API Endpoints ---
 
-// 1. ดึงรายการเมนูทั้งหมด
 app.get('/api/menu', async (req, res) => {
     try {
         const result = await pool.query('SELECT * FROM menu_items ORDER BY id ASC');
@@ -103,7 +99,6 @@ app.get('/api/menu', async (req, res) => {
     }
 });
 
-// 2. รับออเดอร์ใหม่ (รองรับ notes, options และ name)
 app.post('/api/orders', async (req, res) => {
     const { table_id, items } = req.body;
     if (!table_id || !items || items.length === 0) {
@@ -145,7 +140,6 @@ app.post('/api/orders', async (req, res) => {
     }
 });
 
-// 3. ดึงประวัติออเดอร์ตามโต๊ะ
 app.get('/api/orders/table/:tableId', async (req, res) => {
     const tableId = String(req.params.tableId).toUpperCase();
     try {
@@ -172,7 +166,6 @@ app.get('/api/orders/table/:tableId', async (req, res) => {
     }
 });
 
-// 4. ดึงออเดอร์ทั้งหมดสำหรับหน้าจอครัว (Admin)
 app.get('/api/admin/orders', async (req, res) => {
     try {
         const ordersResult = await pool.query(
@@ -197,7 +190,6 @@ app.get('/api/admin/orders', async (req, res) => {
     }
 });
 
-// 5. อัปเดตสถานะออเดอร์
 app.put('/api/admin/orders/:id/status', async (req, res) => {
     const orderId = req.params.id;
     const { status } = req.body;
@@ -210,7 +202,6 @@ app.put('/api/admin/orders/:id/status', async (req, res) => {
     }
 });
 
-// 6. ลบรายการอาหารเฉพาะชิ้นในออเดอร์
 app.delete('/api/orders/:orderId/item/:itemIndex', async (mainReq, mainRes) => {
     const orderId = mainReq.params.orderId;
     const itemIndex = parseInt(mainReq.params.itemIndex);
@@ -240,7 +231,6 @@ app.delete('/api/orders/:orderId/item/:itemIndex', async (mainReq, mainRes) => {
     }
 });
 
-// 7. ย้ายออเดอร์ทั้งหมดจากโต๊ะเดิมไปโต๊ะใหม่
 app.put('/api/orders/table/:tableId/move', async (req, res) => {
     const oldTableId = String(req.params.tableId).toUpperCase();
     const { new_table_id } = req.body;
@@ -267,7 +257,6 @@ app.put('/api/orders/table/:tableId/move', async (req, res) => {
     }
 });
 
-// 8. ลบ/เคลียร์ออเดอร์ของโต๊ะ
 app.delete('/api/orders/table/:tableId', async (req, res) => {
     const tableId = String(req.params.tableId).toUpperCase();
     try {
@@ -289,7 +278,6 @@ app.delete('/api/orders/table/:tableId', async (req, res) => {
     }
 });
 
-// 9. เพิ่มเมนูอาหารใหม่
 app.post('/api/menu', async (req, res) => {
     const { name, price, category_name, image_url, category_id } = req.body;
     try {
@@ -304,7 +292,6 @@ app.post('/api/menu', async (req, res) => {
     }
 });
 
-// 10. ลบเมนูอาหาร
 app.delete('/api/menu/:id', async (req, res) => {
     const menuId = req.params.id;
     try {
@@ -315,7 +302,6 @@ app.delete('/api/menu/:id', async (req, res) => {
     }
 });
 
-// --- 11. API สำหรับบันทึกประวัติยอดขายหลังเช็คบิล (Sales History) ---
 app.post('/api/admin/sales-history', async (req, res) => {
     try {
         const { table_id, title, total_price, items } = req.body;
@@ -333,12 +319,27 @@ app.post('/api/admin/sales-history', async (req, res) => {
     }
 });
 
-// --- 12. API สำหรับดึงประวัติยอดขายทั้งหมดมาแสดงในหน้าสรุปยอดขาย ---
+// --- API ดึงประวัติยอดขาย รองรับการกรองช่วงวันที่ (start_date & end_date) ---
 app.get('/api/admin/sales-history', async (req, res) => {
     try {
-        const result = await pool.query(
-            'SELECT * FROM sales_history ORDER BY checked_out_at DESC'
-        );
+        let { start_date, end_date } = req.query;
+        let query = 'SELECT * FROM sales_history';
+        let queryParams = [];
+
+        if (start_date && end_date) {
+            query += ' WHERE checked_out_at >= $1 AND checked_out_at < ($2::date + INTERVAL \'1 day\')';
+            queryParams = [start_date, end_date];
+        } else if (start_date) {
+            query += ' WHERE checked_out_at >= $1';
+            queryParams = [start_date];
+        } else if (end_date) {
+            query += ' WHERE checked_out_at < ($1::date + INTERVAL \'1 day\')';
+            queryParams = [end_date];
+        }
+
+        query += ' ORDER BY checked_out_at DESC';
+
+        const result = await pool.query(query, queryParams);
         res.status(200).json(result.rows);
     } catch (err) {
         console.error('Server Error:', err);
