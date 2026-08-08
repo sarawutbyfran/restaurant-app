@@ -375,6 +375,7 @@
             <button class="cat-menu-btn" onclick="selectCategory('ยำ', this)">🥗 ยำ</button>
             <button class="cat-menu-btn" onclick="selectCategory('อาหารตามสั่ง', this)">🍛 ตามสั่ง</button>
             <button class="cat-menu-btn" onclick="selectCategory('เครื่องดื่ม', this)">🧋 เครื่องดื่ม</button>
+            <button class="cat-menu-btn" onclick="selectCategory('AdminController', this)">AdminController</button>
         </div>
 
         <div style="display: flex; flex-direction: column; gap: 4px; margin-top: auto;">
@@ -483,6 +484,7 @@
                                 <option value="ยำ">🥗 ยำ</option>
                                 <option value="อาหารตามสั่ง">🍛 ตามสั่ง</option>
                                 <option value="เครื่องดื่ม">🧋 เครื่องดื่ม</option>
+                                <option value="ADMIN">AdminController</option>
                             </select>
                         </div>
                         <div class="form-group">
@@ -597,7 +599,8 @@
             5: 'ต้มยำ',
             6: 'ยำ',
             7: 'เครื่องดื่ม',
-            8: 'เมนูแนะนำ'
+            8: 'เมนูแนะนำ',
+            9: 'AdminController'
         };
 
         async function fetchAdminData() {
