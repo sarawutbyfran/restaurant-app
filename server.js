@@ -27,7 +27,7 @@ pool.connect((err, client, release) => {
     }
 });
 
-// สร้างตารางโครงสร้างเริ่มต้นอัตโนมัติ (ถ้ายังไม่มี)
+// สร้างตารางโครงสร้างเริ่มต้นอัตโนมัติ (รองรับฟังก์ชันใหม่)
 async function initDatabase() {
     try {
         await pool.query(`
@@ -49,7 +49,7 @@ async function initDatabase() {
             );
         `);
 
-        // สร้างตาราง orders รองรับ table_id เป็นตัวอักษรหรือตัวเลข (VARCHAR)
+        // ตาราง orders รองรับการย้ายโต๊ะและติดตามสถานะ
         await pool.query(`
             CREATE TABLE IF NOT EXISTS orders (
                 id SERIAL PRIMARY KEY,
@@ -59,14 +59,16 @@ async function initDatabase() {
             );
         `);
 
-        // สร้างตาราง order_items สำหรับเก็บรายการอาหารในแต่ละออเดอร์
+        // อัปเดตตาราง order_items เพิ่มคอลัมน์ notes (หมายเหตุ) และ options (ตัวเลือกเสริม เช่น +ไข่ดาว)
         await pool.query(`
             CREATE TABLE IF NOT EXISTS order_items (
                 id SERIAL PRIMARY KEY,
                 order_id INTEGER REFERENCES orders(id) ON DELETE CASCADE,
                 menu_item_id INTEGER REFERENCES menu_items(id),
                 quantity INTEGER NOT NULL,
-                price NUMERIC(10, 2) NOT NULL
+                price NUMERIC(10, 2) NOT NULL,
+                notes TEXT,
+                options TEXT
             );
         `);
     
@@ -88,7 +90,7 @@ app.get('/api/menu', async (req, res) => {
     }
 });
 
-// 2. รับออเดอร์ใหม่
+// 2. รับออเดอร์ใหม่ (รองรับ notes และ options)
 app.post('/api/orders', async (req, res) => {
     const { table_id, items } = req.body;
     if (!table_id || !items || items.length === 0) {
@@ -106,9 +108,10 @@ app.post('/api/orders', async (req, res) => {
         const orderId = orderResult.rows[0].id;
 
         for (const item of items) {
+            // item ประกอบด้วย: menu_item_id, quantity, price, notes (หมายเหตุ), options (ตัวเลือกเสริม เช่น "+ไข่ดาว (+7 บาท)")
             await client.query(
-                'INSERT INTO order_items (order_id, menu_item_id, quantity, price) VALUES ($1, $2, $3, $4)',
-                [orderId, item.menu_item_id, item.quantity, item.price]
+                'INSERT INTO order_items (order_id, menu_item_id, quantity, price, notes, options) VALUES ($1, $2, $3, $4, $5, $6)',
+                [orderId, item.menu_item_id, item.quantity, item.price, item.notes || null, item.options || null]
             );
         }
 
@@ -122,7 +125,7 @@ app.post('/api/orders', async (req, res) => {
     }
 });
 
-// 3. ดึงประวัติออเดอร์ตามโต๊ะ
+// 3. ดึงประวัติออเดอร์ตามโต๊ะ (ดึง notes และ options มาแสดงด้วย)
 app.get('/api/orders/table/:tableId', async (req, res) => {
     const tableId = req.params.tableId;
     try {
@@ -136,7 +139,7 @@ app.get('/api/orders/table/:tableId', async (req, res) => {
 
         for (let i = 0; i < orders.length; i++) {
             const itemsResult = await pool.query(`
-                SELECT oi.quantity, oi.price, m.name 
+                SELECT oi.quantity, oi.price, oi.notes, oi.options, m.name 
                 FROM order_items oi 
                 JOIN menu_items m ON oi.menu_item_id = m.id 
                 WHERE oi.order_id = $1
@@ -162,7 +165,7 @@ app.get('/api/admin/orders', async (req, res) => {
 
         for (let i = 0; i < orders.length; i++) {
             const itemsResult = await pool.query(`
-                SELECT oi.quantity, oi.price, m.name 
+                SELECT oi.quantity, oi.price, oi.notes, oi.options, m.name 
                 FROM order_items oi 
                 JOIN menu_items m ON oi.menu_item_id = m.id 
                 WHERE oi.order_id = $1
@@ -184,6 +187,24 @@ app.put('/api/admin/orders/:id/status', async (req, res) => {
     try {
         await pool.query('UPDATE orders SET status = $1 WHERE id = $2', [status, orderId]);
         res.json({ message: 'อัปเดตสถานะสำเร็จ' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// ฟังก์ชันใหม่: 5.1 ย้ายออเดอร์ไปยังโต๊ะอื่น (Transfer Table)
+app.put('/api/admin/orders/transfer', async (req, res) => {
+    const { from_table_id, to_table_id } = req.body;
+    if (!from_table_id || !to_table_id) {
+        return res.status(400).json({ error: 'กรุณาระบุโต๊ะต้นทางและโต๊ะปลายทางให้ครบถ้วน' });
+    }
+
+    try {
+        const result = await pool.query(
+            'UPDATE orders SET table_id = $1 WHERE table_id = $2',
+            [to_table_id, from_table_id]
+        );
+        res.json({ success: true, message: `ย้ายออเดอร์จากโต๊ะ ${from_table_id} ไปโต๊ะ ${to_table_id} สำเร็จ`, updated_rows: result.rowCount });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
