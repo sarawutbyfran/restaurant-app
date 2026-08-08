@@ -506,7 +506,7 @@
         <div class="modal-content" style="width: 500px;">
             <h3 style="margin-top:0; color:var(--primary);">📊 สรุปยอดขายของร้าน</h3>
             <div style="background: var(--light-gray); padding: 12px; border-radius: 8px; margin-bottom: 15px; text-align: center;">
-                <div style="font-size: 13px; color: var(--gray);">ยอดขายรวมทั้งสิ้น (จากออเดอร์ในระบบทั้งหมด)</div>
+                <div style="font-size: 13px; color: var(--gray);">ยอดขายรวมทั้งสิ้น (จากประวัติการเช็คบิลทั้งหมด)</div>
                 <div id="totalSalesAmount" style="font-size: 26px; font-weight: bold; color: var(--success); margin-top: 5px;">0.00 ฿</div>
             </div>
             <div style="display:flex; justify-content:flex-end; border-top:1px solid #ddd; padding-top:8px;">
@@ -828,6 +828,7 @@
             }
         }
 
+        // --- ฟังก์ชันเช็คบิลพร้อมบันทึกลง sales_history ---
         async function printReceiptAndCheckout(tableId, titleText) {
             try {
                 const res = await fetch(`/api/orders/table/${tableId}`);
@@ -840,12 +841,14 @@
 
                 let totalPrice = 0;
                 let receiptItemsHtml = '';
+                let allItemsToSave = [];
 
                 orders.forEach(ord => {
                     if (ord.items) {
                         ord.items.forEach(i => {
                             let sumItemPrice = Number(i.price) * Number(i.quantity);
                             totalPrice += sumItemPrice;
+                            allItemsToSave.push(i);
                             receiptItemsHtml += `
                                 <div style="display:flex; justify-content:space-between; margin:3px 0; font-size:13px;">
                                     <span>${i.name} x${i.quantity}</span>
@@ -877,17 +880,31 @@
 
                 window.print();
 
+                // บันทึกประวัติยอดขายลง Backend (ตาราง sales_history)
+                await fetch('/api/admin/sales-history', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        table_id: String(tableId),
+                        title: titleText,
+                        total_price: totalPrice,
+                        items: allItemsToSave
+                    })
+                });
+
+                // ลบออเดอร์ของโต๊ะนี้ทิ้งหลังเช็คบิลเสร็จ
                 await fetch(`/api/orders/table/${tableId}`, {
                     method: 'DELETE'
                 });
 
-                alert('เช็คบิลและพิมพ์ใบเสร็จเรียบร้อยแล้ว');
+                alert('เช็คบิลและบันทึกยอดขายเรียบร้อยแล้ว');
                 activeTableId = null;
                 currentCart = [];
                 document.getElementById('tableSummaryBox').innerHTML = `<div style="font-size:11px; color:var(--gray); text-align:center; padding:40px 0;">ยังไม่ได้เลือกโต๊ะหรือคิว<br>(กรุณาคลิกเลือกจากด้านบน)</div>`;
                 fetchKitchenOrders();
 
             } catch(e) {
+                console.error(e);
                 alert('เกิดข้อผิดพลาดในการเช็คบิล');
             }
         }
@@ -1136,20 +1153,17 @@
             document.getElementById('menuManagerModal').style.display = 'none';
         }
 
-        // --- ระบบสรุปยอดขาย ---
+        // --- ระบบสรุปยอดขาย (ดึงจากตาราง sales_history) ---
         async function openSalesReportModal() {
             document.getElementById('salesReportModal').style.display = 'flex';
+            document.getElementById('totalSalesAmount').innerText = 'กำลังคำนวณ...';
             try {
-                const res = await fetch('/api/admin/orders');
-                const orders = await res.json();
+                const res = await fetch('/api/admin/sales-history');
+                const historyList = await res.json();
                 let totalSum = 0;
 
-                orders.forEach(ord => {
-                    if (ord.items) {
-                        ord.items.forEach(i => {
-                            totalSum += Number(i.price) * Number(i.quantity);
-                        });
-                    }
+                historyList.forEach(record => {
+                    totalSum += Number(record.total_price || 0);
                 });
 
                 document.getElementById('totalSalesAmount').innerText = totalSum.toFixed(2) + ' ฿';

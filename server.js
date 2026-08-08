@@ -27,7 +27,7 @@ pool.connect((err, client, release) => {
     }
 });
 
-// สร้างตารางโครงสร้างเริ่มต้นอัตโนมัติ (รองรับรหัสโต๊ะและซุ้มแบบตัวอักษร VARCHAR)
+// สร้างตารางโครงสร้างเริ่มต้นอัตโนมัติ (รวมถึงตาราง sales_history สำหรับเก็บบันทึกยอดขาย)
 async function initDatabase() {
     try {
         await pool.query(`
@@ -70,6 +70,18 @@ async function initDatabase() {
                 notes TEXT,
                 options TEXT,
                 name TEXT
+            );
+        `);
+
+        // 🌟 ตารางเก็บบันทึกประวัติยอดขายหลังเช็คบิล (สำหรับระบบสรุปยอดขายสะสม)
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS sales_history (
+                id SERIAL PRIMARY KEY,
+                table_id VARCHAR(50) NOT NULL,
+                title VARCHAR(100) NOT NULL,
+                total_price NUMERIC(10, 2) NOT NULL,
+                items JSONB,
+                checked_out_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
         `);
     
@@ -133,7 +145,7 @@ app.post('/api/orders', async (req, res) => {
     }
 });
 
-// 3. ดึงประวัติออเดอร์ตามโต๊ะ (ดึงชื่อเมนูจาก order_items โดยตรง)
+// 3. ดึงประวัติออเดอร์ตามโต๊ะ
 app.get('/api/orders/table/:tableId', async (req, res) => {
     const tableId = String(req.params.tableId).toUpperCase();
     try {
@@ -160,7 +172,7 @@ app.get('/api/orders/table/:tableId', async (req, res) => {
     }
 });
 
-// 4. ดึงออเดอร์ทั้งหมดสำหรับหน้าจอครัว (Admin) (ดึงชื่อเมนูจาก order_items โดยตรง)
+// 4. ดึงออเดอร์ทั้งหมดสำหรับหน้าจอครัว (Admin)
 app.get('/api/admin/orders', async (req, res) => {
     try {
         const ordersResult = await pool.query(
@@ -299,6 +311,37 @@ app.delete('/api/menu/:id', async (req, res) => {
         await pool.query('DELETE FROM menu_items WHERE id = $1', [menuId]);
         res.json({ success: true, message: 'Deleted menu successfully' });
     } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// --- 11. API สำหรับบันทึกประวัติยอดขายหลังเช็คบิล (Sales History) ---
+app.post('/api/admin/sales-history', async (req, res) => {
+    try {
+        const { table_id, title, total_price, items } = req.body;
+        
+        const result = await pool.query(
+            `INSERT INTO sales_history (table_id, title, total_price, items) 
+             VALUES ($1, $2, $3, $4) RETURNING id`,
+            [table_id, title, total_price, JSON.stringify(items)]
+        );
+
+        res.status(200).json({ success: true, id: result.rows[0].id, message: 'บันทึกประวัติยอดขายสำเร็จ' });
+    } catch (err) {
+        console.error('Server Error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// --- 12. API สำหรับดึงประวัติยอดขายทั้งหมดมาแสดงในหน้าสรุปยอดขาย ---
+app.get('/api/admin/sales-history', async (req, res) => {
+    try {
+        const result = await pool.query(
+            'SELECT * FROM sales_history ORDER BY checked_out_at DESC'
+        );
+        res.status(200).json(result.rows);
+    } catch (err) {
+        console.error('Server Error:', err);
         res.status(500).json({ error: err.message });
     }
 });
