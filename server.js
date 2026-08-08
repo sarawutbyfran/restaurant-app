@@ -27,7 +27,7 @@ pool.connect((err, client, release) => {
     }
 });
 
-// สร้างตารางโครงสร้างเริ่มต้นอัตโนมัติ (รองรับฟังก์ชันใหม่)
+// สร้างตารางโครงสร้างเริ่มต้นอัตโนมัติ (รองรับรหัสโต๊ะและซุ้มแบบตัวอักษร VARCHAR)
 async function initDatabase() {
     try {
         await pool.query(`
@@ -49,7 +49,7 @@ async function initDatabase() {
             );
         `);
 
-        // ตาราง orders รองรับการย้ายโต๊ะและติดตามสถานะ
+        // ตาราง orders รองรับ table_id เป็น VARCHAR (รองรับ Z1, Z2, ฯลฯ)
         await pool.query(`
             CREATE TABLE IF NOT EXISTS orders (
                 id SERIAL PRIMARY KEY,
@@ -59,7 +59,7 @@ async function initDatabase() {
             );
         `);
 
-        // อัปเดตตาราง order_items เพิ่มคอลัมน์ notes (หมายเหตุ) และ options (ตัวเลือกเสริม เช่น +ไข่ดาว)
+        // ตาราง order_items เก็บหมายเหตุและตัวเลือกเสริม
         await pool.query(`
             CREATE TABLE IF NOT EXISTS order_items (
                 id SERIAL PRIMARY KEY,
@@ -103,12 +103,11 @@ app.post('/api/orders', async (req, res) => {
 
         const orderResult = await client.query(
             'INSERT INTO orders (table_id) VALUES ($1) RETURNING id',
-            [table_id]
+            [String(table_id).toUpperCase()] // แปลงเป็นตัวพิมพ์ใหญ่ป้องกัน Error
         );
         const orderId = orderResult.rows[0].id;
 
         for (const item of items) {
-            // item ประกอบด้วย: menu_item_id, quantity, price, notes (หมายเหตุ), options (ตัวเลือกเสริม เช่น "+ไข่ดาว (+7 บาท)")
             await client.query(
                 'INSERT INTO order_items (order_id, menu_item_id, quantity, price, notes, options) VALUES ($1, $2, $3, $4, $5, $6)',
                 [orderId, item.menu_item_id, item.quantity, item.price, item.notes || null, item.options || null]
@@ -125,12 +124,12 @@ app.post('/api/orders', async (req, res) => {
     }
 });
 
-// 3. ดึงประวัติออเดอร์ตามโต๊ะ (ดึง notes และ options มาแสดงด้วย)
+// 3. ดึงประวัติออเดอร์ตามโต๊ะ
 app.get('/api/orders/table/:tableId', async (req, res) => {
-    const tableId = req.params.tableId;
+    const tableId = String(req.params.tableId).toUpperCase();
     try {
         const ordersResult = await pool.query(
-            'SELECT * FROM orders WHERE table_id = $1 ORDER BY created_at DESC',
+            'SELECT * FROM orders WHERE UPPER(table_id) = $1 ORDER BY created_at DESC',
             [tableId]
         );
         const orders = ordersResult.rows;
@@ -192,29 +191,11 @@ app.put('/api/admin/orders/:id/status', async (req, res) => {
     }
 });
 
-// ฟังก์ชันใหม่: 5.1 ย้ายออเดอร์ไปยังโต๊ะอื่น (Transfer Table)
-app.put('/api/admin/orders/transfer', async (req, res) => {
-    const { from_table_id, to_table_id } = req.body;
-    if (!from_table_id || !to_table_id) {
-        return res.status(400).json({ error: 'กรุณาระบุโต๊ะต้นทางและโต๊ะปลายทางให้ครบถ้วน' });
-    }
-
-    try {
-        const result = await pool.query(
-            'UPDATE orders SET table_id = $1 WHERE table_id = $2',
-            [to_table_id, from_table_id]
-        );
-        res.json({ success: true, message: `ย้ายออเดอร์จากโต๊ะ ${from_table_id} ไปโต๊ะ ${to_table_id} สำเร็จ`, updated_rows: result.rowCount });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
-// 6. ลบ/เคลียร์ออเดอร์ของโต๊ะ
+// 6. ลบ/เคลียร์ออเดอร์ของโต๊ะ (เช็คตัวพิมพ์ใหญ่-เล็ก)
 app.delete('/api/orders/table/:tableId', async (req, res) => {
-    const tableId = req.params.tableId;
+    const tableId = String(req.params.tableId).toUpperCase();
     try {
-        const ordersResult = await pool.query('SELECT id FROM orders WHERE table_id = $1', [tableId]);
+        const ordersResult = await pool.query('SELECT id FROM orders WHERE UPPER(table_id) = $1', [tableId]);
         const orders = ordersResult.rows;
 
         if (orders.length === 0) {
@@ -224,7 +205,7 @@ app.delete('/api/orders/table/:tableId', async (req, res) => {
         const orderIds = orders.map(o => o.id);
         
         await pool.query('DELETE FROM order_items WHERE order_id = ANY($1::int[])', [orderIds]);
-        await pool.query('DELETE FROM orders WHERE table_id = $1', [tableId]);
+        await pool.query('DELETE FROM orders WHERE UPPER(table_id) = $1', [tableId]);
 
         res.json({ success: true, message: `Cleared orders for table ${tableId} successfully` });
     } catch (err) {
