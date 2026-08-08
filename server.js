@@ -2,24 +2,33 @@ const express = require('express');
 const { Pool } = require('pg');
 const cors = require('cors');
 const path = require('path');
-const multer = require('multer'); // 1. เรียกใช้งาน multer สำหรับจัดการไฟล์รูปภาพ
+const fs = require('fs');
+const multer = require('multer');
 
 const app = express();
 const PORT = 3000;
 
 app.use(cors());
 app.use(express.json());
-app.use(express.urlencoded({ extended: true })); // รองรับ form-urlencoded
+app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// ตั้งค่าการจัดเก็บไฟล์รูปภาพด้วย Multer
+// กำหนด Path ของ Disk ให้ตรงกับที่ตั้งค่าไว้ใน Render Dashboard
+const uploadDir = process.env.NODE_ENV === 'production' 
+    ? '/opt/render/project/src/uploads' 
+    : path.join(__dirname, 'public', 'uploads');
+
+// ตรวจสอบและสร้างโฟลเดอร์หากยังไม่มี
+if (!fs.existsSync(uploadDir)){
+    fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+// เปิดให้ Express เสิร์ฟไฟล์รูปภาพจาก Disk โดยตรงผ่าน URL /uploads/...
+app.use('/uploads', express.static(uploadDir));
+
+// ตั้งค่า Multer ให้เก็บบันทึกลงใน Disk Path นี้
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        const uploadDir = path.join(__dirname, 'public', 'uploads');
-        const fs = require('fs');
-        if (!fs.existsSync(uploadDir)){
-            fs.mkdirSync(uploadDir, { recursive: true });
-        }
         cb(null, uploadDir);
     },
     filename: (req, file, cb) => {
@@ -29,13 +38,12 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage: storage });
 
-// ตั้งค่าการเชื่อมต่อ PostgreSQL (รองรับทั้งบนเครื่องและบน Cloud)
+// ตั้งค่าการเชื่อมต่อ PostgreSQL
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false
 });
 
-// ตรวจสอบการเชื่อมต่อฐานข้อมูล
 pool.connect((err, client, release) => {
     if (err) {
         console.error('Error connecting to PostgreSQL database:', err.stack);
@@ -46,7 +54,6 @@ pool.connect((err, client, release) => {
     }
 });
 
-// สร้างตารางโครงสร้างเริ่มต้นอัตโนมัติ (รวมถึง sales_history)
 async function initDatabase() {
     try {
         await pool.query(`
@@ -297,7 +304,7 @@ app.delete('/api/orders/table/:tableId', async (req, res) => {
     }
 });
 
-// --- API เพิ่มเมนูอาหาร (รองรับอัปโหลดรูปภาพผ่าน Multer) ---
+// --- API เพิ่มเมนูอาหาร ---
 app.post('/api/menu', upload.single('image'), async (req, res) => {
     const { name, price, category_name, category_id } = req.body;
     const image_url = req.file ? `/uploads/${req.file.filename}` : (req.body.image_url || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c');
@@ -314,7 +321,7 @@ app.post('/api/menu', upload.single('image'), async (req, res) => {
     }
 });
 
-// --- API อัปเดตข้อมูลเมนูอาหาร (รองรับอัปโหลดรูปภาพใหม่ผ่าน Multer) ---
+// --- API อัปเดตข้อมูลเมนูอาหาร ---
 app.put('/api/menu/:id', upload.single('image'), async (req, res) => {
     const menuId = req.params.id;
     const { name, price } = req.body;
@@ -365,7 +372,6 @@ app.post('/api/admin/sales-history', async (req, res) => {
     }
 });
 
-// --- API ดึงประวัติยอดขาย รองรับการกรองช่วงวันที่ (start_date & end_date) ---
 app.get('/api/admin/sales-history', async (req, res) => {
     try {
         let { start_date, end_date } = req.query;
