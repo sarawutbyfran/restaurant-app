@@ -2,7 +2,8 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- ป้องกันหน้าจอมือถือซูมอัตโนมัติ -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Mobile Order - สั่งอาหารที่โต๊ะ</title>
     <style>
         :root {
@@ -255,6 +256,7 @@
             margin-bottom: 5px;
             font-size: 14px;
         }
+        /* ตั้งฟอนต์ไม่ให้ต่ำกว่า 16px เพื่อไม่ให้มือถือซูมจออัตโนมัติ */
         .form-control {
             width: 100%;
             padding: 10px;
@@ -262,7 +264,7 @@
             border-radius: 8px;
             box-sizing: border-box;
             font-family: inherit;
-            font-size: 14px;
+            font-size: 16px; 
         }
         .checkbox-label {
             display: flex;
@@ -316,14 +318,26 @@
         <button class="btn-order" onclick="submitOrder()">ยืนยันสั่งอาหาร</button>
     </div>
 
-    <!-- Modal สำหรับปรับแต่งเมนูก่อนใส่ตะกร้า (หมายเหตุ + ไข่ดาว/ไข่เจียว) -->
+    <!-- Modal สำหรับปรับแต่งเมนูก่อนใส่ตะกร้า (เพิ่มจำนวน + หมายเหตุ + ไข่ดาว/ไข่เจียว) -->
     <div class="modal" id="customizeModal">
         <div class="modal-content">
             <div class="modal-header">
                 <h2 id="modalItemTitle">เพิ่มรายการอาหาร</h2>
                 <button class="close-btn" onclick="closeCustomizeModal()">&times;</button>
             </div>
+            
             <div id="customizeExtraOptions"></div>
+
+            <!-- เพิ่มส่วนปรับจำนวนสินค้าในหน้านี้ -->
+            <div class="form-group">
+                <label>จำนวน</label>
+                <div style="display: flex; align-items: center; gap: 15px; background: var(--light-gray); padding: 10px; border-radius: 8px; width: fit-content;">
+                    <button type="button" onclick="changeCustomModalQty(-1)" style="background: white; border: 1px solid #ddd; width: 35px; height: 35px; border-radius: 6px; font-weight: bold; cursor: pointer;">-</button>
+                    <span id="customItemQty" style="font-size: 18px; font-weight: bold; min-width: 20px; text-align: center;">1</span>
+                    <button type="button" onclick="changeCustomModalQty(1)" style="background: white; border: 1px solid #ddd; width: 35px; height: 35px; border-radius: 6px; font-weight: bold; cursor: pointer;">+</button>
+                </div>
+            </div>
+
             <div class="form-group">
                 <label>หมายเหตุ / รายละเอียดเพิ่มเติม (เช่น ไม่เผ็ด, เผ็ดน้อย, ไม่ใส่ผัก)</label>
                 <input type="text" id="itemNotesInput" class="form-control" placeholder="ระบุความต้องการเพิ่มเติม...">
@@ -370,6 +384,7 @@
         let cart = []; 
         let currentCategory = 'ทั้งหมด';
         let selectedItemForCustom = null;
+        let currentCustomQty = 1; // ตัวแปรเก็บจำนวนตอนกดเลือกเมนู
 
         const categoryMap = {
             1: 'อาหารตามสั่ง', 
@@ -440,6 +455,8 @@
             selectedItemForCustom = allMenus.find(m => m.id === itemId);
             if (!selectedItemForCustom) return;
 
+            currentCustomQty = 1; // รีเซ็ตจำนวนเริ่มต้นเป็น 1
+            document.getElementById('customItemQty').innerText = currentCustomQty;
             document.getElementById('modalItemTitle').innerText = selectedItemForCustom.name;
             document.getElementById('itemNotesInput').value = '';
 
@@ -461,6 +478,12 @@
             }
 
             document.getElementById('customizeModal').style.display = 'flex';
+        }
+
+        function changeCustomModalQty(delta) {
+            currentCustomQty += delta;
+            if (currentCustomQty < 1) currentCustomQty = 1;
+            document.getElementById('customItemQty').innerText = currentCustomQty;
         }
 
         function closeCustomizeModal() {
@@ -500,14 +523,14 @@
             );
 
             if (existingIndex > -1) {
-                cart[existingIndex].quantity += 1;
+                cart[existingIndex].quantity += currentCustomQty; // บวกเพิ่มตามจำนวนที่เลือกใน modal
             } else {
                 cart.push({
                     id: selectedItemForCustom.id,
                     name: itemCustomName,
                     basePrice: parseFloat(selectedItemForCustom.price),
                     price: finalPrice,
-                    quantity: 1,
+                    quantity: currentCustomQty,
                     notes: notes,
                     hasEgg: hasEgg,
                     hasOmelet: hasOmelet,
