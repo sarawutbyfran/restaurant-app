@@ -63,7 +63,6 @@
         }
 
         .btn-manage-menu-corner {
-            margin-top: auto;
             background: #2f3542;
             color: white;
             border: none;
@@ -371,7 +370,10 @@
             <button class="cat-menu-btn" onclick="selectCategory('เครื่องดื่ม', this)">🧋 เครื่องดื่ม</button>
         </div>
 
-        <button class="btn-manage-menu-corner" onclick="openMenuManagerModal()">⚙️ จัดการเมนูอาหาร</button>
+        <div style="display: flex; flex-direction: column; gap: 4px; margin-top: auto;">
+            <button class="btn-manage-menu-corner" style="background: var(--success);" onclick="openSalesReportModal()">📊 สรุปยอดขาย</button>
+            <button class="btn-manage-menu-corner" onclick="openMenuManagerModal()">⚙️ จัดการเมนูอาหาร</button>
+        </div>
     </div>
 
     <div class="content-middle">
@@ -484,8 +486,11 @@
                     </form>
                 </div>
                 <div>
-                    <h4 style="margin:0 0 8px 0; font-size:12px;">📋 รายการเมนูที่มีทั้งหมด</h4>
-                    <div id="manageMenuList" style="background:var(--light-gray); padding:8px; border-radius:6px; min-height:220px; max-height:300px; overflow-y:auto; font-size:11px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                        <h4 style="margin:0; font-size:12px;">📋 รายการเมนูทั้งหมด</h4>
+                        <input type="text" id="searchMenuInput" placeholder="🔍 ค้นหาเมนู..." onkeyup="filterManageMenuList()" style="padding:4px; font-size:11px; width:130px; border:1px solid #ccc; border-radius:4px;">
+                    </div>
+                    <div id="manageMenuList" style="background:var(--light-gray); padding:8px; border-radius:6px; min-height:200px; max-height:260px; overflow-y:auto; font-size:11px;">
                         <p style="color:var(--gray);">กำลังโหลด...</p>
                     </div>
                 </div>
@@ -493,6 +498,42 @@
             <div style="display:flex; justify-content:flex-end; margin-top:10px; border-top:1px solid #ddd; padding-top:8px;">
                 <button onclick="closeMenuManagerModal()" style="background:#ddd; border:none; padding:6px 14px; border-radius:6px; cursor:pointer; font-size:12px;">ปิดหน้าต่าง</button>
             </div>
+        </div>
+    </div>
+
+    <!-- Modal สรุปยอดขาย -->
+    <div class="modal" id="salesReportModal">
+        <div class="modal-content" style="width: 500px;">
+            <h3 style="margin-top:0; color:var(--primary);">📊 สรุปยอดขายของร้าน</h3>
+            <div style="background: var(--light-gray); padding: 12px; border-radius: 8px; margin-bottom: 15px; text-align: center;">
+                <div style="font-size: 13px; color: var(--gray);">ยอดขายรวมทั้งสิ้น (จากออเดอร์ในระบบทั้งหมด)</div>
+                <div id="totalSalesAmount" style="font-size: 26px; font-weight: bold; color: var(--success); margin-top: 5px;">0.00 ฿</div>
+            </div>
+            <div style="display:flex; justify-content:flex-end; border-top:1px solid #ddd; padding-top:8px;">
+                <button onclick="closeSalesReportModal()" style="background:#ddd; border:none; padding:6px 14px; border-radius:6px; cursor:pointer; font-size:12px;">ปิดหน้าต่าง</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal แก้ไขข้อมูลเมนู -->
+    <div class="modal" id="editMenuModal">
+        <div class="modal-content" style="width: 400px;">
+            <h3 style="margin-top:0; color:var(--primary);">✏️ แก้ไขข้อมูลเมนูอาหาร</h3>
+            <form id="editMenuForm" onsubmit="updateMenuSubmit(event)">
+                <input type="hidden" id="editMenuId">
+                <div class="form-group">
+                    <label>ชื่อเมนูอาหาร</label>
+                    <input type="text" id="editMenuName" required>
+                </div>
+                <div class="form-group">
+                    <label>ราคา (บาท)</label>
+                    <input type="number" step="0.01" id="editMenuPrice" required>
+                </div>
+                <div style="display:flex; justify-content:flex-end; gap:6px; margin-top:15px;">
+                    <button type="button" onclick="closeEditMenuModal()" style="background:#ddd; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:12px;">ยกเลิก</button>
+                    <button type="submit" style="background:var(--success); color:white; border:none; padding:6px 12px; border-radius:6px; font-weight:bold; cursor:pointer; font-size:12px;">บันทึกการแก้ไข</button>
+                </div>
+            </form>
         </div>
     </div>
 
@@ -1095,6 +1136,42 @@
             document.getElementById('menuManagerModal').style.display = 'none';
         }
 
+        // --- ระบบสรุปยอดขาย ---
+        async function openSalesReportModal() {
+            document.getElementById('salesReportModal').style.display = 'flex';
+            try {
+                const res = await fetch('/api/admin/orders');
+                const orders = await res.json();
+                let totalSum = 0;
+
+                orders.forEach(ord => {
+                    if (ord.items) {
+                        ord.items.forEach(i => {
+                            totalSum += Number(i.price) * Number(i.quantity);
+                        });
+                    }
+                });
+
+                document.getElementById('totalSalesAmount').innerText = totalSum.toFixed(2) + ' ฿';
+            } catch (e) {
+                document.getElementById('totalSalesAmount').innerText = '0.00 ฿';
+            }
+        }
+
+        function closeSalesReportModal() {
+            document.getElementById('salesReportModal').style.display = 'none';
+        }
+
+        // --- ระบบจัดการเมนู (ค้นหา & แก้ไข) ---
+        function filterManageMenuList() {
+            const keyword = document.getElementById('searchMenuInput').value.toLowerCase();
+            const items = document.querySelectorAll('.manage-menu-item-row');
+            items.forEach(item => {
+                const text = item.innerText.toLowerCase();
+                item.style.display = text.includes(keyword) ? 'flex' : 'none';
+            });
+        }
+
         async function loadManageMenuList() {
             const container = document.getElementById('manageMenuList');
             container.innerHTML = '<p style="color:var(--gray);">กำลังโหลด...</p>';
@@ -1111,17 +1188,57 @@
                 menus.forEach(m => {
                     const cName = m.category_name || categoryMap[m.category_id] || 'ไม่ระบุ';
                     container.innerHTML += `
-                        <div style="display:flex; justify-content:space-between; align-items:center; background:white; padding:6px; margin-bottom:4px; border-radius:4px;">
+                        <div class="manage-menu-item-row" style="display:flex; justify-content:space-between; align-items:center; background:white; padding:6px; margin-bottom:4px; border-radius:4px;">
                             <div>
                                 <strong style="font-size:11px;">${m.name}</strong><br>
                                 <span style="color:var(--primary); font-size:10px;">${parseFloat(m.price).toFixed(2)}฿ (${cName})</span>
                             </div>
-                            <button onclick="deleteMenuItem(${m.id})" style="background:#ff4757; color:white; border:none; padding:3px 6px; border-radius:4px; cursor:pointer; font-size:10px;">🗑️ ลบ</button>
+                            <div style="display:flex; gap:3px;">
+                                <button onclick="openEditMenuModal(${m.id}, '${m.name}', ${m.price})" style="background:#ffa502; color:white; border:none; padding:3px 6px; border-radius:4px; cursor:pointer; font-size:10px;">✏️ แก้ไข</button>
+                                <button onclick="deleteMenuItem(${m.id})" style="background:#ff4757; color:white; border:none; padding:3px 6px; border-radius:4px; cursor:pointer; font-size:10px;">🗑️ ลบ</button>
+                            </div>
                         </div>
                     `;
                 });
             } catch(e) {
                 container.innerHTML = '<p style="color:red;">โหลดรายการไม่สำเร็จ</p>';
+            }
+        }
+
+        function openEditMenuModal(id, name, price) {
+            document.getElementById('editMenuId').value = id;
+            document.getElementById('editMenuName').value = name;
+            document.getElementById('editMenuPrice').value = price;
+            document.getElementById('editMenuModal').style.display = 'flex';
+        }
+
+        function closeEditMenuModal() {
+            document.getElementById('editMenuModal').style.display = 'none';
+        }
+
+        async function updateMenuSubmit(event) {
+            event.preventDefault();
+            const id = document.getElementById('editMenuId').value;
+            const name = document.getElementById('editMenuName').value;
+            const price = document.getElementById('editMenuPrice').value;
+
+            try {
+                const res = await fetch(`/api/menu/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, price })
+                });
+
+                if(res.ok) {
+                    alert('อัปเดตเมนูสำเร็จ!');
+                    closeEditMenuModal();
+                    loadManageMenuList();
+                    fetchAdminData();
+                } else {
+                    alert('ไม่สามารถอัปเดตเมนูได้');
+                }
+            } catch(e) {
+                alert('เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์');
             }
         }
 
