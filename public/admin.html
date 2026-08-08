@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard - ระบบจัดการร้านอาหาร</title>
-    <!-- เพิ่มฟอนต์ Sarabun และ Prompt เพื่อความคมชัดและอ่านง่ายยิ่งขึ้น -->
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -338,12 +337,9 @@
             display: none;
         }
 
-        /* ปรับปรุงการพิมพ์สำหรับเครื่องพิมพ์ 80mm ให้กระดาษยาวพอดี ไม่ถูกปุรอยตัดกินข้อความ */
+        /* การตั้งค่าเครื่องพิมพ์ (ค่าเดิมตามที่คุณใช้งาน) */
         @media print {
-            @page { 
-                margin: 0; 
-                size: 80mm auto; 
-            }
+            @page { margin: 0; size: 80mm auto; }
             body * { visibility: hidden; }
             #print-area, #print-area * { visibility: visible; }
             #print-area {
@@ -355,7 +351,7 @@
                 font-size: 13px;
                 line-height: 1.4;
                 color: #000;
-                padding: 2mm 4mm 15mm 4mm; /* เพิ่ม Padding ด้านล่าง 15mm เพื่อเว้นระยะให้พ้นรอยปรบ/รอยฉีก */
+                padding: 2mm 4mm 10mm 4mm;
                 box-sizing: border-box;
             }
         }
@@ -484,7 +480,7 @@
                                 <option value="ยำ">🥗 ยำ</option>
                                 <option value="อาหารตามสั่ง">🍛 ตามสั่ง</option>
                                 <option value="เครื่องดื่ม">🧋 เครื่องดื่ม</option>
-                                <option value="ADMIN">AdminController</option>
+                                <option value="AdminController">AdminController</option>
                             </select>
                         </div>
                         <div class="form-group">
@@ -855,7 +851,6 @@
                 itemsListHtml += `<div style="display:flex; justify-content:space-between; margin: 6px 0; font-size: 14px;"><span>- ${i.name}</span><strong>x${i.quantity}</strong></div>`;
             });
 
-            // ปรับปรุง: ถ้ารายการน้อยกว่า 6 รายการ ให้เพิ่มบรรทัดว่าง เพื่อให้ใบออเดอร์ยาวขึ้นพอดี ไม่สั้นเกินไป
             if (totalItemsCount < 6) {
                 let missingLines = 6 - totalItemsCount;
                 for (let k = 0; k < missingLines; k++) {
@@ -869,7 +864,7 @@
                 <div style="text-align:center; font-size:15px; margin-bottom:12px; border-bottom:1.5px dashed #000; padding-bottom:6px;">ตำแหน่ง: <b>${locationLabel}</b></div>
                 <div style="margin-bottom:12px;">${itemsListHtml}</div>
                 <div style="text-align:center; font-size:12px; border-top:1.5px dashed #000; padding-top:6px; margin-top:15px;">เวลาสั่ง: ${new Date(createdAt).toLocaleTimeString()}</div>
-                <div style="height: 30px;"></div> <!-- เพิ่มพื้นที่ท้ายกระดาษป้องกันรอยปรบตัดข้อความ -->
+                <div style="height: 20px;"></div>
             `;
             window.print();
 
@@ -917,7 +912,6 @@
                     }
                 });
 
-                // ปรับปรุง: ถ้ารายการน้อยกว่า 6 รายการ ให้เพิ่มบรรทัดว่างในใบเสร็จด้วยเช่นกันเพื่อป้องกันสั้นเกินไป
                 if (totalItemsCount < 6) {
                     let missingLines = 6 - totalItemsCount;
                     for (let k = 0; k < missingLines; k++) {
@@ -943,7 +937,7 @@
                         <span>${totalPrice.toFixed(2)} ฿</span>
                     </div>
                     <div style="text-align:center; font-size:12px; margin-top:15px;">*** ขอบคุณที่ใช้บริการ ***</div>
-                    <div style="height: 35px;"></div> <!-- เพิ่มระยะความยาวท้ายกระดาษบิลป้องกันโดนรอยตัด -->
+                    <div style="height: 20px;"></div>
                 `;
 
                 window.print();
