@@ -627,43 +627,50 @@
             }
         }
 
-        async function submitOrder() {
-            if (cart.length === 0) {
-                alert('กรุณาเลือกเมนูอาหารอย่างน้อย 1 รายการครับ');
-                return;
-            }
+       async function submitOrder() {
+    async function submitOrder() {
+    if (cart.length === 0) {
+        alert('กรุณาเลือกเมนูอาหารอย่างน้อย 1 รายการครับ');
+        return;
+    }
 
-            // แก้ไขจุดนี้ให้ส่ง notes ไปแบบชัดเจน (ถ้าไม่มีให้เป็น null)
-            let orderItems = cart.map(item => ({
-                menu_item_id: item.id,
-                name: item.name, 
-                quantity: item.quantity,
-                price: item.price,
-                notes: item.notes && item.notes.trim() !== '' ? item.notes.trim() : null,
-                options: item.optionsText || null
-            }));
-
-            try {
-                const res = await fetch('/api/orders', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ table_id: tableId, items: orderItems })
-                });
-
-                const result = await res.json();
-                if (res.ok) {
-                    alert('🎉 สั่งอาหารสำเร็จ! ส่งตรงเข้าครัวเรียบร้อย');
-                    cart = [];
-                    closeCartModal();
-                    updateSummary();
-                } else {
-                    alert('เกิดข้อผิดพลาด: ' + (result.error || 'ไม่สามารถส่งออเดอร์ได้'));
-                }
-            } catch (err) {
-                alert('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้');
-            }
+    let orderItems = cart.map(item => {
+        // จัดรูปแบบชื่ออาหาร + โน๊ต ให้เหมือนกับฝั่ง Admin ที่คุณต้องการ
+        let finalItemName = item.name;
+        if (item.notes && item.notes.trim() !== '') {
+            finalItemName += ` [โน๊ต: ${item.notes.trim()}]`;
         }
 
+        return {
+            menu_item_id: item.id,
+            name: finalItemName, // ส่งชื่อที่รวมโน๊ตแล้วไป
+            quantity: item.quantity,
+            price: item.price,
+            notes: item.notes || null,
+            options: item.optionsText || null
+        };
+    });
+
+    try {
+        const res = await fetch('/api/orders', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ table_id: tableId, items: orderItems })
+        });
+
+        const result = await res.json();
+        if (res.ok) {
+            alert('🎉 สั่งอาหารสำเร็จ! ส่งตรงเข้าครัวเรียบร้อย');
+            cart = [];
+            closeCartModal();
+            updateSummary();
+        } else {
+            alert('เกิดข้อผิดพลาด: ' + (result.error || 'ไม่สามารถส่งออเดอร์ได้'));
+        }
+    } catch (err) {
+        alert('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้');
+    }
+}
         fetchMenu();
     </script>
 </body>
