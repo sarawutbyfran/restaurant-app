@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard - ระบบจัดการร้านอาหาร</title>
+    <!-- เพิ่มฟอนต์ Sarabun และ Prompt เพื่อความคมชัดและอ่านง่ายยิ่งขึ้น -->
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
             --primary: #ff4757;
@@ -19,7 +21,7 @@
         }
 
         body {
-            font-family: 'Prompt', 'Segoe UI', Tahoma, sans-serif;
+            font-family: 'Prompt', 'Sarabun', sans-serif;
             background-color: var(--bg);
             margin: 0;
             padding: 0;
@@ -233,12 +235,12 @@
 
         .kitchen-card {
             background: white;
-            padding: 8px;
+            padding: 10px 12px;
             border-radius: 6px;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
             border-left: 4px solid var(--warning);
-            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-            font-size: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            font-size: 13px;
         }
         .kitchen-card.completed {
             border-left-color: var(--success);
@@ -249,22 +251,22 @@
             background: var(--success);
             color: white;
             border: none;
-            padding: 3px 6px;
+            padding: 4px 8px;
             border-radius: 4px;
             cursor: pointer;
-            font-size: 10px;
-            margin-top: 4px;
+            font-size: 11px;
+            margin-top: 6px;
             font-weight: bold;
         }
         .btn-print {
             background: #3742fa;
             color: white;
             border: none;
-            padding: 3px 6px;
+            padding: 4px 8px;
             border-radius: 4px;
             cursor: pointer;
-            font-size: 10px;
-            margin-top: 4px;
+            font-size: 11px;
+            margin-top: 6px;
         }
         .right-action-panel {
             padding: 10px 15px;
@@ -336,19 +338,24 @@
             display: none;
         }
 
+        /* ปรับปรุงการพิมพ์สำหรับเครื่องพิมพ์ 80mm ให้เต็มกระดาษและฟอนต์อ่านง่าย */
         @media print {
-            @page { margin: 0; }
+            @page { 
+                margin: 0; 
+                size: 80mm auto; 
+            }
             body * { visibility: hidden; }
             #print-area, #print-area * { visibility: visible; }
             #print-area {
-                display: block;
+                display: block !important;
                 position: absolute;
                 left: 0; top: 0;
-                width: 80mm;
-                font-family: 'Prompt', sans-serif;
-                font-size: 14px;
+                width: 76mm; /* ให้พอดีกับหน้ากว้าง 80mm ลบขอบเล็กน้อย */
+                font-family: 'Sarabun', 'Prompt', sans-serif;
+                font-size: 13px;
+                line-height: 1.4;
                 color: #000;
-                padding: 5mm;
+                padding: 2mm 4mm;
                 box-sizing: border-box;
             }
         }
@@ -501,7 +508,7 @@
         </div>
     </div>
 
-    <!-- Modal สรุปยอดขาย (ฉบับอัปเกรด: เลือกวันที่ + ดูบิลย้อนหลัง) -->
+    <!-- Modal สรุปยอดขาย -->
     <div class="modal" id="salesReportModal">
         <div class="modal-content" style="width: 750px; max-height: 90vh;">
             <h3 style="margin-top:0; color:var(--primary);">📊 สรุปยอดขายและประวัติใบเสร็จ</h3>
@@ -546,9 +553,9 @@
         </div>
     </div>
 
-    <!-- Modal แก้ไขข้อมูลเมนู -->
+    <!-- Modal แก้ไขข้อมูลเมนู (อัปเกรดให้สามารถอัปโหลดเปลี่ยนรูปภาพได้) -->
     <div class="modal" id="editMenuModal">
-        <div class="modal-content" style="width: 400px;">
+        <div class="modal-content" style="width: 420px;">
             <h3 style="margin-top:0; color:var(--primary);">✏️ แก้ไขข้อมูลเมนูอาหาร</h3>
             <form id="editMenuForm" onsubmit="updateMenuSubmit(event)">
                 <input type="hidden" id="editMenuId">
@@ -559,6 +566,10 @@
                 <div class="form-group">
                     <label>ราคา (บาท)</label>
                     <input type="number" step="0.01" id="editMenuPrice" required>
+                </div>
+                <div class="form-group">
+                    <label>เปลี่ยนรูปภาพอาหาร (อัปโหลดไฟล์ใหม่)</label>
+                    <input type="file" id="editMenuImageFile" accept="image/*" style="background: white; padding: 4px;">
                 </div>
                 <div style="display:flex; justify-content:flex-end; gap:6px; margin-top:15px;">
                     <button type="button" onclick="closeEditMenuModal()" style="background:#ddd; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:12px;">ยกเลิก</button>
@@ -773,7 +784,7 @@
                     let itemsHtml = '';
                     if (ord.items) {
                         ord.items.forEach(i => {
-                            itemsHtml += `<div>• ${i.name} x${i.quantity}</div>`;
+                            itemsHtml += `<div style="padding: 2px 0;">• ${i.name} <strong>x${i.quantity}</strong></div>`;
                         });
                     }
                     
@@ -783,14 +794,14 @@
 
                     container.innerHTML += `
                         <div class="${cardClass}" style="${cardStyle}">
-                            <div style="display:flex; justify-content:space-between; align-items:center;">
-                                <span style="font-weight:bold; color:var(--primary);">${locationLabel}</span>
-                                <span style="font-size:10px; color:var(--gray);">
+                            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 1px dashed #eee; padding-bottom: 4px; margin-bottom: 4px;">
+                                <span style="font-weight:bold; color:var(--primary); font-size: 14px;">📍 ${locationLabel}</span>
+                                <span style="font-size:11px; color:var(--gray);">
                                     ${isPrinted ? '🖨️ พิมพ์แล้ว' : '⏳ รอพิมพ์ออเดอร์'}
                                 </span>
                             </div>
-                            <div style="color:var(--text); margin:4px 0;">${itemsHtml}</div>
-                            <div style="display:flex; justify-content:flex-end; gap:3px; margin-top:4px;">
+                            <div style="color:var(--text); margin:6px 0; line-height: 1.5;">${itemsHtml}</div>
+                            <div style="display:flex; justify-content:flex-end; gap:5px; margin-top:8px; border-top: 1px solid #eee; padding-top: 6px;">
                                 <button class="btn-action" onclick="completeSingleOrder('${ord.id}')">✔️ ทำเสร็จแล้ว</button>
                                 <button class="btn-print" onclick="printKitchenOrderOnly('${ord.id}', '${locationLabel}', '${encodeURIComponent(JSON.stringify(ord.items))}', '${ord.created_at}')">🖨️ พิมพ์</button>
                             </div>
@@ -835,15 +846,15 @@
             const items = JSON.parse(decodeURIComponent(encodedItems));
             let itemsListHtml = '';
             items.forEach(i => {
-                itemsListHtml += `<div style="display:flex; justify-content:space-between; margin: 4px 0;"><span>- ${i.name}</span><strong>x${i.quantity}</strong></div>`;
+                itemsListHtml += `<div style="display:flex; justify-content:space-between; margin: 6px 0; font-size: 14px;"><span>- ${i.name}</span><strong>x${i.quantity}</strong></div>`;
             });
 
             const printArea = document.getElementById('print-area');
             printArea.innerHTML = `
-                <div style="text-align:center; font-weight:bold; font-size:16px; margin-bottom:5px;">[ ใบออเดอร์ครัว ]</div>
-                <div style="text-align:center; font-size:14px; margin-bottom:10px; border-bottom:1px dashed #000; padding-bottom:5px;">ตำแหน่ง: <b>${locationLabel}</b></div>
-                <div style="margin-bottom:10px;">${itemsListHtml}</div>
-                <div style="text-align:center; font-size:11px; border-top:1px dashed #000; padding-top:5px; margin-top:10px;">เวลาสั่ง: ${new Date(createdAt).toLocaleTimeString()}</div>
+                <div style="text-align:center; font-weight:bold; font-size:18px; margin-bottom:4px;">[ ใบออเดอร์ครัว ]</div>
+                <div style="text-align:center; font-size:15px; margin-bottom:12px; border-bottom:1.5px dashed #000; padding-bottom:6px;">ตำแหน่ง: <b>${locationLabel}</b></div>
+                <div style="margin-bottom:12px; min-height: 80px;">${itemsListHtml}</div>
+                <div style="text-align:center; font-size:12px; border-top:1.5px dashed #000; padding-top:6px; margin-top:15px;">เวลาสั่ง: ${new Date(createdAt).toLocaleTimeString()}</div>
             `;
             window.print();
 
@@ -880,7 +891,7 @@
                             totalPrice += sumItemPrice;
                             allItemsToSave.push(i);
                             receiptItemsHtml += `
-                                <div style="display:flex; justify-content:space-between; margin:3px 0; font-size:13px;">
+                                <div style="display:flex; justify-content:space-between; margin:4px 0; font-size:13px;">
                                     <span>${i.name} x${i.quantity}</span>
                                     <span>${sumItemPrice.toFixed(2)} ฿</span>
                                 </div>
@@ -894,18 +905,18 @@
                     <div style="text-align:center; margin-bottom:6px;">
                         <img src="/logo.png" alt="Logo" style="width: 55px; height: 55px; object-fit: contain; border-radius: 50%;">
                     </div>
-                    <div style="text-align:center; font-weight:bold; font-size:16px; margin-bottom:2px;">ร้านร่มทาง อาหารป่า</div>
-                    <div style="text-align:center; font-size:12px; margin-bottom:8px;">ใบเสร็จรับเงิน / Receipt</div>
-                    <div style="border-bottom:1px dashed #000; margin-bottom:8px; padding-bottom:4px; font-size:12px;">
+                    <div style="text-align:center; font-weight:bold; font-size:17px; margin-bottom:2px;">ร้านร่มทาง อาหารป่า</div>
+                    <div style="text-align:center; font-size:13px; margin-bottom:8px;">ใบเสร็จรับเงิน / Receipt</div>
+                    <div style="border-bottom:1.5px dashed #000; margin-bottom:8px; padding-bottom:6px; font-size:13px;">
                         <div>โต๊ะ/คิว: <b>${titleText}</b></div>
-                        <div>เวลา: ${new Date().toLocaleString()}</div>
+                        <div>เวลา: ${new Date().toLocaleString('th-TH')}</div>
                     </div>
                     <div style="margin-bottom:10px;">${receiptItemsHtml}</div>
-                    <div style="border-top:1px dashed #000; margin-top:8px; padding-top:6px; display:flex; justify-content:space-between; font-weight:bold; font-size:15px;">
+                    <div style="border-top:1.5px dashed #000; margin-top:8px; padding-top:8px; display:flex; justify-content:space-between; font-weight:bold; font-size:16px;">
                         <span>ยอดรวมทั้งสิ้น:</span>
                         <span>${totalPrice.toFixed(2)} ฿</span>
                     </div>
-                    <div style="text-align:center; font-size:11px; margin-top:15px;">*** ขอบคุณที่ใช้บริการ ***</div>
+                    <div style="text-align:center; font-size:12px; margin-top:15px;">*** ขอบคุณที่ใช้บริการ ***</div>
                 `;
 
                 window.print();
@@ -989,7 +1000,7 @@
                     if (ord.items) {
                         ord.items.forEach((i, itemIndex) => {
                             submittedItemsHtml += `
-                                <div style="display:flex; justify-content:space-between; align-items:center; padding:2px 0; border-bottom:1px solid #f8f9fa;">
+                                <div style="display:flex; justify-content:space-between; align-items:center; padding:3px 0; border-bottom:1px solid #f8f9fa;">
                                     <span>${i.name} x ${i.quantity} (${(i.price * i.quantity).toFixed(2)}฿)</span>
                                     <button onclick="deleteSingleOrderItem('${ord.id}', ${itemIndex})" style="background:#ff4757; color:white; border:none; padding:2px 5px; border-radius:3px; cursor:pointer; font-size:9px;">❌ ลบ</button>
                                 </div>
@@ -1003,12 +1014,12 @@
                 currentCart.forEach((item, idx) => {
                     cartTotal += item.price * item.quantity;
                     cartItemsHtml += `
-                        <div style="display:flex; justify-content:space-between; align-items:center; background:#fff3cd; padding:3px 6px; margin-bottom:2px; border-radius:4px; font-size:11px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; background:#fff3cd; padding:4px 6px; margin-bottom:3px; border-radius:4px; font-size:11px;">
                             <span>${item.name}</span>
                             <div style="display:flex; align-items:center; gap:4px;">
-                                <button onclick="updateCartQuantity(${idx}, -1)" style="padding:1px 4px; font-size:10px;">-</button>
+                                <button onclick="updateCartQuantity(${idx}, -1)" style="padding:1px 5px; font-size:10px;">-</button>
                                 <span>${item.quantity}</span>
-                                <button onclick="updateCartQuantity(${idx}, 1)" style="padding:1px 4px; font-size:10px;">+</button>
+                                <button onclick="updateCartQuantity(${idx}, 1)" style="padding:1px 5px; font-size:10px;">+</button>
                                 <span>${(item.price * item.quantity).toFixed(2)}฿</span>
                             </div>
                         </div>
@@ -1181,7 +1192,6 @@
             document.getElementById('menuManagerModal').style.display = 'none';
         }
 
-        // --- ระบบสรุปยอดขาย (รองรับดูบิลย้อนหลัง & กรองตามวันที่) ---
         function openSalesReportModal() {
             document.getElementById('salesReportModal').style.display = 'flex';
             loadSalesReport();
@@ -1253,7 +1263,6 @@
             }
         }
 
-        // --- ระบบจัดการเมนู (ค้นหา & แก้ไข) ---
         function filterManageMenuList() {
             const keyword = document.getElementById('searchMenuInput').value.toLowerCase();
             const items = document.querySelectorAll('.manage-menu-item-row');
@@ -1280,9 +1289,12 @@
                     const cName = m.category_name || categoryMap[m.category_id] || 'ไม่ระบุ';
                     container.innerHTML += `
                         <div class="manage-menu-item-row" style="display:flex; justify-content:space-between; align-items:center; background:white; padding:6px; margin-bottom:4px; border-radius:4px;">
-                            <div>
-                                <strong style="font-size:11px;">${m.name}</strong><br>
-                                <span style="color:var(--primary); font-size:10px;">${parseFloat(m.price).toFixed(2)}฿ (${cName})</span>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <img src="${m.image_url || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c'}" style="width: 35px; height: 35px; object-fit: cover; border-radius: 4px;">
+                                <div>
+                                    <strong style="font-size:11px;">${m.name}</strong><br>
+                                    <span style="color:var(--primary); font-size:10px;">${parseFloat(m.price).toFixed(2)}฿ (${cName})</span>
+                                </div>
                             </div>
                             <div style="display:flex; gap:3px;">
                                 <button onclick="openEditMenuModal(${m.id}, '${m.name}', ${m.price})" style="background:#ffa502; color:white; border:none; padding:3px 6px; border-radius:4px; cursor:pointer; font-size:10px;">✏️ แก้ไข</button>
@@ -1300,6 +1312,7 @@
             document.getElementById('editMenuId').value = id;
             document.getElementById('editMenuName').value = name;
             document.getElementById('editMenuPrice').value = price;
+            document.getElementById('editMenuImageFile').value = ''; // เคลียร์ช่องเลือกไฟล์รูป
             document.getElementById('editMenuModal').style.display = 'flex';
         }
 
@@ -1307,21 +1320,29 @@
             document.getElementById('editMenuModal').style.display = 'none';
         }
 
+        // ระบบแก้ไขเมนู (รองรับการอัปโหลดไฟล์รูปภาพใหม่ไปที่ Disk ผ่าน FormData)
         async function updateMenuSubmit(event) {
             event.preventDefault();
             const id = document.getElementById('editMenuId').value;
             const name = document.getElementById('editMenuName').value;
             const price = document.getElementById('editMenuPrice').value;
+            const imageFile = document.getElementById('editMenuImageFile').files[0];
+
+            const formData = new FormData();
+            formData.append('name', name);
+            formData.append('price', price);
+            if (imageFile) {
+                formData.append('image', imageFile); // แนบไฟล์รูปใหม่ (ถ้ามีการเลือก)
+            }
 
             try {
                 const res = await fetch(`/api/menu/${id}`, {
                     method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name, price })
+                    body: formData // ส่งเป็น FormData เพื่ออัปโหลดไฟล์เข้าระบบ
                 });
 
                 if(res.ok) {
-                    alert('อัปเดตเมนูสำเร็จ!');
+                    alert('อัปเดตเมนูและรูปภาพสำเร็จ!');
                     closeEditMenuModal();
                     loadManageMenuList();
                     fetchAdminData();
@@ -1333,7 +1354,6 @@
             }
         }
 
-        // --- ปรับปรุงให้รองรับการอัปโหลดไฟล์รูปภาพส่งเข้า Backend ---
         async function addNewMenu(event) {
             event.preventDefault();
             const name = document.getElementById('newMenuName').value;
@@ -1346,13 +1366,13 @@
             formData.append('price', price);
             formData.append('category_name', category_name);
             if (imageFile) {
-                formData.append('image', imageFile); // ส่งไฟล์รูปภาพเข้า Backend (Multer จะรับด้วยชื่อ field 'image')
+                formData.append('image', imageFile);
             }
 
             try {
                 const res = await fetch('/api/menu', {
                     method: 'POST',
-                    body: formData // ส่งแบบ FormData (ไม่ต้องกำหนด Content-Type เพิ่ม fetch จะจัดการให้อัตโนมัติ)
+                    body: formData
                 });
 
                 if(res.ok) {
