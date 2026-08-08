@@ -316,7 +316,7 @@
         <button class="btn-order" onclick="submitOrder()">ยืนยันสั่งอาหาร</button>
     </div>
 
-    <!-- Modal สำหรับปรับแต่งเมนูก่อนใส่ตะกร้า (หมายเหตุ + ไข่ดาว/ไข่เจียว) -->
+    <!-- Modal สำหรับปรับแต่งเมนูก่อนใส่ตะกร้า -->
     <div class="modal" id="customizeModal">
         <div class="modal-content">
             <div class="modal-header">
@@ -361,10 +361,9 @@
     </div>
 
     <script>
-        // ดึงเลขโต๊ะหรือรหัสซุ้มจาก URL (รองรับ z1, Z1 ฯลฯ และแปลงเป็นตัวพิมพ์ใหญ่อัตโนมัติ)
         const urlParams = new URLSearchParams(window.location.search);
         let tableId = urlParams.get('table') || '1';
-        tableId = tableId.toUpperCase(); // แปลงพิมพ์เล็กเป็นพิมพ์ใหญ่ เช่น z1 -> Z1
+        tableId = tableId.toUpperCase();
         document.getElementById('table-badge').innerText = `โต๊ะ: ${tableId}`;
 
         let allMenus = [];
@@ -447,7 +446,6 @@
             const extraContainer = document.getElementById('customizeExtraOptions');
             extraContainer.innerHTML = '';
 
-            // แสดงตัวเลือกเสริม (ไข่ดาว / ไข่เจียว) เฉพาะหมวดอาหารตามสั่ง
             const catName = selectedItemForCustom.category_name || categoryMap[selectedItemForCustom.category_id] || '';
             if (catName === 'อาหารตามสั่ง') {
                 extraContainer.innerHTML = `
@@ -612,7 +610,7 @@
                         if (ord.items) {
                             ord.items.forEach(i => {
                                 html += `<div style="display:flex; justify-content:space-between; font-size:14px; padding:2px 0;">
-                                    <span>${i.name || 'อาหาร'} x ${i.quantity} ${i.notes ? `(${i.notes})` : ''}</span>
+                                    <span>${i.name || 'อาหาร'} x ${i.quantity} ${i.options ? `(${i.options})` : ''} ${i.notes ? `[${i.notes}]` : ''}</span>
                                     <span>${(i.price * i.quantity).toFixed(2)} ฿</span>
                                 </div>`;
                             });
@@ -644,7 +642,6 @@
             }));
 
             try {
-                // ส่ง table_id เป็น String เพื่อรองรับทั้งตัวเลขและรหัสซุ้ม เช่น "Z1"
                 const res = await fetch('/api/orders', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },

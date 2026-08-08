@@ -1,244 +1,139 @@
 const express = require('express');
-const { Pool } = require('pg');
-const cors = require('cors');
+const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
-app.use(cors());
+// Middleware
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'public'))); // ตั้งค่าโฟลเดอร์สำหรับไฟล์ static เช่น รูปภาพ/HTML
 
-// ตั้งค่าการเชื่อมต่อ PostgreSQL (รองรับทั้งบนเครื่องและบน Cloud)
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false
-});
-
-// ตรวจสอบการเชื่อมต่อฐานข้อมูล
-pool.connect((err, client, release) => {
+// เชื่อมต่อฐานข้อมูล SQLite (หรือสร้างไฟล์ใหม่ถ้ายังไม่มี)
+const db = new SQLite3.Database(path.join(__dirname, 'database.sqlite'), (err) => {
     if (err) {
-        console.error('Error connecting to PostgreSQL database:', err.stack);
+        console.error('Error opening database', err.message);
     } else {
-        console.log('Connected to PostgreSQL database successfully.');
-        release();
+        console.log('Connected to SQLite database.');
         initDatabase();
     }
 });
 
-// สร้างตารางโครงสร้างเริ่มต้นอัตโนมัติ (รองรับรหัสโต๊ะและซุ้มแบบตัวอักษร VARCHAR)
-async function initDatabase() {
-    try {
-        await pool.query(`
-            CREATE TABLE IF NOT EXISTS categories (
-                id SERIAL PRIMARY KEY,
-                name VARCHAR(100) UNIQUE NOT NULL
-            );
-        `);
+// สร้างตารางข้อมูลเริ่มต้น (รองรับ table_id เป็น TEXT เพื่อรองรับรหัสซุ้ม เช่น Z1)
+function initDatabase() {
+    db.serialize(() => {
+        db.run(`CREATE TABLE IF NOT EXISTS categories (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL
+        )`);
 
-        await pool.query(`
-            CREATE TABLE IF NOT EXISTS menu_items (
-                id SERIAL PRIMARY KEY,
-                name VARCHAR(255) NOT NULL,
-                price NUMERIC(10, 2) NOT NULL,
-                category_name VARCHAR(100) NOT NULL,
-                image_url TEXT,
-                category_id INTEGER,
-                FOREIGN KEY(category_id) REFERENCES categories(id)
-            );
-        `);
+        db.run(`CREATE TABLE IF NOT EXISTS menu_items (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            price REAL NOT NULL,
+            category_id INTEGER,
+            image_url TEXT,
+            FOREIGN KEY (category_id) REFERENCES categories(id)
+        )`);
 
-        // ตาราง orders รองรับ table_id เป็น VARCHAR (รองรับ Z1, Z2, ฯลฯ)
-        await pool.query(`
-            CREATE TABLE IF NOT EXISTS orders (
-                id SERIAL PRIMARY KEY,
-                table_id VARCHAR(50) NOT NULL,
-                status VARCHAR(50) DEFAULT 'กำลังทำอาหาร',
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            );
-        `);
+        db.run(`CREATE TABLE IF NOT EXISTS orders (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            table_id TEXT NOT NULL,
+            status TEXT DEFAULT 'pending',
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )`);
 
-        // ตาราง order_items เก็บหมายเหตุและตัวเลือกเสริม
-        await pool.query(`
-            CREATE TABLE IF NOT EXISTS order_items (
-                id SERIAL PRIMARY KEY,
-                order_id INTEGER REFERENCES orders(id) ON DELETE CASCADE,
-                menu_item_id INTEGER REFERENCES menu_items(id),
-                quantity INTEGER NOT NULL,
-                price NUMERIC(10, 2) NOT NULL,
-                notes TEXT,
-                options TEXT
-            );
-        `);
-    
-        console.log('Database tables checked/initialized successfully.');
-    } catch (err) {
-        console.error('Error initializing database tables:', err.message);
-    }
+        // ตารางเก็บรายการอาหารในแต่ละออเดอร์ (เพิ่มคอลัมน์ options สำหรับเก็บตัวเลือกเสริม เช่น ไข่ดาว/ไข่เจียว)
+        db.run(`CREATE TABLE IF NOT EXISTS order_items (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            order_id INTEGER,
+            menu_item_id INTEGER,
+            quantity INTEGER,
+            price REAL,
+            notes TEXT,
+            options TEXT,
+            FOREIGN KEY (order_id) REFERENCES orders(id),
+            FOREIGN KEY (menu_item_id) REFERENCES menu_items(id)
+        )`);
+    });
 }
 
-// --- API Endpoints ---
-
-// 1. ดึงรายการเมนูทั้งหมด
-app.get('/api/menu', async (req, res) => {
-    try {
-        const result = await pool.query('SELECT * FROM menu_items ORDER BY id ASC');
-        res.json(result.rows);
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
+// 1. API ดึงรายการเมนูทั้งหมด
+app.get('/api/menu', (req, res) => {
+    const query = `
+        SELECT menu_items.*, categories.name as category_name 
+        FROM menu_items 
+        LEFT JOIN categories ON menu_items.category_id = categories.id
+    `;
+    db.all(query, [], (err, rows) => {
+        if (err) {
+            res.status(500).json({ error: err.message });
+            return;
+        }
+        res.json(rows);
+    });
 });
 
-// 2. รับออเดอร์ใหม่ (รองรับ notes และ options)
-app.post('/api/orders', async (req, res) => {
+// 2. API สั่งอาหาร (บันทึกลงฐานข้อมูล)
+app.post('/api/orders', (req, res) => {
     const { table_id, items } = req.body;
-    if (!table_id || !items || items.length === 0) {
-        return res.status(400).json({ error: 'ข้อมูลออเดอร์ไม่ครบถ้วน' });
+
+    if (!table_id || !items || !Array.isArray(items) || items.length === 0) {
+        return res.status(400).json({ error: 'ข้อมูลออเดอร์ไม่ถูกต้อง' });
     }
 
-    const client = await pool.connect();
-    try {
-        await client.query('BEGIN');
-
-        const orderResult = await client.query(
-            'INSERT INTO orders (table_id) VALUES ($1) RETURNING id',
-            [String(table_id).toUpperCase()] // แปลงเป็นตัวพิมพ์ใหญ่ป้องกัน Error
-        );
-        const orderId = orderResult.rows[0].id;
-
-        for (const item of items) {
-            await client.query(
-                'INSERT INTO order_items (order_id, menu_item_id, quantity, price, notes, options) VALUES ($1, $2, $3, $4, $5, $6)',
-                [orderId, item.menu_item_id, item.quantity, item.price, item.notes || null, item.options || null]
-            );
+    db.run(`INSERT INTO orders (table_id, status) VALUES (?, ?)`, [table_id, 'pending'], function(err) {
+        if (err) {
+            return res.status(500).json({ error: err.message });
         }
 
-        await client.query('COMMIT');
-        res.json({ message: 'สั่งอาหารสำเร็จ', order_id: orderId });
-    } catch (err) {
-        await client.query('ROLLBACK');
-        res.status(500).json({ error: err.message });
-    } finally {
-        client.release();
-    }
+        const orderId = this.lastID;
+        const stmt = db.prepare(`INSERT INTO order_items (order_id, menu_item_id, quantity, price, notes, options) VALUES (?, ?, ?, ?, ?, ?)`);
+
+        items.forEach(item => {
+            stmt.run(orderId, item.menu_item_id, item.quantity, item.price, item.notes || null, item.options || null);
+        });
+
+        stmt.finalize((err) => {
+            if (err) {
+                return res.status(500).json({ error: err.message });
+            }
+            res.json({ success: true, order_id: orderId, message: 'สั่งอาหารสำเร็จ' });
+        });
+    });
 });
 
-// 3. ดึงประวัติออเดอร์ตามโต๊ะ
-app.get('/api/orders/table/:tableId', async (req, res) => {
-    const tableId = String(req.params.tableId).toUpperCase();
-    try {
-        const ordersResult = await pool.query(
-            'SELECT * FROM orders WHERE UPPER(table_id) = $1 ORDER BY created_at DESC',
-            [tableId]
-        );
-        const orders = ordersResult.rows;
+// 3. API ดึงประวัติการสั่งอาหารตามโต๊ะหรือซุ้ม (รองรับตัวอักษรเช่น Z1)
+app.get('/api/orders/table/:tableId', (req, res) => {
+    const tableId = req.params.tableId;
 
-        if (orders.length === 0) return res.json([]);
-
-        for (let i = 0; i < orders.length; i++) {
-            const itemsResult = await pool.query(`
-                SELECT oi.quantity, oi.price, oi.notes, oi.options, m.name 
-                FROM order_items oi 
-                JOIN menu_items m ON oi.menu_item_id = m.id 
-                WHERE oi.order_id = $1
-            `, [orders[i].id]);
-            orders[i].items = itemsResult.rows;
+    const queryOrders = `SELECT * FROM orders WHERE table_id = ? ORDER BY created_at DESC`;
+    db.all(queryOrders, [tableId], async (err, orders) => {
+        if (err) {
+            return res.status(500).json({ error: err.message });
         }
 
-        res.json(orders);
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
+        // ดึงรายการอาหารย่อยของแต่ละออเดอร์มาประกอบกัน
+        const fullOrders = await Promise.all(orders.map(async (ord) => {
+            return new Promise((resolve, reject) => {
+                const queryItems = `
+                    SELECT order_items.*, menu_items.name 
+                    FROM order_items 
+                    LEFT JOIN menu_items ON order_items.menu_item_id = menu_items.id 
+                    WHERE order_items.order_id = ?
+                `;
+                db.all(queryItems, [ord.id], (err, items) => {
+                    if (err) reject(err);
+                    else resolve({ ...ord, items });
+                });
+            });
+        }));
+
+        res.json(fullOrders);
+    });
 });
 
-// 4. ดึงออเดอร์ทั้งหมดสำหรับหน้าจอครัว (Admin)
-app.get('/api/admin/orders', async (req, res) => {
-    try {
-        const ordersResult = await pool.query(
-            'SELECT * FROM orders ORDER BY created_at DESC'
-        );
-        const orders = ordersResult.rows;
-
-        if (orders.length === 0) return res.json([]);
-
-        for (let i = 0; i < orders.length; i++) {
-            const itemsResult = await pool.query(`
-                SELECT oi.quantity, oi.price, oi.notes, oi.options, m.name 
-                FROM order_items oi 
-                JOIN menu_items m ON oi.menu_item_id = m.id 
-                WHERE oi.order_id = $1
-            `, [orders[i].id]);
-            orders[i].items = itemsResult.rows;
-        }
-
-        res.json(orders);
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
-// 5. อัปเดตสถานะออเดอร์
-app.put('/api/admin/orders/:id/status', async (req, res) => {
-    const orderId = req.params.id;
-    const { status } = req.body;
-
-    try {
-        await pool.query('UPDATE orders SET status = $1 WHERE id = $2', [status, orderId]);
-        res.json({ message: 'อัปเดตสถานะสำเร็จ' });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
-// 6. ลบ/เคลียร์ออเดอร์ของโต๊ะ (เช็คตัวพิมพ์ใหญ่-เล็ก)
-app.delete('/api/orders/table/:tableId', async (req, res) => {
-    const tableId = String(req.params.tableId).toUpperCase();
-    try {
-        const ordersResult = await pool.query('SELECT id FROM orders WHERE UPPER(table_id) = $1', [tableId]);
-        const orders = ordersResult.rows;
-
-        if (orders.length === 0) {
-            return res.json({ success: true, message: 'No orders found for this table' });
-        }
-
-        const orderIds = orders.map(o => o.id);
-        
-        await pool.query('DELETE FROM order_items WHERE order_id = ANY($1::int[])', [orderIds]);
-        await pool.query('DELETE FROM orders WHERE UPPER(table_id) = $1', [tableId]);
-
-        res.json({ success: true, message: `Cleared orders for table ${tableId} successfully` });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
-// 7. เพิ่มเมนูอาหารใหม่
-app.post('/api/menu', async (req, res) => {
-    const { name, price, category_name, image_url, category_id } = req.body;
-    try {
-        const result = await pool.query(
-            `INSERT INTO menu_items (name, price, category_name, image_url, category_id) 
-             VALUES ($1, $2, $3, $4, $5) RETURNING id`,
-            [name, price, category_name, image_url || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c', category_id || 1]
-        );
-        res.json({ success: true, id: result.rows[0].id });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
-// 8. ลบเมนูอาหาร
-app.delete('/api/menu/:id', async (req, res) => {
-    const menuId = req.params.id;
-    try {
-        await pool.query('DELETE FROM menu_items WHERE id = $1', [menuId]);
-        res.json({ success: true, message: 'Deleted menu successfully' });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
+// เริ่มต้นรัน Server
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
 });
