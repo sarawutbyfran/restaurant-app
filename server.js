@@ -59,7 +59,7 @@ async function initDatabase() {
             );
         `);
 
-        // ตาราง order_items เก็บหมายเหตุและตัวเลือกเสริม
+        // ตาราง order_items เก็บหมายเหตุ ตัวเลือกเสริม และชื่อเมนูที่เลือก
         await pool.query(`
             CREATE TABLE IF NOT EXISTS order_items (
                 id SERIAL PRIMARY KEY,
@@ -68,7 +68,8 @@ async function initDatabase() {
                 quantity INTEGER NOT NULL,
                 price NUMERIC(10, 2) NOT NULL,
                 notes TEXT,
-                options TEXT
+                options TEXT,
+                name TEXT
             );
         `);
     
@@ -90,7 +91,7 @@ app.get('/api/menu', async (req, res) => {
     }
 });
 
-// 2. รับออเดอร์ใหม่ (รองรับ notes และ options)
+// 2. รับออเดอร์ใหม่ (รองรับ notes, options และ name)
 app.post('/api/orders', async (req, res) => {
     const { table_id, items } = req.body;
     if (!table_id || !items || items.length === 0) {
@@ -109,14 +110,15 @@ app.post('/api/orders', async (req, res) => {
 
         for (const item of items) {
             await client.query(
-                'INSERT INTO order_items (order_id, menu_item_id, quantity, price, notes, options) VALUES ($1, $2, $3, $4, $5, $6)',
+                'INSERT INTO order_items (order_id, menu_item_id, quantity, price, notes, options, name) VALUES ($1, $2, $3, $4, $5, $6, $7)',
                 [
                     orderId, 
                     item.menu_item_id, 
                     item.quantity, 
                     item.price, 
                     item.notes || null, 
-                    item.options ? JSON.stringify(item.options) : (item.options_str || null)
+                    item.options ? JSON.stringify(item.options) : (item.options_str || null),
+                    item.name || null
                 ]
             );
         }
@@ -131,7 +133,7 @@ app.post('/api/orders', async (req, res) => {
     }
 });
 
-// 3. ดึงประวัติออเดอร์ตามโต๊ะ
+// 3. ดึงประวัติออเดอร์ตามโต๊ะ (ดึงชื่อเมนูจาก order_items โดยตรง)
 app.get('/api/orders/table/:tableId', async (req, res) => {
     const tableId = String(req.params.tableId).toUpperCase();
     try {
@@ -145,9 +147,8 @@ app.get('/api/orders/table/:tableId', async (req, res) => {
 
         for (let i = 0; i < orders.length; i++) {
             const itemsResult = await pool.query(`
-                SELECT oi.quantity, oi.price, oi.notes, oi.options, m.name 
+                SELECT oi.quantity, oi.price, oi.notes, oi.options, oi.name 
                 FROM order_items oi 
-                JOIN menu_items m ON oi.menu_item_id = m.id 
                 WHERE oi.order_id = $1
             `, [orders[i].id]);
             orders[i].items = itemsResult.rows;
@@ -159,7 +160,7 @@ app.get('/api/orders/table/:tableId', async (req, res) => {
     }
 });
 
-// 4. ดึงออเดอร์ทั้งหมดสำหรับหน้าจอครัว (Admin)
+// 4. ดึงออเดอร์ทั้งหมดสำหรับหน้าจอครัว (Admin) (ดึงชื่อเมนูจาก order_items โดยตรง)
 app.get('/api/admin/orders', async (req, res) => {
     try {
         const ordersResult = await pool.query(
@@ -171,9 +172,8 @@ app.get('/api/admin/orders', async (req, res) => {
 
         for (let i = 0; i < orders.length; i++) {
             const itemsResult = await pool.query(`
-                SELECT oi.quantity, oi.price, oi.notes, oi.options, m.name 
+                SELECT oi.quantity, oi.price, oi.notes, oi.options, oi.name 
                 FROM order_items oi 
-                JOIN menu_items m ON oi.menu_item_id = m.id 
                 WHERE oi.order_id = $1
             `, [orders[i].id]);
             orders[i].items = itemsResult.rows;
