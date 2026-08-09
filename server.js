@@ -73,6 +73,7 @@ async function initDatabase() {
                 category_id INTEGER,
                 is_recommended INT2 DEFAULT 0,
                 is_admin_menu INT2 DEFAULT 0,
+                allow_egg INT2 DEFAULT 0,
                 FOREIGN KEY(category_id) REFERENCES categories(id)
             );
         `);
@@ -81,6 +82,7 @@ async function initDatabase() {
         await pool.query(`
             ALTER TABLE menu_items ADD COLUMN IF NOT EXISTS is_recommended INT2 DEFAULT 0;
             ALTER TABLE menu_items ADD COLUMN IF NOT EXISTS is_admin_menu INT2 DEFAULT 0;
+            ALTER TABLE menu_items ADD COLUMN IF NOT EXISTS allow_egg INT2 DEFAULT 0;
         `);
 
         await pool.query(`
@@ -313,15 +315,15 @@ app.delete('/api/orders/table/:tableId', async (req, res) => {
     }
 });
 
-// --- API เพิ่มเมนูอาหาร (รองรับ is_recommended และ is_admin_menu) ---
+// --- API เพิ่มเมนูอาหาร (รองรับ is_recommended, is_admin_menu และ allow_egg) ---
 app.post('/api/menu', upload.single('image'), async (req, res) => {
-    const { name, price, category_name, category_id, is_recommended, is_admin_menu } = req.body;
+    const { name, price, category_name, category_id, is_recommended, is_admin_menu, allow_egg } = req.body;
     const image_url = req.file ? `/uploads/${req.file.filename}` : (req.body.image_url || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c');
     
     try {
         const result = await pool.query(
-            `INSERT INTO menu_items (name, price, category_name, image_url, category_id, is_recommended, is_admin_menu) 
-             VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
+            `INSERT INTO menu_items (name, price, category_name, image_url, category_id, is_recommended, is_admin_menu, allow_egg) 
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`,
             [
                 name, 
                 price, 
@@ -329,7 +331,8 @@ app.post('/api/menu', upload.single('image'), async (req, res) => {
                 image_url, 
                 category_id || 1, 
                 is_recommended || 0, 
-                is_admin_menu || 0
+                is_admin_menu || 0,
+                allow_egg || 0
             ]
         );
         res.json({ success: true, id: result.rows[0].id });
@@ -338,108 +341,82 @@ app.post('/api/menu', upload.single('image'), async (req, res) => {
     }
 });
 
-// --- API อัปเดตข้อมูลเมนูอาหาร (รองรับอัปเดตสถานะพิเศษ) ---
+// --- API อัปเดตข้อมูลเมนูอาหาร (รองรับอัปเดต allow_egg) ---
 app.put('/api/menu/:id', upload.single('image'), async (req, res) => {
     const menuId = req.params.id;
-    const { name, price, is_recommended, is_admin_menu } = req.body;
+    const { name, price, category_name, is_recommended, is_admin_menu, allow_egg } = req.body;
 
     try {
         const recVal = is_recommended !== undefined ? is_recommended : 0;
         const adminVal = is_admin_menu !== undefined ? is_admin_menu : 0;
+        const eggVal = allow_egg !== undefined ? allow_egg : 0;
+
+        let query = `UPDATE menu_items SET name = $1, price = $2, category_name = $3, is_recommended = $4, is_admin_menu = $5, allow_egg = $6`;
+        let params = [name, price, category_name, recVal, adminVal, eggVal];
 
         if (req.file) {
             const image_url = `/uploads/${req.file.filename}`;
-            await pool.query(
-                'UPDATE menu_items SET name = $1, price = $2, image_url = $3, is_recommended = $4, is_admin_menu = $5 WHERE id = $6',
-                [name, price, image_url, recVal, adminVal, menuId]
-            );
+            query += `, image_url = $7 WHERE id = $8`;
+            params.push(image_url, menuId);
         } else {
-            await pool.query(
-                'UPDATE menu_items SET name = $1, price = $2, is_recommended = $3, is_admin_menu = $4 WHERE id = $5',
-                [name, price, recVal, adminVal, menuId]
-            );
+            query += ` WHERE id = $7`;
+            params.push(menuId);
         }
-        res.json({ success: true, message: 'Updated menu successfully' });
+
+        await pool.query(query, params);
+        res.json({ success: true, message: 'อัปเดตเมนูสำเร็จ' });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
 
+// --- API ลบเมนูอาหาร ---
 app.delete('/api/menu/:id', async (req, res) => {
     const menuId = req.params.id;
     try {
         await pool.query('DELETE FROM menu_items WHERE id = $1', [menuId]);
-        res.json({ success: true, message: 'Deleted menu successfully' });
+        res.json({ success: true, message: 'ลบเมนูสำเร็จ' });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
 
-app.post('/api/admin/sales-history', async (req, res) => {
-    try {
-        const { table_id, title, total_price, items } = req.body;
-        
-        const result = await pool.query(
-            `INSERT INTO sales_history (table_id, title, total_price, items, print_status) 
-             VALUES ($1, $2, $3, $4, 'รอพิมพ์ใบเสร็จ') RETURNING id`,
-            [table_id, title, total_price, JSON.stringify(items)]
-        );
-
-        res.status(200).json({ success: true, id: result.rows[0].id, message: 'บันทึกประวัติยอดขายและตั้งค่ารอพิมพ์ใบเสร็จสำเร็จ' });
-    } catch (err) {
-        console.error('Server Error:', err);
-        res.status(500).json({ error: err.message });
-    }
-});
-
+// --- API ประวัติการขาย (Sales History) ---
 app.get('/api/admin/sales-history', async (req, res) => {
+    const { start_date, end_date } = req.query;
     try {
-        let { start_date, end_date } = req.query;
         let query = 'SELECT * FROM sales_history';
-        let queryParams = [];
+        let params = [];
 
         if (start_date && end_date) {
-            query += ' WHERE checked_out_at >= $1 AND checked_out_at < ($2::date + INTERVAL \'1 day\')';
-            queryParams = [start_date, end_date];
+            query += ' WHERE checked_out_at::date BETWEEN $1 AND $2';
+            params.push(start_date, end_date);
         } else if (start_date) {
-            query += ' WHERE checked_out_at >= $1';
-            queryParams = [start_date];
+            query += ' WHERE checked_out_at::date >= $1';
+            params.push(start_date);
         } else if (end_date) {
-            query += ' WHERE checked_out_at < ($1::date + INTERVAL \'1 day\')';
-            queryParams = [end_date];
+            query += ' WHERE checked_out_at::date <= $1';
+            params.push(end_date);
         }
 
         query += ' ORDER BY checked_out_at DESC';
 
-        const result = await pool.query(query, queryParams);
-        res.status(200).json(result.rows);
-    } catch (err) {
-        console.error('Server Error:', err);
-        res.status(500).json({ error: err.message });
-    }
-});
-
-// --- API สำหรับ Print Agent ดึงใบเสร็จที่ยังไม่ได้พิมพ์ ---
-app.get('/api/admin/unprinted-receipts', async (req, res) => {
-    try {
-        const result = await pool.query(
-            "SELECT * FROM sales_history WHERE print_status = 'รอพิมพ์ใบเสร็จ' ORDER BY checked_out_at ASC"
-        );
+        const result = await pool.query(query, params);
         res.json(result.rows);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
 
-// --- API สำหรับอัปเดตสถานะใบเสร็จว่าพิมพ์แล้ว ---
-app.put('/api/admin/receipts/:id/printed', async (req, res) => {
-    const receiptId = req.params.id;
+app.post('/api/admin/sales-history', async (req, res) => {
+    const { table_id, title, total_price, items } = req.body;
     try {
-        await pool.query(
-            "UPDATE sales_history SET print_status = 'พิมพ์แล้ว' WHERE id = $1",
-            [receiptId]
+        const result = await pool.query(
+            `INSERT INTO sales_history (table_id, title, total_price, items) 
+             VALUES ($1, $2, $3, $4) RETURNING id`,
+            [table_id, title, total_price, JSON.stringify(items)]
         );
-        res.json({ success: true, message: 'อัปเดตสถานะใบเสร็จเป็นพิมพ์แล้ว' });
+        res.json({ success: true, id: result.rows[0].id });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }

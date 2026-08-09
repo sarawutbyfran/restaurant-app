@@ -436,7 +436,6 @@
             renderMenus();
         }
 
-        // --- จุดที่แก้ไข: เพิ่มเงื่อนไขตรวจสอบ is_recommended ให้ครอบคลุม ---
         function isRecommendedItem(item) {
             const catName = item.category_name || categoryMap[item.category_id] || '';
             return (
@@ -457,11 +456,9 @@
             const filtered = currentCategory === 'ทั้งหมด' 
                 ? allMenus 
                 : allMenus.filter(m => {
-                    // ถ้าเลือกหมวดหมู่ "เมนูแนะนำ" ให้เรียกใช้ฟังก์ชันเช็คเงื่อนไข
                     if (currentCategory === 'เมนูแนะนำ') {
                         return isRecommendedItem(m);
                     }
-                    // หมวดูหมวดหมู่ทั่วไป
                     const catName = m.category_name || categoryMap[m.category_id] || '';
                     return catName === currentCategory;
                 });
@@ -473,7 +470,7 @@
 
             filtered.forEach(item => {
                 const imgSrc = item.image_url || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c';
-                const showBadge = isRecommendedItem(item); // เช็คเพื่อแสดงป้าย ⭐ แนะนำบนรูป
+                const showBadge = isRecommendedItem(item);
 
                 container.innerHTML += `
                     <div class="menu-card" onclick="openCustomizeModal(${item.id})">
@@ -494,7 +491,7 @@
             updateSummary();
         }
 
-       function openCustomizeModal(itemId) {
+        function openCustomizeModal(itemId) {
             selectedItemForCustom = allMenus.find(m => m.id === itemId);
             if (!selectedItemForCustom) return;
 
@@ -506,11 +503,15 @@
             const extraContainer = document.getElementById('customizeExtraOptions');
             extraContainer.innerHTML = '';
 
-            // ดึงชื่อหมวดหมู่ของเมนูนี้
-            const catName = selectedItemForCustom.category_name || categoryMap[selectedItemForCustom.category_id] || '';
-            
-            // ปรับเงื่อนไขให้แสดงเฉพาะหมวดหมู่ "อาหารตามสั่ง" หรือ category_id == 1 เท่านั้น
-            if (catName === 'อาหารตามสั่ง' || selectedItemForCustom.category_id == 1) {
+            // ตรวจสอบค่า allow_egg จากฐานข้อมูลที่ส่งมาจากหน้า Admin โดยตรง
+            const allowEgg = (
+                selectedItemForCustom.allow_egg === true || 
+                selectedItemForCustom.allow_egg === 1 || 
+                selectedItemForCustom.allow_egg === '1'
+            );
+
+            // ถ้าหลังบ้านตั้งค่า allow_egg ไว้ ให้แสดงตัวเลือกไข่ดาว / ไข่เจียว
+            if (allowEgg) {
                 extraContainer.innerHTML = `
                     <div class="form-group" style="display: flex; gap: 10px;">
                         <label class="checkbox-label">
@@ -709,7 +710,7 @@
                 }
 
                 return {
-                    _menu_item_id: item.id,
+                    menu_item_id: item.id,
                     name: finalItemName,
                     quantity: item.quantity,
                     price: item.price,
