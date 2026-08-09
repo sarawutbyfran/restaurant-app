@@ -132,18 +132,40 @@
             box-shadow: 0 2px 8px rgba(0,0,0,0.04);
             cursor: pointer;
             transition: transform 0.1s;
+            position: relative;
         }
         .menu-card:active {
             transform: scale(0.98);
         }
 
-        .menu-img {
+        /* ป้ายกำกับเมนูแนะนำบนรูปภาพ */
+        .recommend-badge {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: #ff4757;
+            color: white;
+            font-size: 11px;
+            font-weight: bold;
+            padding: 3px 8px;
+            border-radius: 6px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            z-index: 2;
+        }
+
+        .menu-img-wrapper {
+            position: relative;
             width: 100%;
             height: 110px;
+            margin-bottom: 8px;
+        }
+
+        .menu-img {
+            width: 100%;
+            height: 100%;
             border-radius: 8px;
             object-fit: cover;
             background: #ddd;
-            margin-bottom: 8px;
         }
 
         .menu-info h3 { margin: 0 0 4px 0; font-size: 15px; color: var(--text); }
@@ -256,7 +278,6 @@
             margin-bottom: 5px;
             font-size: 14px;
         }
-        /* ตั้งฟอนต์ไม่ให้ต่ำกว่า 16px เพื่อไม่ให้มือถือซูมจออัตโนมัติ */
         .form-control {
             width: 100%;
             padding: 10px;
@@ -318,7 +339,7 @@
         <button class="btn-order" onclick="submitOrder()">ยืนยันสั่งอาหาร</button>
     </div>
 
-    <!-- Modal สำหรับปรับแต่งเมนูก่อนใส่ตะกร้า (เพิ่มจำนวน + หมายเหตุ + ไข่ดาว/ไข่เจียว) -->
+    <!-- Modal สำหรับปรับแต่งเมนูก่อนใส่ตะกร้า -->
     <div class="modal" id="customizeModal">
         <div class="modal-content">
             <div class="modal-header">
@@ -328,7 +349,6 @@
             
             <div id="customizeExtraOptions"></div>
 
-            <!-- เพิ่มส่วนปรับจำนวนสินค้าในหน้านี้ -->
             <div class="form-group">
                 <label>จำนวน</label>
                 <div style="display: flex; align-items: center; gap: 15px; background: var(--light-gray); padding: 10px; border-radius: 8px; width: fit-content;">
@@ -384,7 +404,7 @@
         let cart = []; 
         let currentCategory = 'ทั้งหมด';
         let selectedItemForCustom = null;
-        let currentCustomQty = 1; // ตัวแปรเก็บจำนวนตอนกดเลือกเมนู
+        let currentCustomQty = 1;
 
         const categoryMap = {
             1: 'อาหารตามสั่ง', 
@@ -416,6 +436,12 @@
             renderMenus();
         }
 
+        // ฟังก์ชันตรวจสอบว่าเป็นเมนูแนะนำหรือไม่ (รองรับทั้งชื่อหมวดหมู่, category_id = 8 หรือ property เช็คแนะนำ)
+        function isRecommendedItem(item) {
+            const catName = item.category_name || categoryMap[item.category_id] || '';
+            return catName === 'เมนูแนะนำ' || item.category_id == 8 || item.is_recommended === true || item.is_recommend === 1;
+        }
+
         function renderMenus() {
             const container = document.getElementById('menu-list');
             container.innerHTML = '';
@@ -424,6 +450,9 @@
                 ? allMenus 
                 : allMenus.filter(m => {
                     const catName = m.category_name || categoryMap[m.category_id] || '';
+                    if (currentCategory === 'เมนูแนะนำ') {
+                        return isRecommendedItem(m);
+                    }
                     return catName === currentCategory;
                 });
 
@@ -434,11 +463,15 @@
 
             filtered.forEach(item => {
                 const imgSrc = item.image_url || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c';
+                const showBadge = isRecommendedItem(item);
 
                 container.innerHTML += `
                     <div class="menu-card" onclick="openCustomizeModal(${item.id})">
                         <div>
-                            <img src="${imgSrc}" class="menu-img" alt="${item.name}">
+                            <div class="menu-img-wrapper">
+                                ${showBadge ? '<span class="recommend-badge">⭐ แนะนำ</span>' : ''}
+                                <img src="${imgSrc}" class="menu-img" alt="${item.name}">
+                            </div>
                             <div class="menu-info">
                                 <h3>${item.name}</h3>
                                 <p class="price">${parseFloat(item.price).toFixed(2)} บาท</p>
@@ -455,7 +488,7 @@
             selectedItemForCustom = allMenus.find(m => m.id === itemId);
             if (!selectedItemForCustom) return;
 
-            currentCustomQty = 1; // รีเซ็ตจำนวนเริ่มต้นเป็น 1
+            currentCustomQty = 1;
             document.getElementById('customItemQty').innerText = currentCustomQty;
             document.getElementById('modalItemTitle').innerText = selectedItemForCustom.name;
             document.getElementById('itemNotesInput').value = '';
@@ -464,7 +497,7 @@
             extraContainer.innerHTML = '';
 
             const catName = selectedItemForCustom.category_name || categoryMap[selectedItemForCustom.category_id] || '';
-            if (catName === 'อาหารตามสั่ง') {
+            if (catName === 'อาหารตามสั่ง' || selectedItemForCustom.category_id == 1) {
                 extraContainer.innerHTML = `
                     <div class="form-group" style="display: flex; gap: 10px;">
                         <label class="checkbox-label">
@@ -523,7 +556,7 @@
             );
 
             if (existingIndex > -1) {
-                cart[existingIndex].quantity += currentCustomQty; // บวกเพิ่มตามจำนวนที่เลือกใน modal
+                cart[existingIndex].quantity += currentCustomQty;
             } else {
                 cart.push({
                     id: selectedItemForCustom.id,
