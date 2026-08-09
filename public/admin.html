@@ -459,6 +459,14 @@
                                 <option value="AdminController">AdminController</option>
                             </select>
                         </div>
+                        <div class="form-group" style="display: flex; gap: 15px; margin: 8px 0;">
+                            <label style="display: flex; align-items: center; gap: 5px; cursor: pointer; font-size: 11px;">
+                                <input type="checkbox" id="newMenuIsRec"> ⭐ เมนูแนะนำ
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 5px; cursor: pointer; font-size: 11px;">
+                                <input type="checkbox" id="newMenuIsAdmin"> AdminController
+                            </label>
+                        </div>
                         <div class="form-group">
                             <label>รูปภาพอาหาร (อัปโหลดไฟล์)</label>
                             <input type="file" id="newMenuImageFile" accept="image/*" style="background: white; padding: 4px;">
@@ -540,6 +548,14 @@
                     <label>ราคา (บาท)</label>
                     <input type="number" step="0.01" id="editMenuPrice" required>
                 </div>
+                <div class="form-group" style="display: flex; gap: 15px; margin: 10px 0;">
+                    <label style="display: flex; align-items: center; gap: 5px; cursor: pointer; font-size: 11px;">
+                        <input type="checkbox" id="editMenuIsRec"> ⭐ เมนูแนะนำ
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 5px; cursor: pointer; font-size: 11px;">
+                        <input type="checkbox" id="editMenuIsAdmin"> AdminController
+                    </label>
+                </div>
                 <div class="form-group">
                     <label>เปลี่ยนรูปภาพอาหาร (อัปโหลดไฟล์ใหม่)</label>
                     <input type="file" id="editMenuImageFile" accept="image/*" style="background: white; padding: 4px;">
@@ -599,7 +615,6 @@
             const filtered = allMenus.filter(m => {
                 const catName = m.category_name || categoryMap[m.category_id] || '';
                 
-                // รองรับการคลิกเลือกหมวดหมู่พิเศษทางซ้าย
                 if (currentSelectedCategory === 'AdminController') {
                     return Number(m.is_admin_menu) === 1;
                 }
@@ -607,7 +622,6 @@
                     return Number(m.is_recommended) === 1;
                 }
                 
-                // กรณีเลือกหมวดหมู่ทั่วไป
                 if (currentSelectedCategory === 'ทั้งหมด') return true;
                 return catName === currentSelectedCategory;
             });
@@ -1271,7 +1285,7 @@
                                 </div>
                             </div>
                             <div style="display:flex; gap:3px;">
-                                <button onclick="openEditMenuModal(${m.id}, '${m.name}', ${m.price}, ${m.is_admin_menu || 0}, ${m.is_recommended || 0})" style="background:#ffa502; color:white; border:none; padding:3px 6px; border-radius:4px; cursor:pointer; font-size:10px;">✏️ แก้ไข</button>
+                                <button onclick="openEditMenuModal(${m.id}, '${m.name.replace(/'/g, "\\'")}', ${m.price}, ${m.is_admin_menu || 0}, ${m.is_recommended || 0})" style="background:#ffa502; color:white; border:none; padding:3px 6px; border-radius:4px; cursor:pointer; font-size:10px;">✏️ แก้ไข</button>
                                 <button onclick="deleteMenuItem(${m.id})" style="background:#ff4757; color:white; border:none; padding:3px 6px; border-radius:4px; cursor:pointer; font-size:10px;">🗑️ ลบ</button>
                             </div>
                         </div>
@@ -1282,16 +1296,14 @@
             }
         }
 
-        // เพิ่มฟิลด์ checkbox ในหน้า Modal เพิ่มเมนูใหม่ด้วย
         async function addNewMenu(event) {
             event.preventDefault();
             const name = document.getElementById('newMenuName').value;
             const price = document.getElementById('newMenuPrice').value;
             const category_name = document.getElementById('newMenuCategory').value;
             
-            // ดึงค่าสถานะจาก Checkbox
-            const isAdminMenu = document.getElementById('newMenuIsAdmin') && document.getElementById('newMenuIsAdmin').checked ? 1 : 0;
-            const isRecommended = document.getElementById('newMenuIsRec') && document.getElementById('newMenuIsRec').checked ? 1 : 0;
+            const isAdminMenu = document.getElementById('newMenuIsAdmin').checked ? 1 : 0;
+            const isRecommended = document.getElementById('newMenuIsRec').checked ? 1 : 0;
             
             const imageFile = document.getElementById('newMenuImageFile').files[0];
 
@@ -1318,6 +1330,60 @@
                     fetchAdminData();
                 } else {
                     alert('ไม่สามารถเพิ่มเมนูได้');
+                }
+            } catch(e) {
+                alert('เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์');
+            }
+        }
+
+        function openEditMenuModal(id, name, price, isAdminMenu, isRecommended) {
+            document.getElementById('editMenuId').value = id;
+            document.getElementById('editMenuName').value = name;
+            document.getElementById('editMenuPrice').value = price;
+            
+            document.getElementById('editMenuIsAdmin').checked = Number(isAdminMenu) === 1;
+            document.getElementById('editMenuIsRec').checked = Number(isRecommended) === 1;
+            
+            document.getElementById('editMenuModal').style.display = 'flex';
+        }
+
+        function closeEditMenuModal() {
+            document.getElementById('editMenuModal').style.display = 'none';
+        }
+
+        async function updateMenuSubmit(event) {
+            event.preventDefault();
+            const id = document.getElementById('editMenuId').value;
+            const name = document.getElementById('editMenuName').value;
+            const price = document.getElementById('editMenuPrice').value;
+            
+            const isAdminMenu = document.getElementById('editMenuIsAdmin').checked ? 1 : 0;
+            const isRecommended = document.getElementById('editMenuIsRec').checked ? 1 : 0;
+            
+            const imageFile = document.getElementById('editMenuImageFile').files[0];
+
+            const formData = new FormData();
+            formData.append('name', name);
+            formData.append('price', price);
+            formData.append('is_admin_menu', isAdminMenu);
+            formData.append('is_recommended', isRecommended);
+            if (imageFile) {
+                formData.append('image', imageFile);
+            }
+
+            try {
+                const res = await fetch(`/api/menu/${id}`, {
+                    method: 'PUT',
+                    body: formData
+                });
+
+                if(res.ok) {
+                    alert('อัปเดตเมนูสำเร็จ!');
+                    closeEditMenuModal();
+                    loadManageMenuList();
+                    fetchAdminData();
+                } else {
+                    alert('ไม่สามารถอัปเดตเมนูได้');
                 }
             } catch(e) {
                 alert('เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์');
