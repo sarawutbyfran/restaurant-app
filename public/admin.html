@@ -332,28 +332,6 @@
             border-radius: 6px;
             font-size: 12px;
         }
-
-        #print-area {
-            display: none;
-        }
-
-        @media print {
-            @page { margin: 0; size: 80mm auto; }
-            body * { visibility: hidden; }
-            #print-area, #print-area * { visibility: visible; }
-            #print-area {
-                display: block !important;
-                position: absolute;
-                left: 0; top: 0;
-                width: 76mm; 
-                font-family: 'Sarabun', 'Prompt', sans-serif;
-                font-size: 13px;
-                line-height: 1.4;
-                color: #000;
-                padding: 2mm 4mm 10mm 4mm;
-                box-sizing: border-box;
-            }
-        }
     </style>
 </head>
 <body>
@@ -386,9 +364,7 @@
         <div class="menu-grid-admin" id="admin-menu-grid"></div>
     </div>
 
-    <!-- คอลัมน์ที่ย้ายตะกร้ามาไว้ด้านบน และโซนโต๊ะ/ซุ้มไว้ด้านล่าง -->
     <div class="tables-column">
-        <!-- 1. ตะกร้าและรายการอาหารของโต๊ะ (ย้ายมาไว้ด้านบน) -->
         <div style="display: flex; flex-direction: column; flex: 1;">
             <h3 style="margin:4px 0 6px 0; font-size:13px; color:var(--primary);">📋 ตะกร้าและรายการอาหารของโต๊ะ</h3>
             <div class="table-summary-box" id="tableSummaryBox">
@@ -396,13 +372,11 @@
             </div>
         </div>
 
-        <!-- 2. โซนโต๊ะหลัก (1 - 12) (ย้ายมาไว้ด้านล่าง) -->
         <div class="selection-group">
             <div class="group-title">🪑 โซนโต๊ะหลัก (1 - 12)</div>
             <div class="table-grid" id="tables-grid-container"></div>
         </div>
 
-        <!-- 3. โซนซุ้มส่วนตัว (1 - 6) (ย้ายมาไว้ด้านล่าง) -->
         <div class="selection-group">
             <div class="group-title">⛺ โซนซุ้มส่วนตัว (1 - 6)</div>
             <div class="table-grid" id="zones-grid-container"></div>
@@ -509,7 +483,7 @@
     </div>
 
     <div class="modal" id="salesReportModal">
-        <div class="modal-content" style="width: 750px; max-height: 90vh;">
+        <div class="modal-content" style="width: 800px; max-height: 90vh;">
             <h3 style="margin-top:0; color:var(--primary);">📊 สรุปยอดขายและประวัติใบเสร็จ</h3>
             
             <div style="background: var(--light-gray); padding: 10px; border-radius: 8px; margin-bottom: 10px; display: flex; align-items: center; gap: 10px; font-size: 12px;">
@@ -538,10 +512,11 @@
                             <th style="padding: 8px;">โต๊ะ/คิว</th>
                             <th style="padding: 8px;">รายการอาหาร</th>
                             <th style="padding: 8px; text-align: right;">ยอดเงิน</th>
+                            <th style="padding: 8px; text-align: center;">จัดการ</th>
                         </tr>
                     </thead>
                     <tbody id="salesHistoryTableBody">
-                        <tr><td colspan="4" style="text-align:center; padding:20px; color:var(--gray);">กำลังโหลดข้อมูล...</td></tr>
+                        <tr><td colspan="5" style="text-align:center; padding:20px; color:var(--gray);">กำลังโหลดข้อมูล...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -576,8 +551,6 @@
             </form>
         </div>
     </div>
-
-    <div id="print-area"></div>
 
     <script>
         let allMenus = [];
@@ -802,7 +775,7 @@
                             <div style="color:var(--text); margin:6px 0; line-height: 1.5;">${itemsHtml}</div>
                             <div style="display:flex; justify-content:flex-end; gap:5px; margin-top:8px; border-top: 1px solid #eee; padding-top: 6px;">
                                 <button class="btn-action" onclick="completeSingleOrder('${ord.id}')">✔️ ทำเสร็จแล้ว</button>
-                                <button class="btn-print" onclick="printKitchenOrderOnly('${ord.id}', '${locationLabel}', '${encodeURIComponent(JSON.stringify(ord.items))}', '${ord.created_at}')">🖨️ พิมพ์</button>
+                                <button class="btn-print" onclick="resetOrderToPrint('${ord.id}')">🔄 สั่งพิมพ์อีกครั้ง</button>
                             </div>
                         </div>
                     `;
@@ -841,45 +814,27 @@
             }
         }
 
-        async function printKitchenOrderOnly(orderId, locationLabel, encodedItems, createdAt) {
-            const items = JSON.parse(decodeURIComponent(encodedItems));
-            let itemsListHtml = '';
-            let totalItemsCount = 0;
-
-            items.forEach(i => {
-                totalItemsCount += Number(i.quantity);
-                itemsListHtml += `<div style="display:flex; justify-content:space-between; margin: 6px 0; font-size: 14px;"><span>- ${i.name}</span><strong>x${i.quantity}</strong></div>`;
-            });
-
-            if (totalItemsCount < 6) {
-                let missingLines = 6 - totalItemsCount;
-                for (let k = 0; k < missingLines; k++) {
-                    itemsListHtml += `<div style="margin: 14px 0; color: transparent;">- (เว้นว่าง)</div>`;
-                }
-            }
-
-            const printArea = document.getElementById('print-area');
-            printArea.innerHTML = `
-                <div style="text-align:center; font-weight:bold; font-size:18px; margin-bottom:4px;">[ ใบออเดอร์ครัว ]</div>
-                <div style="text-align:center; font-size:15px; margin-bottom:12px; border-bottom:1.5px dashed #000; padding-bottom:6px;">ตำแหน่ง: <b>${locationLabel}</b></div>
-                <div style="margin-bottom:12px;">${itemsListHtml}</div>
-                <div style="text-align:center; font-size:12px; border-top:1.5px dashed #000; padding-top:6px; margin-top:15px;">เวลาสั่ง: ${new Date(createdAt).toLocaleTimeString()}</div>
-                <div style="height: 20px;"></div>
-            `;
-            window.print();
-
+        // ฟังก์ชันสั่งรีเซ็ตสถานะออเดอร์กลับเป็น "กำลังทำอาหาร" เพื่อให้หลังบ้านดึงไปพิมพ์ซ้ำ
+        async function resetOrderToPrint(orderId) {
+            if(!confirm('ต้องการส่งออเดอร์นี้กลับไปคิวรอพิมพ์ที่เครื่องพิมพ์หลังบ้านใช่หรือไม่?')) return;
             try {
-                await fetch(`/api/admin/orders/${orderId}/status`, {
+                const res = await fetch(`/api/admin/orders/${orderId}/status`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ status: 'พิมพ์แล้ว' })
+                    body: JSON.stringify({ status: 'กำลังทำอาหาร' })
                 });
-                fetchKitchenOrders();
+                if(res.ok) {
+                    alert('ส่งคำสั่งรีเซ็ตเพื่อพิมพ์ใหม่สำเร็จ!');
+                    fetchKitchenOrders();
+                } else {
+                    alert('ไม่สามารถเปลี่ยนสถานะได้');
+                }
             } catch(e) {
-                console.error('ไม่สามารถอัปเดตสถานะการพิมพ์ได้');
+                alert('เกิดข้อผิดพลาดในการเชื่อมต่อ');
             }
         }
 
+        // ฟังก์ชันเช็คบิล ส่งข้อมูลเข้าตะกร้า unprinted-receipts ให้เครื่องพิมพ์หลังบ้านพิมพ์ใบเสร็จอัตโนมัติ
         async function printReceiptAndCheckout(tableId, titleText) {
             try {
                 const res = await fetch(`/api/orders/table/${tableId}`);
@@ -891,57 +846,19 @@
                 }
 
                 let totalPrice = 0;
-                let receiptItemsHtml = '';
                 let allItemsToSave = [];
-                let totalItemsCount = 0;
 
                 orders.forEach(ord => {
                     if (ord.items) {
                         ord.items.forEach(i => {
                             let sumItemPrice = Number(i.price) * Number(i.quantity);
                             totalPrice += sumItemPrice;
-                            totalItemsCount += Number(i.quantity);
                             allItemsToSave.push(i);
-                            receiptItemsHtml += `
-                                <div style="display:flex; justify-content:space-between; margin:4px 0; font-size:13px;">
-                                    <span>${i.name} x${i.quantity}</span>
-                                    <span>${sumItemPrice.toFixed(2)} ฿</span>
-                                </div>
-                            `;
                         });
                     }
                 });
 
-                if (totalItemsCount < 6) {
-                    let missingLines = 6 - totalItemsCount;
-                    for (let k = 0; k < missingLines; k++) {
-                        receiptItemsHtml += `<div style="margin: 10px 0; color: transparent;">-</div>`;
-                    }
-                }
-
-                const printArea = document.getElementById('print-area');
-                printArea.innerHTML = `
-                    <div style="text-align:center; margin-bottom:6px;">
-                        <img src="/uploads/logo.png" style="width: 80px; height: 80px; object-fit: contain; border-radius: 50%;">
-                    </div>
-                    <div style="text-align:center; font-weight:bold; font-size:17px; margin-bottom:2px;">ร้านริมทาง อาหารป่า</div>
-                    <div style="text-align:center; font-size:13px; margin-bottom:8px;">โทร 090-131-8376</div>
-                    <div style="text-align:center; font-size:13px; margin-bottom:8px;">ใบเสร็จรับเงิน / Receipt</div>
-                    <div style="border-bottom:1.5px dashed #000; margin-bottom:8px; padding-bottom:6px; font-size:13px;">
-                        <div>โต๊ะ/คิว: <b>${titleText}</b></div>
-                        <div>เวลา: ${new Date().toLocaleString('th-TH')}</div>
-                    </div>
-                    <div style="margin-bottom:10px;">${receiptItemsHtml}</div>
-                    <div style="border-top:1.5px dashed #000; margin-top:8px; padding-top:8px; display:flex; justify-content:space-between; font-weight:bold; font-size:16px;">
-                        <span>ยอดรวมทั้งสิ้น:</span>
-                        <span>${totalPrice.toFixed(2)} ฿</span>
-                    </div>
-                    <div style="text-align:center; font-size:12px; margin-top:15px;">*** ขอบคุณที่ใช้บริการ ***</div>
-                    <div style="height: 20px;"></div>
-                `;
-
-                window.print();
-
+                // 1. บันทึกยอดขายและสร้างข้อมูลบิลรอพิมพ์ให้หลังบ้าน (unprinted-receipts)
                 await fetch('/api/admin/sales-history', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -953,11 +870,12 @@
                     })
                 });
 
+                // 2. ลล้างออเดอร์ของโต๊ะนี้ทิ้งหลังเช็คบิลเสร็จ
                 await fetch(`/api/orders/table/${tableId}`, {
                     method: 'DELETE'
                 });
 
-                alert('เช็คบิลและบันทึกยอดขายเรียบร้อยแล้ว');
+                alert('เช็คบิลสำเร็จ! ระบบหลังบ้านกำลังพิมพ์ใบเสร็จให้อัตโนมัติ');
                 activeTableId = null;
                 currentCart = [];
                 document.getElementById('tableSummaryBox').innerHTML = `<div style="font-size:11px; color:var(--gray); text-align:center; padding:40px 0;">ยังไม่ได้เลือกโต๊ะหรือคิว<br>(กรุณาคลิกเลือกจากด้านบน)</div>`;
@@ -966,6 +884,33 @@
             } catch(e) {
                 console.error(e);
                 alert('เกิดข้อผิดพลาดในการเช็คบิล');
+            }
+        }
+
+        // ฟังก์ชันสั่งพิมพ์ใบเสร็จย้อนหลัง จากหน้าประวัติการขาย (ส่งไป unprinted-receipts อีกครั้งเพื่อให้เครื่องพิมพ์หลังบ้านพิมพ์ซ้ำ)
+        async function reprintReceiptBackend(recordId, titleText, totalPrice, itemsJson) {
+            if(!confirm(`ต้องการสั่งพิมพ์ใบเสร็จของ ${titleText} ออกเครื่องพิมพ์หลักอีกครั้งใช่หรือไม่?`)) return;
+            try {
+                const items = typeof itemsJson === 'string' ? JSON.parse(itemsJson) : itemsJson;
+                const res = await fetch('/api/admin/sales-history', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        table_id: "reprint",
+                        title: `${titleText} (พิมพ์ซ้ำ)`,
+                        total_price: totalPrice,
+                        items: items
+                    })
+                });
+
+                if(res.ok) {
+                    alert('ส่งคำสั่งพิมพ์ซ้ำไปที่เครื่องพิมพ์หลังบ้านเรียบร้อยแล้ว!');
+                } else {
+                    alert('สั่งพิมพ์ซ้ำไม่สำเร็จ');
+                }
+            } catch(e) {
+                console.error(e);
+                alert('เกิดข้อผิดพลาดในการเชื่อมต่อ');
             }
         }
 
@@ -1251,7 +1196,7 @@
                 tbody.innerHTML = '';
 
                 if (historyList.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:20px; color:var(--gray);">ไม่พบประวัติยอดขายในช่วงเวลานี้</td></tr>`;
+                    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:20px; color:var(--gray);">ไม่พบประวัติยอดขายในช่วงเวลานี้</td></tr>`;
                     document.getElementById('totalSalesAmount').innerText = '0.00 ฿';
                     return;
                 }
@@ -1265,13 +1210,17 @@
                     }
 
                     const formattedDate = new Date(record.checked_out_at).toLocaleString('th-TH');
+                    const itemsStrEscaped = encodeURIComponent(JSON.stringify(record.items || []));
 
                     tbody.innerHTML += `
                         <tr style="border-bottom: 1px solid #f1f2f6;">
                             <td style="padding: 6px 8px; color: var(--gray);">${formattedDate}</td>
                             <td style="padding: 6px 8px; font-weight: bold; color: var(--primary);">${record.title}</td>
-                            <td style="padding: 6px 8px; max-width: 250px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${itemsSummary}">${itemsSummary}</td>
+                            <td style="padding: 6px 8px; max-width: 220px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${itemsSummary}">${itemsSummary}</td>
                             <td style="padding: 6px 8px; text-align: right; font-weight: bold; color: var(--success);">${Number(record.total_price).toFixed(2)} ฿</td>
+                            <td style="padding: 6px 8px; text-align: center;">
+                                <button onclick="reprintReceiptBackend('${record.id}', '${record.title}', ${record.total_price}, decodeURIComponent('${itemsStrEscaped}'))" style="background:#3742fa; color:white; border:none; padding:3px 6px; border-radius:4px; cursor:pointer; font-size:10px;">🖨️ พิมพ์อีกครั้ง</button>
+                            </td>
                         </tr>
                     `;
                 });
@@ -1280,7 +1229,7 @@
             } catch (e) {
                 console.error(e);
                 document.getElementById('totalSalesAmount').innerText = '0.00 ฿';
-                document.getElementById('salesHistoryTableBody').innerHTML = `<tr><td colspan="4" style="text-align:center; color:red; padding:20px;">เกิดข้อผิดพลาดในการโหลดข้อมูล</td></tr>`;
+                document.getElementById('salesHistoryTableBody').innerHTML = `<tr><td colspan="5" style="text-align:center; color:red; padding:20px;">เกิดข้อผิดพลาดในการโหลดข้อมูล</td></tr>`;
             }
         }
 
