@@ -436,10 +436,18 @@
             renderMenus();
         }
 
-        // ฟังก์ชันตรวจสอบว่าเป็นเมนูแนะนำหรือไม่ (รองรับทั้งชื่อหมวดหมู่, category_id = 8 หรือ property เช็คแนะนำ)
+        // --- จุดที่แก้ไข: เพิ่มเงื่อนไขตรวจสอบ is_recommended ให้ครอบคลุม ---
         function isRecommendedItem(item) {
             const catName = item.category_name || categoryMap[item.category_id] || '';
-            return catName === 'เมนูแนะนำ' || item.category_id == 8 || item.is_recommended === true || item.is_recommend === 1;
+            return (
+                catName === 'เมนูแนะนำ' || 
+                item.category_id == 8 || 
+                item.is_recommended === true || 
+                item.is_recommended === 1 || 
+                item.is_recommended === '1' ||
+                item.is_recommend === true ||
+                item.is_recommend === 1
+            );
         }
 
         function renderMenus() {
@@ -449,10 +457,12 @@
             const filtered = currentCategory === 'ทั้งหมด' 
                 ? allMenus 
                 : allMenus.filter(m => {
-                    const catName = m.category_name || categoryMap[m.category_id] || '';
+                    // ถ้าเลือกหมวดหมู่ "เมนูแนะนำ" ให้เรียกใช้ฟังก์ชันเช็คเงื่อนไข
                     if (currentCategory === 'เมนูแนะนำ') {
                         return isRecommendedItem(m);
                     }
+                    // หมวดูหมวดหมู่ทั่วไป
+                    const catName = m.category_name || categoryMap[m.category_id] || '';
                     return catName === currentCategory;
                 });
 
@@ -463,13 +473,13 @@
 
             filtered.forEach(item => {
                 const imgSrc = item.image_url || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c';
-                const showBadge = isRecommendedItem(item);
+                const showBadge = isRecommendedItem(item); // เช็คเพื่อแสดงป้าย ⭐ แนะนำบนรูป
 
                 container.innerHTML += `
                     <div class="menu-card" onclick="openCustomizeModal(${item.id})">
                         <div>
-                            <div class="menu-img-wrapper">
-                                ${showBadge ? '<span class="recommend-badge">⭐ แนะนำ</span>' : ''}
+                            <div class="menu-img-wrapper" style="position: relative;">
+                                ${showBadge ? '<span class="recommend-badge" style="position: absolute; top: 10px; left: 10px; background: #ff4757; color: white; font-size: 11px; font-weight: bold; padding: 3px 8px; border-radius: 6px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); z-index: 2;">⭐ แนะนำ</span>' : ''}
                                 <img src="${imgSrc}" class="menu-img" alt="${item.name}">
                             </div>
                             <div class="menu-info">
@@ -696,7 +706,7 @@
                 }
 
                 return {
-                    menu_item_id: item.id,
+                    _menu_item_id: item.id,
                     name: finalItemName,
                     quantity: item.quantity,
                     price: item.price,
