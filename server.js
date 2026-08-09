@@ -71,8 +71,16 @@ async function initDatabase() {
                 category_name VARCHAR(100) NOT NULL,
                 image_url TEXT,
                 category_id INTEGER,
+                is_recommended INT2 DEFAULT 0,
+                is_admin_menu INT2 DEFAULT 0,
                 FOREIGN KEY(category_id) REFERENCES categories(id)
             );
+        `);
+
+        // ตรวจสอบและเพิ่มคอลัมน์อัตโนมัติหากตารางถูกสร้างไว้ก่อนแล้ว
+        await pool.query(`
+            ALTER TABLE menu_items ADD COLUMN IF NOT EXISTS is_recommended INT2 DEFAULT 0;
+            ALTER TABLE menu_items ADD COLUMN IF NOT EXISTS is_admin_menu INT2 DEFAULT 0;
         `);
 
         await pool.query(`
@@ -97,7 +105,6 @@ async function initDatabase() {
             );
         `);
 
-        // ปรับปรุงตาราง sales_history ให้เพิ่ม print_status สำหรับระบบพิมพ์ใบเสร็จอัตโนมัติ
         await pool.query(`
             CREATE TABLE IF NOT EXISTS sales_history (
                 id SERIAL PRIMARY KEY,
@@ -306,16 +313,24 @@ app.delete('/api/orders/table/:tableId', async (req, res) => {
     }
 });
 
-// --- API เพิ่มเมนูอาหาร ---
+// --- API เพิ่มเมนูอาหาร (รองรับ is_recommended และ is_admin_menu) ---
 app.post('/api/menu', upload.single('image'), async (req, res) => {
-    const { name, price, category_name, category_id } = req.body;
+    const { name, price, category_name, category_id, is_recommended, is_admin_menu } = req.body;
     const image_url = req.file ? `/uploads/${req.file.filename}` : (req.body.image_url || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c');
     
     try {
         const result = await pool.query(
-            `INSERT INTO menu_items (name, price, category_name, image_url, category_id) 
-             VALUES ($1, $2, $3, $4, $5) RETURNING id`,
-            [name, price, category_name, image_url, category_id || 1]
+            `INSERT INTO menu_items (name, price, category_name, image_url, category_id, is_recommended, is_admin_menu) 
+             VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
+            [
+                name, 
+                price, 
+                category_name, 
+                image_url, 
+                category_id || 1, 
+                is_recommended || 0, 
+                is_admin_menu || 0
+            ]
         );
         res.json({ success: true, id: result.rows[0].id });
     } catch (err) {
@@ -323,22 +338,25 @@ app.post('/api/menu', upload.single('image'), async (req, res) => {
     }
 });
 
-// --- API อัปเดตข้อมูลเมนูอาหาร ---
+// --- API อัปเดตข้อมูลเมนูอาหาร (รองรับอัปเดตสถานะพิเศษ) ---
 app.put('/api/menu/:id', upload.single('image'), async (req, res) => {
     const menuId = req.params.id;
-    const { name, price } = req.body;
+    const { name, price, is_recommended, is_admin_menu } = req.body;
 
     try {
+        const recVal = is_recommended !== undefined ? is_recommended : 0;
+        const adminVal = is_admin_menu !== undefined ? is_admin_menu : 0;
+
         if (req.file) {
             const image_url = `/uploads/${req.file.filename}`;
             await pool.query(
-                'UPDATE menu_items SET name = $1, price = $2, image_url = $3 WHERE id = $4',
-                [name, price, image_url, menuId]
+                'UPDATE menu_items SET name = $1, price = $2, image_url = $3, is_recommended = $4, is_admin_menu = $5 WHERE id = $6',
+                [name, price, image_url, recVal, adminVal, menuId]
             );
         } else {
             await pool.query(
-                'UPDATE menu_items SET name = $1, price = $2 WHERE id = $3',
-                [name, price, menuId]
+                'UPDATE menu_items SET name = $1, price = $2, is_recommended = $3, is_admin_menu = $4 WHERE id = $5',
+                [name, price, recVal, adminVal, menuId]
             );
         }
         res.json({ success: true, message: 'Updated menu successfully' });
