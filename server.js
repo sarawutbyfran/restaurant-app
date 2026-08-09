@@ -118,6 +118,11 @@ async function initDatabase() {
                 checked_out_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
         `);
+
+        // ป้องกันกรณีตาราง sales_history ถูกสร้างไปก่อนแล้วแต่ไม่มีคอลัมน์ print_status
+        await pool.query(`
+            ALTER TABLE sales_history ADD COLUMN IF NOT EXISTS print_status VARCHAR(50) DEFAULT 'รอพิมพ์ใบเสร็จ';
+        `);
     
         console.log('Database tables checked/initialized successfully.');
     } catch (err) {
@@ -370,53 +375,82 @@ app.put('/api/menu/:id', upload.single('image'), async (req, res) => {
     }
 });
 
-// --- API ลบเมนูอาหาร ---
 app.delete('/api/menu/:id', async (req, res) => {
     const menuId = req.params.id;
     try {
         await pool.query('DELETE FROM menu_items WHERE id = $1', [menuId]);
-        res.json({ success: true, message: 'ลบเมนูสำเร็จ' });
+        res.json({ success: true, message: 'Deleted menu successfully' });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
 
-// --- API ประวัติการขาย (Sales History) ---
-app.get('/api/admin/sales-history', async (req, res) => {
-    const { start_date, end_date } = req.query;
+// --- API ประวัติการขาย (Sales History) & รองรับระบบพิมพ์ใบเสร็จ ---
+app.post('/api/admin/sales-history', async (req, res) => {
     try {
+        const { table_id, title, total_price, items } = req.body;
+        
+        const result = await pool.query(
+            `INSERT INTO sales_history (table_id, title, total_price, items, print_status) 
+             VALUES ($1, $2, $3, $4, 'รอพิมพ์ใบเสร็จ') RETURNING id`,
+            [table_id, title, total_price, JSON.stringify(items)]
+        );
+
+        res.status(200).json({ success: true, id: result.rows[0].id, message: 'บันทึกประวัติยอดขายและตั้งค่ารอพิมพ์ใบเสร็จสำเร็จ' });
+    } catch (err) {
+        console.error('Server Error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.get('/api/admin/sales-history', async (req, res) => {
+    try {
+        let { start_date, end_date } = req.query;
         let query = 'SELECT * FROM sales_history';
-        let params = [];
+        let queryParams = [];
 
         if (start_date && end_date) {
-            query += ' WHERE checked_out_at::date BETWEEN $1 AND $2';
-            params.push(start_date, end_date);
+            query += ' WHERE checked_out_at >= $1 AND checked_out_at < ($2::date + INTERVAL \'1 day\')';
+            queryParams = [start_date, end_date];
         } else if (start_date) {
-            query += ' WHERE checked_out_at::date >= $1';
-            params.push(start_date);
+            query += ' WHERE checked_out_at >= $1';
+            queryParams = [start_date];
         } else if (end_date) {
-            query += ' WHERE checked_out_at::date <= $1';
-            params.push(end_date);
+            query += ' WHERE checked_out_at < ($1::date + INTERVAL \'1 day\')';
+            queryParams = [end_date];
         }
 
         query += ' ORDER BY checked_out_at DESC';
 
-        const result = await pool.query(query, params);
+        const result = await pool.query(query, queryParams);
+        res.status(200).json(result.rows);
+    } catch (err) {
+        console.error('Server Error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// --- API สำหรับ Print Agent ดึงใบเสร็จที่ยังไม่ได้พิมพ์ ---
+app.get('/api/admin/unprinted-receipts', async (req, res) => {
+    try {
+        const result = await pool.query(
+            "SELECT * FROM sales_history WHERE print_status = 'รอพิมพ์ใบเสร็จ' ORDER BY checked_out_at ASC"
+        );
         res.json(result.rows);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
 
-app.post('/api/admin/sales-history', async (req, res) => {
-    const { table_id, title, total_price, items } = req.body;
+// --- API สำหรับอัปเดตสถานะใบเสร็จว่าพิมพ์แล้ว ---
+app.put('/api/admin/receipts/:id/printed', async (req, res) => {
+    const receiptId = req.params.id;
     try {
-        const result = await pool.query(
-            `INSERT INTO sales_history (table_id, title, total_price, items) 
-             VALUES ($1, $2, $3, $4) RETURNING id`,
-            [table_id, title, total_price, JSON.stringify(items)]
+        await pool.query(
+            "UPDATE sales_history SET print_status = 'พิมพ์แล้ว' WHERE id = $1",
+            [receiptId]
         );
-        res.json({ success: true, id: result.rows[0].id });
+        res.json({ success: true, message: 'อัปเดตสถานะใบเสร็จเป็นพิมพ์แล้ว' });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
