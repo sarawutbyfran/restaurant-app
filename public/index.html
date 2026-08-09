@@ -494,7 +494,7 @@
             updateSummary();
         }
 
-        function openCustomizeModal(itemId) {
+       function openCustomizeModal(itemId) {
             selectedItemForCustom = allMenus.find(m => m.id === itemId);
             if (!selectedItemForCustom) return;
 
@@ -506,7 +506,10 @@
             const extraContainer = document.getElementById('customizeExtraOptions');
             extraContainer.innerHTML = '';
 
+            // ดึงชื่อหมวดหมู่ของเมนูนี้
             const catName = selectedItemForCustom.category_name || categoryMap[selectedItemForCustom.category_id] || '';
+            
+            // ปรับเงื่อนไขให้แสดงเฉพาะหมวดหมู่ "อาหารตามสั่ง" หรือ category_id == 1 เท่านั้น
             if (catName === 'อาหารตามสั่ง' || selectedItemForCustom.category_id == 1) {
                 extraContainer.innerHTML = `
                     <div class="form-group" style="display: flex; gap: 10px;">
