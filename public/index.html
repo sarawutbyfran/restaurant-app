@@ -84,6 +84,40 @@
         .store-header h1 { margin: 0; font-size: 20px; font-weight: 600; }
         .store-header p { margin: 4px 0 0 0; font-size: 13px; opacity: 0.9; }
 
+        /* ช่องค้นหาเมนู */
+        .search-container {
+            max-width: 800px;
+            margin: 15px auto 0 auto;
+            padding: 0 15px;
+            box-sizing: border-box;
+        }
+        .search-box-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        .search-input {
+            width: 100%;
+            padding: 12px 15px 12px 42px;
+            border: 1px solid #ddd;
+            border-radius: 14px;
+            font-size: 15px;
+            font-family: inherit;
+            background: white;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .search-input:focus {
+            border-color: var(--primary);
+        }
+        .search-icon {
+            position: absolute;
+            left: 14px;
+            color: var(--gray);
+            font-size: 16px;
+        }
+
         .category-scroll {
             display: flex;
             gap: 10px;
@@ -93,6 +127,7 @@
             white-space: nowrap;
             box-shadow: 0 2px 5px rgba(0,0,0,0.03);
             scrollbar-width: none;
+            margin-top: 15px;
         }
         .category-scroll::-webkit-scrollbar { display: none; }
 
@@ -122,7 +157,6 @@
             gap: 12px;
         }
 
-        /* ปรับดีไซน์การ์ดเมนูให้พรีเมียมและดึงดูดขึ้น */
         .menu-card {
             background: white;
             border-radius: 16px;
@@ -140,7 +174,6 @@
             transform: scale(0.97);
         }
 
-        /* ป้ายกำกับเมนูแนะนำบนรูปภาพ */
         .recommend-badge {
             position: absolute;
             top: 10px;
@@ -158,7 +191,7 @@
         .menu-img-wrapper {
             position: relative;
             width: 100%;
-            height: 130px; /* ขยายความสูงรูปขึ้นเล็กน้อยเพื่อให้เห็นอาหารชัดเจนขึ้น */
+            height: 130px;
             margin-bottom: 10px;
             border-radius: 12px;
             overflow: hidden;
@@ -172,7 +205,6 @@
             transition: transform 0.3s ease;
         }
 
-        /* เอฟเฟกต์ซูมรูปภาพเมื่อมีการชี้หรือสัมผัส */
         .menu-card:hover .menu-img {
             transform: scale(1.05);
         }
@@ -326,6 +358,14 @@
         <p>โทร 090-1318376</p>
     </div>
 
+    <!-- ช่องค้นหาเมนู -->
+    <div class="search-container">
+        <div class="search-box-wrapper">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="searchInput" class="search-input" placeholder="ค้นหาชื่อเมนูอาหาร..." oninput="filterMenus()">
+        </div>
+    </div>
+
     <div class="category-scroll" id="category-tabs">
         <button class="cat-btn active" onclick="filterMenu('ทั้งหมด', this)">ทั้งหมด</button>
         <button class="cat-btn" onclick="filterMenu('เมนูแนะนำ', this)">⭐ เมนูแนะนำ</button>
@@ -442,6 +482,14 @@
             currentCategory = categoryName;
             document.querySelectorAll('.cat-btn').forEach(btn => btn.classList.remove('active'));
             element.classList.add('active');
+            
+            // ล้างค่าช่องค้นหาเมื่อเปลี่ยนหมวดหมู่ (ถ้าต้องการให้ค้นหาอิสระข้ามหมวดหมู่ สามารถเอาบรรทัดนี้ออกได้)
+            // document.getElementById('searchInput').value = '';
+            
+            renderMenus();
+        }
+
+        function filterMenus() {
             renderMenus();
         }
 
@@ -462,9 +510,18 @@
             const container = document.getElementById('menu-list');
             container.innerHTML = '';
 
-            const filtered = currentCategory === 'ทั้งหมด' 
-                ? allMenus 
-                : allMenus.filter(m => {
+            const keyword = document.getElementById('searchInput').value.trim().toLowerCase();
+
+            // 1. กรองเมนูที่ category_name เป็น 'AdminController' ออกก่อนเสมอ
+            let availableMenus = allMenus.filter(m => {
+                const catName = m.category_name || categoryMap[m.category_id] || '';
+                return catName !== 'AdminController';
+            });
+
+            // 2. กรองตามหมวดหมู่ที่เลือก
+            let filtered = currentCategory === 'ทั้งหมด' 
+                ? availableMenus 
+                : availableMenus.filter(m => {
                     if (currentCategory === 'เมนูแนะนำ') {
                         return isRecommendedItem(m);
                     }
@@ -472,8 +529,16 @@
                     return catName === currentCategory;
                 });
 
+            // 3. กรองตามคำค้นหา (Search) ถ้ามีการพิมพ์ข้อความค้นหา
+            if (keyword !== '') {
+                filtered = filtered.filter(m => {
+                    const itemName = (m.name || '').toLowerCase();
+                    return itemName.includes(keyword);
+                });
+            }
+
             if (filtered.length === 0) {
-                container.innerHTML = '<p style="grid-column: span 2; text-align:center; color:#999; margin-top:30px;">ไม่พบเมนูในหมวดหมู่นี้</p>';
+                container.innerHTML = '<p style="grid-column: span 2; text-align:center; color:#999; margin-top:30px;">ไม่พบเมนูอาหารที่คุณค้นหา</p>';
                 return;
             }
 
