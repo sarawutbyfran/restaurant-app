@@ -26,7 +26,8 @@
             padding: 0;
             color: var(--text);
             display: grid;
-            grid-template-columns: 160px 1.2fr 1fr 340px;
+            /* ปรับโครงสร้างหลักให้รองรับการย่อขยายหน้าจอแบบยืดหยุ่น (Responsive Grid) */
+            grid-template-columns: 160px minmax(280px, 1.2fr) minmax(260px, 1fr) 320px;
             height: 100vh;
             box-sizing: border-box;
             overflow: hidden;
@@ -35,14 +36,13 @@
         .sidebar-left {
             background: white;
             border-right: 1px solid #ddd;
-            padding: 15px 10px;
+            padding: 12px 8px;
             display: flex;
             flex-direction: column;
             gap: 6px;
             overflow-y: auto;
-            position: relative;
         }
-        .sidebar-left h2 { font-size: 14px; color: var(--primary); margin-bottom: 10px; text-align: center; }
+        .sidebar-left h2 { font-size: 13px; color: var(--primary); margin-bottom: 8px; text-align: center; }
         
         .cat-menu-btn {
             background: var(--light-gray);
@@ -67,7 +67,7 @@
             background: #2f3542;
             color: white;
             border: none;
-            padding: 10px 8px;
+            padding: 8px 6px;
             border-radius: 8px;
             font-weight: bold;
             cursor: pointer;
@@ -82,11 +82,11 @@
         }
 
         .content-middle {
-            padding: 15px;
+            padding: 12px;
             overflow-y: auto;
             display: flex;
             flex-direction: column;
-            gap: 15px;
+            gap: 12px;
             border-right: 1px solid #ddd;
             background: #fff;
         }
@@ -97,12 +97,12 @@
         }
         .menu-grid-admin {
             display: grid;
-            grid-template-columns: repeat(2, 1fr);
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
             gap: 10px;
         }
         .admin-menu-card {
             background: var(--light-gray);
-            padding: 10px;
+            padding: 8px;
             border-radius: 8px;
             box-shadow: 0 1px 3px rgba(0,0,0,0.05);
             display: flex;
@@ -116,10 +116,10 @@
             border-color: var(--success);
             transform: translateY(-2px);
         }
-        .admin-menu-card img { width: 100%; height: 80px; object-fit: cover; border-radius: 6px; margin-bottom: 6px; }
+        .admin-menu-card img { width: 100%; height: 75px; object-fit: cover; border-radius: 6px; margin-bottom: 4px; }
 
         .tables-column {
-            padding: 15px;
+            padding: 12px;
             overflow-y: auto;
             background: #fdfdfd;
             border-right: 1px solid #ddd;
@@ -131,24 +131,24 @@
             background: white;
             border: 1px solid #ced6e0;
             border-radius: 8px;
-            padding: 10px;
+            padding: 8px;
             box-shadow: 0 1px 3px rgba(0,0,0,0.05);
             display: flex;
             flex-direction: column;
             gap: 6px;
             flex: 1;
-            min-height: 220px; 
+            min-height: 180px; 
         }
         
         .selection-group {
             background: white;
             border: 1px solid #e2e8f0;
             border-radius: 8px;
-            padding: 10px;
+            padding: 8px;
             box-shadow: 0 1px 2px rgba(0,0,0,0.02);
         }
         .group-title {
-            font-size: 12px;
+            font-size: 11px;
             font-weight: bold;
             color: var(--primary);
             margin-bottom: 6px;
@@ -162,16 +162,16 @@
         .table-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 6px;
+            gap: 5px;
         }
         .table-box {
             background: var(--light-gray);
             border: 1px solid #ced6e0;
-            padding: 10px 8px;
+            padding: 8px 4px;
             border-radius: 6px;
             text-align: center;
             cursor: pointer;
-            font-size: 12px;
+            font-size: 11px;
             font-weight: bold;
             transition: 0.1s;
         }
@@ -193,11 +193,11 @@
             background: #e1f5fe;
             border: 1px solid #b3e5fc;
             color: #0277bd;
-            padding: 8px 10px;
+            padding: 6px 8px;
             border-radius: 6px;
             text-align: center;
             cursor: pointer;
-            font-size: 12px;
+            font-size: 11px;
             font-weight: bold;
         }
         .queue-box:hover {
@@ -218,7 +218,7 @@
         }
         .kitchen-section {
             flex: 1;
-            padding: 15px;
+            padding: 12px;
             overflow-y: auto;
             background: #fafbfc;
         }
@@ -234,12 +234,12 @@
 
         .kitchen-card {
             background: white;
-            padding: 10px 12px;
+            padding: 8px 10px;
             border-radius: 6px;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
             border-left: 4px solid var(--warning);
             box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-            font-size: 13px;
+            font-size: 12px;
         }
         .kitchen-card.completed {
             border-left-color: var(--success);
@@ -250,41 +250,41 @@
             background: var(--success);
             color: white;
             border: none;
-            padding: 4px 8px;
+            padding: 3px 6px;
             border-radius: 4px;
             cursor: pointer;
-            font-size: 11px;
-            margin-top: 6px;
+            font-size: 10px;
+            margin-top: 4px;
             font-weight: bold;
         }
         .btn-print {
             background: #3742fa;
             color: white;
             border: none;
-            padding: 4px 8px;
+            padding: 3px 6px;
             border-radius: 4px;
             cursor: pointer;
-            font-size: 11px;
-            margin-top: 6px;
+            font-size: 10px;
+            margin-top: 4px;
         }
         .right-action-panel {
-            padding: 10px 15px;
+            padding: 10px;
             border-top: 1px solid #ddd;
             background: #fff;
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 6px;
         }
         .btn-walkin {
             background: var(--success);
             color: white;
             border: none;
-            padding: 10px;
+            padding: 8px;
             border-radius: 8px;
             font-weight: bold;
             cursor: pointer;
             text-align: center;
-            font-size: 13px;
+            font-size: 12px;
             width: 100%;
         }
 
@@ -300,11 +300,13 @@
         .modal-content {
             background: white;
             width: 650px;
+            max-width: 95vw;
             max-height: 85vh;
             border-radius: 15px;
             padding: 20px;
             display: flex;
             flex-direction: column;
+            box-sizing: border-box;
         }
         .modal-body-grid {
             display: grid;
@@ -332,13 +334,39 @@
             border-radius: 6px;
             font-size: 12px;
         }
+
+        /* รองรับ Media Query สำหรับหน้าจอขนาดเล็กหรือเวลาผู้ใช้ย่อหน้าต่างเบราว์เซอร์ให้แคบลง */
+        @media (max-width: 1024px) {
+            body {
+                grid-template-columns: 140px 1fr 1fr;
+                grid-template-rows: auto auto;
+                height: auto;
+                overflow: auto;
+            }
+            .sidebar-right {
+                grid-column: span 3;
+                height: auto;
+                border-top: 2px solid #ddd;
+            }
+        }
+        @media (max-width: 768px) {
+            body {
+                grid-template-columns: 1fr;
+                height: auto;
+                overflow: auto;
+            }
+            .sidebar-left, .content-middle, .tables-column, .sidebar-right {
+                border-right: none;
+                border-bottom: 1px solid #ddd;
+            }
+        }
     </style>
 </head>
 <body>
 
     <div class="sidebar-left">
         <h2>🍲 ประเภท</h2>
-        <div id="category-list-admin" style="display: flex; flex-direction: column; gap: 6px;">
+        <div id="category-list-admin" style="display: flex; flex-direction: column; gap: 5px;">
             <button class="cat-menu-btn active" onclick="selectCategory('ทั้งหมด', this)">ทั้งหมด</button>
             <button class="cat-menu-btn" onclick="selectCategory('เมนูแนะนำ', this)">⭐ แนะนำ</button>
             <button class="cat-menu-btn" onclick="selectCategory('อาหารป่า', this)">🌿 อาหารป่า</button>
@@ -351,7 +379,7 @@
             <button class="cat-menu-btn" onclick="selectCategory('AdminController', this)">AdminController</button>
         </div>
 
-        <div style="display: flex; flex-direction: column; gap: 4px; margin-top: auto;">
+        <div style="display: flex; flex-direction: column; gap: 4px; margin-top: auto; padding-top: 10px;">
             <button class="btn-manage-menu-corner" style="background: var(--success);" onclick="openSalesReportModal()">📊 สรุปยอดขาย</button>
             <button class="btn-manage-menu-corner" onclick="openMenuManagerModal()">⚙️ จัดการเมนูอาหาร</button>
         </div>
@@ -359,16 +387,16 @@
 
     <div class="content-middle">
         <div class="section-header">
-            <h3 id="current-cat-title" style="margin:0; font-size:15px;">รายการอาหาร (คลิกเพื่อใส่ตะกร้า)</h3>
+            <h3 id="current-cat-title" style="margin:0; font-size:14px;">รายการอาหาร (คลิกเพื่อใส่ตะกร้า)</h3>
         </div>
         <div class="menu-grid-admin" id="admin-menu-grid"></div>
     </div>
 
     <div class="tables-column">
         <div style="display: flex; flex-direction: column; flex: 1;">
-            <h3 style="margin:4px 0 6px 0; font-size:13px; color:var(--primary);">📋 ตะกร้าและรายการอาหารของโต๊ะ</h3>
+            <h3 style="margin:2px 0 6px 0; font-size:12px; color:var(--primary);">📋 ตะกร้าและรายการอาหารของโต๊ะ</h3>
             <div class="table-summary-box" id="tableSummaryBox">
-                <div style="font-size:11px; color:var(--gray); text-align:center; padding:40px 0;">ยังไม่ได้เลือกโต๊ะหรือคิว<br>(กรุณาคลิกเลือกจากด้านล่าง)</div>
+                <div style="font-size:11px; color:var(--gray); text-align:center; padding:30px 0;">ยังไม่ได้เลือกโต๊ะหรือคิว<br>(กรุณาคลิกเลือกจากด้านล่าง)</div>
             </div>
         </div>
 
@@ -385,8 +413,8 @@
 
     <div class="sidebar-right">
         <div class="kitchen-section">
-            <h3 style="margin:0 0 8px 0; font-size:14px; color:var(--primary);">👨‍🍳 ออเดอร์ในครัวล่าสุด</h3>
-            <div id="kitchen-orders-list" style="max-height: calc(100vh - 180px); overflow-y: auto; padding-right: 4px;">
+            <h3 style="margin:0 0 8px 0; font-size:13px; color:var(--primary);">👨‍🍳 ออเดอร์ในครัวล่าสุด</h3>
+            <div id="kitchen-orders-list" style="max-height: calc(100vh - 160px); overflow-y: auto; padding-right: 4px;">
                 <p style="color:var(--gray); font-size:12px;">กำลังโหลดออเดอร์...</p>
             </div>
         </div>
@@ -405,7 +433,7 @@
         <div class="modal-content">
             <h3 id="modalTableTitle" style="margin-top:0;">จัดการโต๊ะ/คิว</h3>
             
-            <div style="background: var(--light-gray); padding: 8px; border-radius: 6px; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
+            <div style="background: var(--light-gray); padding: 8px; border-radius: 6px; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
                 <span style="font-size: 11px; font-weight: bold;">🔄 ย้ายไปโต๊ะ/ซุ้ม/คิวอื่น:</span>
                 <input type="text" id="targetMoveInput" placeholder="เช่น 5, Z2, Q123" style="padding: 4px; font-size: 11px; width: 120px; border: 1px solid #ccc; border-radius: 4px;">
                 <button onclick="executeMoveTable()" style="background: var(--warning); border: none; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer;">ยืนยันการย้าย</button>
@@ -413,26 +441,26 @@
 
             <div class="modal-body-grid">
                 <div>
-                    <h4 style="margin:0 0 8px 0; font-size:13px; color:var(--primary);">📋 รายการอาหารในคิวนี้ทั้งหมด</h4>
-                    <div id="tableOrderItemsList" style="background:var(--light-gray); padding:8px; border-radius:6px; min-height:180px; max-height:250px; overflow-y:auto; font-size:12px;">
+                    <h4 style="margin:0 0 8px 0; font-size:12px; color:var(--primary);">📋 รายการอาหารในคิวนี้ทั้งหมด</h4>
+                    <div id="tableOrderItemsList" style="background:var(--light-gray); padding:8px; border-radius:6px; min-height:150px; max-height:220px; overflow-y:auto; font-size:11px;">
                         <p style="color:var(--gray);">ไม่มีรายการอาหาร</p>
                     </div>
                 </div>
                 <div>
-                    <h4 style="margin:0 0 8px 0; font-size:13px; color:var(--text);">ℹ️ คำแนะนำ</h4>
-                    <p style="font-size:12px; color:var(--gray); line-height: 1.5;">คลิกเลือกเมนูจากตรงกลางเพื่อเพิ่มลงตะกร้าชั่วคราว จากนั้นกดปุ่ม "ยืนยันการสั่งอาหาร" เพื่อส่งเข้าครัวพร้อมกันในบิลเดียว</p>
+                    <h4 style="margin:0 0 8px 0; font-size:12px; color:var(--text);">ℹ️ คำแนะนำ</h4>
+                    <p style="font-size:11px; color:var(--gray); line-height: 1.5;">คลิกเลือกเมนูจากตรงกลางเพื่อเพิ่มลงตะกร้าชั่วคราว จากนั้นกดปุ่ม "ยืนยันการสั่งอาหาร" เพื่อส่งเข้าครัวพร้อมกันในบิลเดียว</p>
                 </div>
             </div>
             <div style="display:flex; justify-content:space-between; margin-top:10px; border-top:1px solid #ddd; padding-top:8px;">
-                <button onclick="closeTableModal()" style="background:#ddd; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:12px;">ปิด</button>
-                <button onclick="checkoutTable()" style="background:var(--primary); color:white; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; font-weight:bold; font-size:13px;">💰 เช็คบิล / เคลียร์คิว</button>
+                <button onclick="closeTableModal()" style="background:#ddd; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:11px;">ปิด</button>
+                <button onclick="checkoutTable()" style="background:var(--primary); color:white; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; font-weight:bold; font-size:12px;">💰 เช็คบิล / เคลียร์คิว</button>
             </div>
         </div>
     </div>
 
     <div class="modal" id="menuManagerModal">
         <div class="modal-content" style="width: 700px;">
-            <h3 style="margin-top:0; color:var(--primary);">⚙️ ระบบจัดการเมนูอาหาร</h3>
+            <h3 style="margin-top:0; color:var(--primary); font-size: 16px;">⚙️ ระบบจัดการเมนูอาหาร</h3>
             <div class="modal-body-grid">
                 <div style="background:var(--light-gray); padding:10px; border-radius:8px;">
                     <h4 style="margin:0 0 8px 0; font-size:12px;">➕ เพิ่มเมนูอาหารใหม่</h4>
@@ -459,7 +487,7 @@
                                 <option value="AdminController">AdminController</option>
                             </select>
                         </div>
-                        <div class="form-group" style="display: flex; flex-direction: column; gap: 5px; margin: 8px 0;">
+                        <div class="form-group" style="display: flex; flex-direction: column; gap: 4px; margin: 6px 0;">
                             <label style="display: flex; align-items: center; gap: 5px; cursor: pointer; font-size: 11px;">
                                 <input type="checkbox" id="newMenuIsRec"> ⭐ เมนูแนะนำ
                             </label>
@@ -474,56 +502,56 @@
                             <label>รูปภาพอาหาร (อัปโหลดไฟล์)</label>
                             <input type="file" id="newMenuImageFile" accept="image/*" style="background: white; padding: 4px;">
                         </div>
-                        <button type="submit" style="background:var(--success); color:white; border:none; padding:8px; width:100%; border-radius:6px; font-weight:bold; cursor:pointer; font-size:12px; margin-top:5px;">บันทึกเมนูใหม่</button>
+                        <button type="submit" style="background:var(--success); color:white; border:none; padding:8px; width:100%; border-radius:6px; font-weight:bold; cursor:pointer; font-size:11px; margin-top:4px;">บันทึกเมนูใหม่</button>
                     </form>
                 </div>
                 <div>
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
                         <h4 style="margin:0; font-size:12px;">📋 รายการเมนูทั้งหมด</h4>
-                        <input type="text" id="searchMenuInput" placeholder="🔍 ค้นหาเมนู..." onkeyup="filterManageMenuList()" style="padding:4px; font-size:11px; width:130px; border:1px solid #ccc; border-radius:4px;">
+                        <input type="text" id="searchMenuInput" placeholder="🔍 ค้นหาเมนู..." onkeyup="filterManageMenuList()" style="padding:4px; font-size:11px; width:120px; border:1px solid #ccc; border-radius:4px;">
                     </div>
-                    <div id="manageMenuList" style="background:var(--light-gray); padding:8px; border-radius:6px; min-height:200px; max-height:260px; overflow-y:auto; font-size:11px;">
+                    <div id="manageMenuList" style="background:var(--light-gray); padding:8px; border-radius:6px; min-height:180px; max-height:240px; overflow-y:auto; font-size:11px;">
                         <p style="color:var(--gray);">กำลังโหลด...</p>
                     </div>
                 </div>
             </div>
             <div style="display:flex; justify-content:flex-end; margin-top:10px; border-top:1px solid #ddd; padding-top:8px;">
-                <button onclick="closeMenuManagerModal()" style="background:#ddd; border:none; padding:6px 14px; border-radius:6px; cursor:pointer; font-size:12px;">ปิดหน้าต่าง</button>
+                <button onclick="closeMenuManagerModal()" style="background:#ddd; border:none; padding:6px 14px; border-radius:6px; cursor:pointer; font-size:11px;">ปิดหน้าต่าง</button>
             </div>
         </div>
     </div>
 
     <div class="modal" id="salesReportModal">
         <div class="modal-content" style="width: 800px; max-height: 90vh;">
-            <h3 style="margin-top:0; color:var(--primary);">📊 สรุปยอดขายและประวัติใบเสร็จ</h3>
+            <h3 style="margin-top:0; color:var(--primary); font-size: 16px;">📊 สรุปยอดขายและประวัติใบเสร็จ</h3>
             
-            <div style="background: var(--light-gray); padding: 10px; border-radius: 8px; margin-bottom: 10px; display: flex; align-items: center; gap: 10px; font-size: 12px;">
+            <div style="background: var(--light-gray); padding: 8px; border-radius: 8px; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; font-size: 11px; flex-wrap: wrap;">
                 <div>
                     <label><b>จากวันที่:</b></label>
-                    <input type="date" id="startDate" style="padding: 4px; border: 1px solid #ccc; border-radius: 4px;">
+                    <input type="date" id="startDate" style="padding: 3px; border: 1px solid #ccc; border-radius: 4px;">
                 </div>
                 <div>
                     <label><b>ถึงวันที่:</b></label>
-                    <input type="date" id="endDate" style="padding: 4px; border: 1px solid #ccc; border-radius: 4px;">
+                    <input type="date" id="endDate" style="padding: 3px; border: 1px solid #ccc; border-radius: 4px;">
                 </div>
-                <button onclick="loadSalesReport()" style="background: var(--success); color: white; border: none; padding: 6px 12px; border-radius: 4px; font-weight: bold; cursor: pointer; margin-top: 15px;">🔍 กรองข้อมูล</button>
-                <button onclick="resetSalesFilter()" style="background: #ccc; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; margin-top: 15px;">รีเซ็ต</button>
+                <button onclick="loadSalesReport()" style="background: var(--success); color: white; border: none; padding: 5px 10px; border-radius: 4px; font-weight: bold; cursor: pointer; margin-top: 14px;">🔍 กรอง</button>
+                <button onclick="resetSalesFilter()" style="background: #ccc; border: none; padding: 5px 8px; border-radius: 4px; cursor: pointer; margin-top: 14px;">รีเซ็ต</button>
             </div>
 
-            <div style="background: #e1f5fe; padding: 10px; border-radius: 8px; margin-bottom: 10px; text-align: center; border: 1px solid #b3e5fc;">
-                <div style="font-size: 12px; color: #0277bd;">ยอดขายรวมในช่วงเวลาที่เลือก</div>
-                <div id="totalSalesAmount" style="font-size: 22px; font-weight: bold; color: var(--success); margin-top: 2px;">0.00 ฿</div>
+            <div style="background: #e1f5fe; padding: 8px; border-radius: 8px; margin-bottom: 10px; text-align: center; border: 1px solid #b3e5fc;">
+                <div style="font-size: 11px; color: #0277bd;">ยอดขายรวมในช่วงเวลาที่เลือก</div>
+                <div id="totalSalesAmount" style="font-size: 20px; font-weight: bold; color: var(--success); margin-top: 2px;">0.00 ฿</div>
             </div>
 
-            <div style="flex: 1; overflow-y: auto; max-height: 320px; border: 1px solid #ddd; border-radius: 6px; background: white;">
+            <div style="flex: 1; overflow-y: auto; max-height: 280px; border: 1px solid #ddd; border-radius: 6px; background: white;">
                 <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
                     <thead>
                         <tr style="background: var(--light-gray); text-align: left; border-bottom: 1px solid #ddd; position: sticky; top: 0;">
-                            <th style="padding: 8px;">เวลาเช็คบิล</th>
-                            <th style="padding: 8px;">โต๊ะ/คิว</th>
-                            <th style="padding: 8px;">รายการอาหาร</th>
-                            <th style="padding: 8px; text-align: right;">ยอดเงิน</th>
-                            <th style="padding: 8px; text-align: center;">จัดการ</th>
+                            <th style="padding: 6px;">เวลาเช็คบิล</th>
+                            <th style="padding: 6px;">โต๊ะ/คิว</th>
+                            <th style="padding: 6px;">รายการอาหาร</th>
+                            <th style="padding: 6px; text-align: right;">ยอดเงิน</th>
+                            <th style="padding: 6px; text-align: center;">จัดการ</th>
                         </tr>
                     </thead>
                     <tbody id="salesHistoryTableBody">
@@ -533,14 +561,14 @@
             </div>
 
             <div style="display:flex; justify-content:flex-end; border-top:1px solid #ddd; padding-top:8px; margin-top: 10px;">
-                <button onclick="closeSalesReportModal()" style="background:#ddd; border:none; padding:6px 14px; border-radius:6px; cursor:pointer; font-size:12px;">ปิดหน้าต่าง</button>
+                <button onclick="closeSalesReportModal()" style="background:#ddd; border:none; padding:6px 14px; border-radius:6px; cursor:pointer; font-size:11px;">ปิดหน้าต่าง</button>
             </div>
         </div>
     </div>
 
     <div class="modal" id="editMenuModal">
-        <div class="modal-content" style="width: 420px;">
-            <h3 style="margin-top:0; color:var(--primary);">✏️ แก้ไขข้อมูลเมนูอาหาร</h3>
+        <div class="modal-content" style="width: 400px;">
+            <h3 style="margin-top:0; color:var(--primary); font-size: 15px;">✏️ แก้ไขข้อมูลเมนูอาหาร</h3>
             <form id="editMenuForm" onsubmit="updateMenuSubmit(event)">
                 <input type="hidden" id="editMenuId">
                 <div class="form-group">
@@ -565,7 +593,7 @@
                         <option value="AdminController">AdminController</option>
                     </select>
                 </div>
-                <div class="form-group" style="display: flex; flex-direction: column; gap: 5px; margin: 10px 0;">
+                <div class="form-group" style="display: flex; flex-direction: column; gap: 4px; margin: 8px 0;">
                     <label style="display: flex; align-items: center; gap: 5px; cursor: pointer; font-size: 11px;">
                         <input type="checkbox" id="editMenuIsRec"> ⭐ เมนูแนะนำ
                     </label>
@@ -580,9 +608,9 @@
                     <label>เปลี่ยนรูปภาพอาหาร (อัปโหลดไฟล์ใหม่)</label>
                     <input type="file" id="editMenuImageFile" accept="image/*" style="background: white; padding: 4px;">
                 </div>
-                <div style="display:flex; justify-content:flex-end; gap:6px; margin-top:15px;">
-                    <button type="button" onclick="closeEditMenuModal()" style="background:#ddd; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:12px;">ยกเลิก</button>
-                    <button type="submit" style="background:var(--success); color:white; border:none; padding:6px 12px; border-radius:6px; font-weight:bold; cursor:pointer; font-size:12px;">บันทึกการแก้ไข</button>
+                <div style="display:flex; justify-content:flex-end; gap:6px; margin-top:12px;">
+                    <button type="button" onclick="closeEditMenuModal()" style="background:#ddd; border:none; padding:6px 10px; border-radius:6px; cursor:pointer; font-size:11px;">ยกเลิก</button>
+                    <button type="submit" style="background:var(--success); color:white; border:none; padding:6px 12px; border-radius:6px; font-weight:bold; cursor:pointer; font-size:11px;">บันทึก</button>
                 </div>
             </form>
         </div>
@@ -647,7 +675,7 @@
             });
 
             if (filtered.length === 0) {
-                grid.innerHTML = '<p style="grid-column: span 2; text-align:center; color:var(--gray); padding:20px; font-size:12px;">ไม่พบเมนูในหมวดหมู่นี้</p>';
+                grid.innerHTML = '<p style="grid-column: span 2; text-align:center; color:var(--gray); padding:20px; font-size:11px;">ไม่พบเมนูในหมวดหมู่นี้</p>';
                 return;
             }
 
@@ -655,13 +683,12 @@
                 const catName = item.category_name || categoryMap[item.category_id] || '';
                 let optionsHtml = '';
                 
-                // ตรวจสอบเงื่อนไข allow_egg (ไม่ว่าจะมาจาก category อาหารตามสั่ง หรือเปิดสิทธิ์ allow_egg เป็น 1)
                 const isAllowEgg = Number(item.allow_egg) === 1 || catName === 'อาหารตามสั่ง';
                 if (isAllowEgg) {
                     optionsHtml = `
-                        <div style="margin: 4px 0; font-size: 11px;">
+                        <div style="margin: 3px 0; font-size: 10px;">
                             <label><input type="checkbox" id="egg-${item.id}" value="ไข่ดาว"> ไข่ดาว (+10฿)</label>
-                            <label style="margin-left: 6px;"><input type="checkbox" id="eggj-${item.id}" value="ไข่เจียว"> ไข่เจียว (+15฿)</label>
+                            <label style="margin-left: 4px;"><input type="checkbox" id="eggj-${item.id}" value="ไข่เจียว"> ไข่เจียว (+15฿)</label>
                         </div>
                     `;
                 }
@@ -670,14 +697,14 @@
                     <div class="admin-menu-card">
                         <div onclick="addMenuToCartPrompt(${item.id}, '${item.name}', ${item.price}, ${isAllowEgg})">
                             <img src="${item.image_url || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c'}" alt="">
-                            <div style="font-weight:bold; font-size:12px; margin-bottom:2px;">${item.name}</div>
-                            <div style="color:var(--primary); font-size:11px; font-weight:bold;">${parseFloat(item.price).toFixed(2)} ฿</div>
+                            <div style="font-weight:bold; font-size:11px; margin-bottom:2px;">${item.name}</div>
+                            <div style="color:var(--primary); font-size:10px; font-weight:bold;">${parseFloat(item.price).toFixed(2)} ฿</div>
                         </div>
                         ${optionsHtml}
-                        <div style="margin-top: 4px;">
-                            <input type="text" id="note-${item.id}" placeholder="หมายเหตุ (เช่น ไม่เผ็ด)" style="width: 100%; padding: 3px; font-size: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
+                        <div style="margin-top: 3px;">
+                            <input type="text" id="note-${item.id}" placeholder="หมายเหตุ" style="width: 100%; padding: 2px; font-size: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
                         </div>
-                        <button onclick="addMenuToCartPrompt(${item.id}, '${item.name}', ${item.price}, ${isAllowEgg})" style="background: var(--success); color: white; border: none; padding: 4px; border-radius: 4px; font-size: 10px; font-weight: bold; cursor: pointer; margin-top: 4px; width: 100%;">➕ เพิ่มลงตะกร้า</button>
+                        <button onclick="addMenuToCartPrompt(${item.id}, '${item.name}', ${item.price}, ${isAllowEgg})" style="background: var(--success); color: white; border: none; padding: 3px; border-radius: 4px; font-size: 10px; font-weight: bold; cursor: pointer; margin-top: 3px; width: 100%;">➕ เพิ่ม</button>
                     </div>
                 `;
             });
@@ -791,7 +818,7 @@
                 const pendingKitchenOrders = orders.filter(ord => ord.status !== 'เสร็จสิ้น');
 
                 if (pendingKitchenOrders.length === 0) {
-                    container.innerHTML = '<p style="color:var(--gray); font-size:12px;">ไม่มีออเดอร์ค้างในครัว</p>';
+                    container.innerHTML = '<p style="color:var(--gray); font-size:11px;">ไม่มีออเดอร์ค้างในครัว</p>';
                     return;
                 }
 
@@ -802,7 +829,7 @@
                     let itemsHtml = '';
                     if (ord.items) {
                         ord.items.forEach(i => {
-                            itemsHtml += `<div style="padding: 2px 0;">• ${i.name} <strong>x${i.quantity}</strong></div>`;
+                            itemsHtml += `<div style="padding: 1px 0;">• ${i.name} <strong>x${i.quantity}</strong></div>`;
                         });
                     }
                     
@@ -812,16 +839,16 @@
 
                     container.innerHTML += `
                         <div class="${cardClass}" style="${cardStyle}">
-                            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 1px dashed #eee; padding-bottom: 4px; margin-bottom: 4px;">
-                                <span style="font-weight:bold; color:var(--primary); font-size: 14px;">📍 ${locationLabel}</span>
-                                <span style="font-size:11px; color:var(--gray);">
-                                    ${isPrinted ? '🖨️ พิมพ์แล้ว' : '⏳ รอพิมพ์ออเดอร์'}
+                            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 1px dashed #eee; padding-bottom: 3px; margin-bottom: 3px;">
+                                <span style="font-weight:bold; color:var(--primary); font-size: 12px;">📍 ${locationLabel}</span>
+                                <span style="font-size:10px; color:var(--gray);">
+                                    ${isPrinted ? '🖨️ พิมพ์แล้ว' : '⏳ รอพิมพ์'}
                                 </span>
                             </div>
-                            <div style="color:var(--text); margin:6px 0; line-height: 1.5;">${itemsHtml}</div>
-                            <div style="display:flex; justify-content:flex-end; gap:5px; margin-top:8px; border-top: 1px solid #eee; padding-top: 6px;">
-                                <button class="btn-action" onclick="completeSingleOrder('${ord.id}')">✔️ ทำเสร็จแล้ว</button>
-                                <button class="btn-print" onclick="resetOrderToPrint('${ord.id}')">🔄 สั่งพิมพ์อีกครั้ง</button>
+                            <div style="color:var(--text); margin:4px 0; line-height: 1.4;">${itemsHtml}</div>
+                            <div style="display:flex; justify-content:flex-end; gap:4px; margin-top:6px; border-top: 1px solid #eee; padding-top: 4px;">
+                                <button class="btn-action" onclick="completeSingleOrder('${ord.id}')">✔️ เสร็จ</button>
+                                <button class="btn-print" onclick="resetOrderToPrint('${ord.id}')">🔄 พิมพ์ใหม่</button>
                             </div>
                         </div>
                     `;
@@ -920,7 +947,7 @@
                 alert('เช็คบิลสำเร็จ! ระบบหลังบ้านกำลังพิมพ์ใบเสร็จให้อัตโนมัติ');
                 activeTableId = null;
                 currentCart = [];
-                document.getElementById('tableSummaryBox').innerHTML = `<div style="font-size:11px; color:var(--gray); text-align:center; padding:40px 0;">ยังไม่ได้เลือกโต๊ะหรือคิว<br>(กรุณาคลิกเลือกจากด้านบน)</div>`;
+                document.getElementById('tableSummaryBox').innerHTML = `<div style="font-size:11px; color:var(--gray); text-align:center; padding:30px 0;">ยังไม่ได้เลือกโต๊ะหรือคิว<br>(กรุณาคลิกเลือกจากด้านบน)</div>`;
                 fetchKitchenOrders();
 
             } catch(e) {
@@ -994,7 +1021,7 @@
         async function renderSummaryBox() {
             const summaryBox = document.getElementById('tableSummaryBox');
             if(!activeTableId) {
-                summaryBox.innerHTML = `<div style="font-size:11px; color:var(--gray); text-align:center; padding:40px 0;">ยังไม่ได้เลือกโต๊ะหรือคิว<br>(กรุณาคลิกเลือกจากด้านบน)</div>`;
+                summaryBox.innerHTML = `<div style="font-size:11px; color:var(--gray); text-align:center; padding:30px 0;">ยังไม่ได้เลือกโต๊ะหรือคิว<br>(กรุณาคลิกเลือกจากด้านบน)</div>`;
                 return;
             }
 
@@ -1007,9 +1034,9 @@
                     if (ord.items) {
                         ord.items.forEach((i, itemIndex) => {
                             submittedItemsHtml += `
-                                <div style="display:flex; justify-content:space-between; align-items:center; padding:3px 0; border-bottom:1px solid #f8f9fa;">
+                                <div style="display:flex; justify-content:space-between; align-items:center; padding:2px 0; border-bottom:1px solid #f8f9fa;">
                                     <span>${i.name} x ${i.quantity} (${(i.price * i.quantity).toFixed(2)}฿)</span>
-                                    <button onclick="deleteSingleOrderItem('${ord.id}', ${itemIndex})" style="background:#ff4757; color:white; border:none; padding:2px 5px; border-radius:3px; cursor:pointer; font-size:9px;">❌ ลบ</button>
+                                    <button onclick="deleteSingleOrderItem('${ord.id}', ${itemIndex})" style="background:#ff4757; color:white; border:none; padding:1px 4px; border-radius:3px; cursor:pointer; font-size:9px;">❌</button>
                                 </div>
                             `;
                         });
@@ -1021,12 +1048,12 @@
                 currentCart.forEach((item, idx) => {
                     cartTotal += item.price * item.quantity;
                     cartItemsHtml += `
-                        <div style="display:flex; justify-content:space-between; align-items:center; background:#fff3cd; padding:4px 6px; margin-bottom:3px; border-radius:4px; font-size:11px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; background:#fff3cd; padding:3px 5px; margin-bottom:2px; border-radius:4px; font-size:10px;">
                             <span>${item.name}</span>
-                            <div style="display:flex; align-items:center; gap:4px;">
-                                <button onclick="updateCartQuantity(${idx}, -1)" style="padding:1px 5px; font-size:10px;">-</button>
+                            <div style="display:flex; align-items:center; gap:3px;">
+                                <button onclick="updateCartQuantity(${idx}, -1)" style="padding:1px 4px; font-size:9px;">-</button>
                                 <span>${item.quantity}</span>
-                                <button onclick="updateCartQuantity(${idx}, 1)" style="padding:1px 5px; font-size:10px;">+</button>
+                                <button onclick="updateCartQuantity(${idx}, 1)" style="padding:1px 4px; font-size:9px;">+</button>
                                 <span>${(item.price * item.quantity).toFixed(2)}฿</span>
                             </div>
                         </div>
@@ -1034,21 +1061,21 @@
                 });
 
                 summaryBox.innerHTML = `
-                    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee; padding-bottom:4px;">
-                        <strong style="font-size:12px; color:var(--primary);">เลือกแล้ว: ${activeTableTitleText}</strong>
-                        <button onclick="openTableModalFromSummary()" style="background:var(--light-gray); border:none; padding:2px 5px; border-radius:4px; font-size:10px; cursor:pointer;">🔍 ขยาย</button>
+                    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee; padding-bottom:3px;">
+                        <strong style="font-size:11px; color:var(--primary);">เลือก: ${activeTableTitleText}</strong>
+                        <button onclick="openTableModalFromSummary()" style="background:var(--light-gray); border:none; padding:2px 4px; border-radius:3px; font-size:9px; cursor:pointer;">🔍 ขยาย</button>
                     </div>
-                    <div style="flex:1; overflow-y: auto; font-size:11px; margin:4px 0; padding-right: 4px; min-height:100px;">
-                        <div style="font-weight:bold; color:var(--success); font-size:10px; margin-bottom:2px;">🛒 ตะกร้าชั่วคราว (รอส่งเข้าครัว):</div>
-                        ${cartItemsHtml || '<div style="color:var(--gray); font-size:10px; margin-bottom:4px;">(ยังไม่มีรายการในตะกร้า)</div>'}
+                    <div style="flex:1; overflow-y: auto; font-size:10px; margin:3px 0; padding-right: 2px; min-height:80px;">
+                        <div style="font-weight:bold; color:var(--success); font-size:10px; margin-bottom:2px;">🛒 ตะกร้า (รอส่งครัว):</div>
+                        ${cartItemsHtml || '<div style="color:var(--gray); font-size:9px; margin-bottom:3px;">(ไม่มีในตะกร้า)</div>'}
                         
-                        <div style="font-weight:bold; color:var(--gray); font-size:10px; margin: 6px 0 2px 0;">📦 รายการที่สั่งไปแล้ว:</div>
-                        ${submittedItemsHtml || '<div style="color:var(--gray); font-size:10px;">(ไม่มีรายการค้าง)</div>'}
+                        <div style="font-weight:bold; color:var(--gray); font-size:10px; margin: 4px 0 2px 0;">📦 สั่งแล้ว:</div>
+                        ${submittedItemsHtml || '<div style="color:var(--gray); font-size:9px;">(ไม่มีรายการ)</div>'}
                     </div>
-                    ${currentCart.length > 0 ? `<button onclick="confirmAndSubmitOrder()" style="background:var(--success); color:white; border:none; padding:8px; border-radius:4px; font-size:12px; cursor:pointer; font-weight:bold; width:100%; margin-bottom:2px;">🚀 ยืนยันการสั่งอาหาร (${cartTotal.toFixed(2)} ฿)</button>` : ''}
-                    <div style="display:flex; gap:5px; margin-top:2px;">
-                        <button onclick="cancelActiveTableOrder()" style="flex:1; background:#ffeaa7; color:#d63031; border:none; padding:6px; border-radius:4px; font-size:11px; cursor:pointer; font-weight:bold;">❌ ยกเลิกทั้งหมด</button>
-                        <button onclick="checkoutInlineTable()" style="flex:1; background:var(--primary); color:white; border:none; padding:6px; border-radius:4px; font-size:11px; cursor:pointer; font-weight:bold;">💰 เช็คบิล / พิมพ์</button>
+                    ${currentCart.length > 0 ? `<button onclick="confirmAndSubmitOrder()" style="background:var(--success); color:white; border:none; padding:6px; border-radius:4px; font-size:11px; cursor:pointer; font-weight:bold; width:100%; margin-bottom:2px;">🚀 ยืนยันสั่งอาหาร (${cartTotal.toFixed(2)} ฿)</button>` : ''}
+                    <div style="display:flex; gap:4px; margin-top:2px;">
+                        <button onclick="cancelActiveTableOrder()" style="flex:1; background:#ffeaa7; color:#d63031; border:none; padding:5px; border-radius:4px; font-size:10px; cursor:pointer; font-weight:bold;">❌ ยกเลิก</button>
+                        <button onclick="checkoutInlineTable()" style="flex:1; background:var(--primary); color:white; border:none; padding:5px; border-radius:4px; font-size:10px; cursor:pointer; font-weight:bold;">💰 เช็คบิล</button>
                     </div>
                 `;
             } catch (e) {
@@ -1100,16 +1127,16 @@
                     if (ord.items) {
                         ord.items.forEach((i, itemIndex) => {
                             itemsHtml += `
-                                <div style="display:flex; justify-content:space-between; align-items:center; padding:3px 0; border-bottom:1px solid #f0f0f0;">
+                                <div style="display:flex; justify-content:space-between; align-items:center; padding:2px 0; border-bottom:1px solid #f0f0f0;">
                                     <span>${i.name} x ${i.quantity} (${(i.price * i.quantity).toFixed(2)}฿)</span>
-                                    <button onclick="deleteSingleOrderItem('${ord.id}', ${itemIndex})" style="background:#ff4757; color:white; border:none; padding:2px 6px; border-radius:3px; cursor:pointer; font-size:10px;">❌ ลบ</button>
+                                    <button onclick="deleteSingleOrderItem('${ord.id}', ${itemIndex})" style="background:#ff4757; color:white; border:none; padding:2px 5px; border-radius:3px; cursor:pointer; font-size:9px;">❌ ลบ</button>
                                 </div>
                             `;
                         });
                     }
                     container.innerHTML += `
-                        <div style="margin-bottom:8px; border:1px solid #ddd; padding:6px; border-radius:4px; background:white;">
-                            <div style="font-size:10px; color:var(--gray); margin-bottom:4px;">สถานะ: ${ord.status} | เวลา: ${new Date(ord.created_at).toLocaleTimeString()}</div>
+                        <div style="margin-bottom:6px; border:1px solid #ddd; padding:5px; border-radius:4px; background:white;">
+                            <div style="font-size:10px; color:var(--gray); margin-bottom:3px;">สถานะ: ${ord.status} | เวลา: ${new Date(ord.created_at).toLocaleTimeString()}</div>
                             ${itemsHtml}
                         </div>
                     `;
@@ -1167,7 +1194,7 @@
                 alert('ยกเลิกและล้างออเดอร์เรียบร้อยแล้ว');
                 activeTableId = null;
                 currentCart = [];
-                document.getElementById('tableSummaryBox').innerHTML = `<div style="font-size:11px; color:var(--gray); text-align:center; padding:40px 0;">ยังไม่ได้เลือกโต๊ะหรือคิว<br>(กรุณาคลิกเลือกจากด้านบน)</div>`;
+                document.getElementById('tableSummaryBox').innerHTML = `<div style="font-size:11px; color:var(--gray); text-align:center; padding:30px 0;">ยังไม่ได้เลือกโต๊ะหรือคิว<br>(กรุณาคลิกเลือกจากด้านบน)</div>`;
                 fetchKitchenOrders();
             }
         }
@@ -1255,12 +1282,12 @@
 
                     tbody.innerHTML += `
                         <tr style="border-bottom: 1px solid #f1f2f6;">
-                            <td style="padding: 6px 8px; color: var(--gray);">${formattedDate}</td>
-                            <td style="padding: 6px 8px; font-weight: bold; color: var(--primary);">${record.title}</td>
-                            <td style="padding: 6px 8px; max-width: 220px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${itemsSummary}">${itemsSummary}</td>
-                            <td style="padding: 6px 8px; text-align: right; font-weight: bold; color: var(--success);">${Number(record.total_price).toFixed(2)} ฿</td>
-                            <td style="padding: 6px 8px; text-align: center;">
-                                <button onclick="reprintReceiptBackend('${record.id}', '${record.title}', ${record.total_price}, decodeURIComponent('${itemsStrEscaped}'))" style="background:#3742fa; color:white; border:none; padding:3px 6px; border-radius:4px; cursor:pointer; font-size:10px;">🖨️ พิมพ์อีกครั้ง</button>
+                            <td style="padding: 5px 6px; color: var(--gray);">${formattedDate}</td>
+                            <td style="padding: 5px 6px; font-weight: bold; color: var(--primary);">${record.title}</td>
+                            <td style="padding: 5px 6px; max-width: 180px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${itemsSummary}">${itemsSummary}</td>
+                            <td style="padding: 5px 6px; text-align: right; font-weight: bold; color: var(--success);">${Number(record.total_price).toFixed(2)} ฿</td>
+                            <td style="padding: 5px 6px; text-align: center;">
+                                <button onclick="reprintReceiptBackend('${record.id}', '${record.title}', ${record.total_price}, decodeURIComponent('${itemsStrEscaped}'))" style="background:#3742fa; color:white; border:none; padding:2px 5px; border-radius:4px; cursor:pointer; font-size:10px;">🖨️ พิมพ์ซ้ำ</button>
                             </td>
                         </tr>
                     `;
@@ -1299,17 +1326,17 @@
                 menus.forEach(m => {
                     const cName = m.category_name || categoryMap[m.category_id] || 'ไม่ระบุ';
                     container.innerHTML += `
-                        <div class="manage-menu-item-row" style="display:flex; justify-content:space-between; align-items:center; background:white; padding:6px; margin-bottom:4px; border-radius:4px;">
-                            <div style="display: flex; align-items: center; gap: 8px;">
-                                <img src="${m.image_url || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c'}" style="width: 35px; height: 35px; object-fit: cover; border-radius: 4px;">
+                        <div class="manage-menu-item-row" style="display:flex; justify-content:space-between; align-items:center; background:white; padding:5px; margin-bottom:3px; border-radius:4px;">
+                            <div style="display: flex; align-items: center; gap: 6px;">
+                                <img src="${m.image_url || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c'}" style="width: 30px; height: 30px; object-fit: cover; border-radius: 4px;">
                                 <div>
                                     <strong style="font-size:11px;">${m.name}</strong><br>
-                                    <span style="color:var(--primary); font-size:10px;">${parseFloat(m.price).toFixed(2)}฿ (${cName}) ${Number(m.allow_egg) === 1 ? ' | 🍳 allow_egg' : ''}</span>
+                                    <span style="color:var(--primary); font-size:10px;">${parseFloat(m.price).toFixed(2)}฿ (${cName})</span>
                                 </div>
                             </div>
                             <div style="display:flex; gap:3px;">
-                                <button onclick="openEditMenuModal(${m.id}, '${m.name.replace(/'/g, "\\'")}', ${m.price}, '${cName}', ${m.is_admin_menu || 0}, ${m.is_recommended || 0}, ${m.allow_egg || 0})" style="background:#ffa502; color:white; border:none; padding:3px 6px; border-radius:4px; cursor:pointer; font-size:10px;">✏️ แก้ไข</button>
-                                <button onclick="deleteMenuItem(${m.id})" style="background:#ff4757; color:white; border:none; padding:3px 6px; border-radius:4px; cursor:pointer; font-size:10px;">🗑️ ลบ</button>
+                                <button onclick="openEditMenuModal(${m.id}, '${m.name.replace(/'/g, "\\'")}', ${m.price}, '${cName}', ${m.is_admin_menu || 0}, ${m.is_recommended || 0}, ${m.allow_egg || 0})" style="background:#ffa502; color:white; border:none; padding:2px 5px; border-radius:3px; cursor:pointer; font-size:10px;">✏️</button>
+                                <button onclick="deleteMenuItem(${m.id})" style="background:#ff4757; color:white; border:none; padding:2px 5px; border-radius:3px; cursor:pointer; font-size:10px;">🗑️</button>
                             </div>
                         </div>
                     `;
