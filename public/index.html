@@ -122,27 +122,29 @@
             gap: 12px;
         }
 
+        /* ปรับดีไซน์การ์ดเมนูให้พรีเมียมและดึงดูดขึ้น */
         .menu-card {
             background: white;
-            border-radius: 12px;
-            padding: 12px;
+            border-radius: 16px;
+            padding: 10px;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.06);
             cursor: pointer;
-            transition: transform 0.1s;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
             position: relative;
+            overflow: hidden;
         }
         .menu-card:active {
-            transform: scale(0.98);
+            transform: scale(0.97);
         }
 
         /* ป้ายกำกับเมนูแนะนำบนรูปภาพ */
         .recommend-badge {
             position: absolute;
-            top: 20px;
-            left: 20px;
+            top: 10px;
+            left: 10px;
             background: #ff4757;
             color: white;
             font-size: 11px;
@@ -156,16 +158,23 @@
         .menu-img-wrapper {
             position: relative;
             width: 100%;
-            height: 110px;
-            margin-bottom: 8px;
+            height: 130px; /* ขยายความสูงรูปขึ้นเล็กน้อยเพื่อให้เห็นอาหารชัดเจนขึ้น */
+            margin-bottom: 10px;
+            border-radius: 12px;
+            overflow: hidden;
         }
 
         .menu-img {
             width: 100%;
             height: 100%;
-            border-radius: 8px;
             object-fit: cover;
-            background: #ddd;
+            background: #eee;
+            transition: transform 0.3s ease;
+        }
+
+        /* เอฟเฟกต์ซูมรูปภาพเมื่อมีการชี้หรือสัมผัส */
+        .menu-card:hover .menu-img {
+            transform: scale(1.05);
         }
 
         .menu-info h3 { margin: 0 0 4px 0; font-size: 15px; color: var(--text); }
@@ -175,8 +184,8 @@
             font-size: 12px;
             color: var(--gray);
             background: var(--light-gray);
-            padding: 4px 8px;
-            border-radius: 6px;
+            padding: 6px 8px;
+            border-radius: 8px;
             text-align: center;
             margin-top: 5px;
         }
@@ -475,8 +484,8 @@
                 container.innerHTML += `
                     <div class="menu-card" onclick="openCustomizeModal(${item.id})">
                         <div>
-                            <div class="menu-img-wrapper" style="position: relative;">
-                                ${showBadge ? '<span class="recommend-badge" style="position: absolute; top: 10px; left: 10px; background: #ff4757; color: white; font-size: 11px; font-weight: bold; padding: 3px 8px; border-radius: 6px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); z-index: 2;">⭐ แนะนำ</span>' : ''}
+                            <div class="menu-img-wrapper">
+                                ${showBadge ? '<span class="recommend-badge">⭐ แนะนำ</span>' : ''}
                                 <img src="${imgSrc}" class="menu-img" alt="${item.name}">
                             </div>
                             <div class="menu-info">
@@ -503,14 +512,12 @@
             const extraContainer = document.getElementById('customizeExtraOptions');
             extraContainer.innerHTML = '';
 
-            // ตรวจสอบค่า allow_egg จากฐานข้อมูลที่ส่งมาจากหน้า Admin โดยตรง
             const allowEgg = (
                 selectedItemForCustom.allow_egg === true || 
                 selectedItemForCustom.allow_egg === 1 || 
                 selectedItemForCustom.allow_egg === '1'
             );
 
-            // ถ้าหลังบ้านตั้งค่า allow_egg ไว้ ให้แสดงตัวเลือกไข่ดาว / ไข่เจียว
             if (allowEgg) {
                 extraContainer.innerHTML = `
                     <div class="form-group" style="display: flex; gap: 10px;">
