@@ -18,15 +18,12 @@ const uploadDir = process.env.NODE_ENV === 'production'
     ? '/opt/render/project/src/uploads' 
     : path.join(__dirname, 'public', 'uploads');
 
-// ตรวจสอบและสร้างโฟลเดอร์หากยังไม่มี
 if (!fs.existsSync(uploadDir)){
     fs.mkdirSync(uploadDir, { recursive: true });
 }
 
-// เปิดให้ Express เสิร์ฟไฟล์รูปภาพจาก Disk โดยตรงผ่าน URL /uploads/...
 app.use('/uploads', express.static(uploadDir));
 
-// ตั้งค่า Multer ให้เก็บบันทึกลงใน Disk Path นี้
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         cb(null, uploadDir);
@@ -38,7 +35,6 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage: storage });
 
-// ตั้งค่าการเชื่อมต่อ PostgreSQL
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false
@@ -78,7 +74,6 @@ async function initDatabase() {
             );
         `);
 
-        // ตรวจสอบและเพิ่มคอลัมน์อัตโนมัติหากตารางถูกสร้างไว้ก่อนแล้ว
         await pool.query(`
             ALTER TABLE menu_items ADD COLUMN IF NOT EXISTS is_recommended INT2 DEFAULT 0;
             ALTER TABLE menu_items ADD COLUMN IF NOT EXISTS is_admin_menu INT2 DEFAULT 0;
@@ -119,7 +114,6 @@ async function initDatabase() {
             );
         `);
 
-        // ป้องกันกรณีตาราง sales_history ถูกสร้างไปก่อนแล้วแต่ไม่มีคอลัมน์ print_status
         await pool.query(`
             ALTER TABLE sales_history ADD COLUMN IF NOT EXISTS print_status VARCHAR(50) DEFAULT 'รอพิมพ์ใบเสร็จ';
         `);
@@ -320,7 +314,6 @@ app.delete('/api/orders/table/:tableId', async (req, res) => {
     }
 });
 
-// --- API เพิ่มเมนูอาหาร (รองรับ is_recommended, is_admin_menu และ allow_egg) ---
 app.post('/api/menu', upload.single('image'), async (req, res) => {
     const { name, price, category_name, category_id, is_recommended, is_admin_menu, allow_egg } = req.body;
     const image_url = req.file ? `/uploads/${req.file.filename}` : (req.body.image_url || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c');
@@ -346,7 +339,6 @@ app.post('/api/menu', upload.single('image'), async (req, res) => {
     }
 });
 
-// --- API อัปเดตข้อมูลเมนูอาหาร (รองรับอัปเดต allow_egg) ---
 app.put('/api/menu/:id', upload.single('image'), async (req, res) => {
     const menuId = req.params.id;
     const { name, price, category_name, is_recommended, is_admin_menu, allow_egg } = req.body;
@@ -385,7 +377,6 @@ app.delete('/api/menu/:id', async (req, res) => {
     }
 });
 
-// --- API ประวัติการขาย (Sales History) & รองรับระบบพิมพ์ใบเสร็จ ---
 app.post('/api/admin/sales-history', async (req, res) => {
     try {
         const { table_id, title, total_price, items } = req.body;
@@ -396,7 +387,7 @@ app.post('/api/admin/sales-history', async (req, res) => {
             [table_id, title, total_price, JSON.stringify(items)]
         );
 
-        res.status(200).json({ success: true, id: result.rows[0].id, message: 'บันทึกประวัติยอดขายและตั้งค่ารอพิมพ์ใบเสร็จสำเร็จ' });
+        res.status(200).json({ success: true, id: result.rows[0].id, message: 'บันทึกประวัติยอดขายสำเร็จ' });
     } catch (err) {
         console.error('Server Error:', err);
         res.status(500).json({ error: err.message });
@@ -430,7 +421,6 @@ app.get('/api/admin/sales-history', async (req, res) => {
     }
 });
 
-// --- API สำหรับ Print Agent ดึงใบเสร็จที่ยังไม่ได้พิมพ์ ---
 app.get('/api/admin/unprinted-receipts', async (req, res) => {
     try {
         const result = await pool.query(
@@ -442,7 +432,6 @@ app.get('/api/admin/unprinted-receipts', async (req, res) => {
     }
 });
 
-// --- API สำหรับอัปเดตสถานะใบเสร็จว่าพิมพ์แล้ว ---
 app.put('/api/admin/receipts/:id/printed', async (req, res) => {
     const receiptId = req.params.id;
     try {
