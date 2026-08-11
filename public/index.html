@@ -84,7 +84,7 @@
         .store-header h1 { margin: 0; font-size: 20px; font-weight: 600; }
         .store-header p { margin: 4px 0 0 0; font-size: 13px; opacity: 0.9; }
 
-        /* ช่องค้นหาเมนู */
+        /* ช่องค้นหาเมนูอาหาร */
         .search-container {
             max-width: 800px;
             margin: 15px auto 0 auto;
@@ -349,7 +349,7 @@
 <body>
 
     <div class="store-header">
-        <div class="table-badge-left" id="table-badge">โต๊ะ: 1</div>
+        <div class="table-badge-left" id="table-badge">กำลังโหลด...</div>
         <div class="top-right-btns">
             <button class="btn-top-action" onclick="openOrderedHistory()">📋 รายการที่สั่ง</button>
         </div>
@@ -358,7 +358,7 @@
         <p>โทร 090-1318376</p>
     </div>
 
-    <!-- ช่องค้นหาเมนู -->
+    <!-- ช่องค้นหาเมนูอาหาร -->
     <div class="search-container">
         <div class="search-box-wrapper">
             <span class="search-icon">🔍</span>
@@ -445,9 +445,33 @@
 
     <script>
         const urlParams = new URLSearchParams(window.location.search);
-        let tableId = urlParams.get('table') || '1';
-        tableId = tableId.toUpperCase();
-        document.getElementById('table-badge').innerText = `โต๊ะ: ${tableId}`;
+        let tableId = urlParams.get('table');
+        let isQueue = urlParams.get('queue') === 'true';
+
+        async function initPage() {
+            if (isQueue || !tableId) {
+                // ถ้าเป็นลูกค้าสั่งหน้าร้าน ให้เรียก API ขอเลขคิวอัตโนมัติ
+                try {
+                    const res = await fetch('/api/walk-in-queue', { method: 'POST' });
+                    const data = await res.json();
+                    if (data.success) {
+                        tableId = data.queue_id;
+                    } else {
+                        tableId = 'Q001';
+                    }
+                } catch (err) {
+                    console.error('Error fetching queue:', err);
+                    tableId = 'Q001';
+                }
+            } else {
+                tableId = tableId.toUpperCase();
+            }
+
+            const badgePrefix = tableId.startsWith('Q') ? 'คิว: ' : 'โต๊ะ: ';
+            document.getElementById('table-badge').innerText = `${badgePrefix}${tableId}`;
+            
+            fetchMenu();
+        }
 
         let allMenus = [];
         let cart = []; 
@@ -482,10 +506,6 @@
             currentCategory = categoryName;
             document.querySelectorAll('.cat-btn').forEach(btn => btn.classList.remove('active'));
             element.classList.add('active');
-            
-            // ล้างค่าช่องค้นหาเมื่อเปลี่ยนหมวดหมู่ (ถ้าต้องการให้ค้นหาอิสระข้ามหมวดหมู่ สามารถเอาบรรทัดนี้ออกได้)
-            // document.getElementById('searchInput').value = '';
-            
             renderMenus();
         }
 
@@ -512,7 +532,7 @@
 
             const keyword = document.getElementById('searchInput').value.trim().toLowerCase();
 
-            // 1. กรองเมนูที่ category_name เป็น 'AdminController' ออกก่อนเสมอ
+            // 1. กรองเมนูของ AdminController ออกไม่ให้ลูกค้าเห็นเสมอ
             let availableMenus = allMenus.filter(m => {
                 const catName = m.category_name || categoryMap[m.category_id] || '';
                 return catName !== 'AdminController';
@@ -529,7 +549,7 @@
                     return catName === currentCategory;
                 });
 
-            // 3. กรองตามคำค้นหา (Search) ถ้ามีการพิมพ์ข้อความค้นหา
+            // 3. กรองตามคำค้นหา (Search)
             if (keyword !== '') {
                 filtered = filtered.filter(m => {
                     const itemName = (m.name || '').toLowerCase();
@@ -587,7 +607,7 @@
                 extraContainer.innerHTML = `
                     <div class="form-group" style="display: flex; gap: 10px;">
                         <label class="checkbox-label">
-                            <input type="checkbox" id="addEggCheckbox" value="ไข่ดาว" data-price="10"> ไข่ดาว (+10฿)
+                            <input type="checkbox" id="addEggCheckbox" value="ไข่ดาว" data-price="7"> ไข่ดาว (+7฿)
                         </label>
                         <label class="checkbox-label">
                             <input type="checkbox" id="addOmeletCheckbox" value="ไข่เจียว" data-price="10"> ไข่เจียว (+10฿)
@@ -729,7 +749,7 @@
         }
 
         async function openOrderedHistory() {
-            document.getElementById('infoModalTitle').innerText = `📋 รายการอาหารที่สั่งแล้ว (โต๊ะ/ซุ้ม ${tableId})`;
+            document.getElementById('infoModalTitle').innerText = `📋 รายการอาหารที่สั่งแล้ว (${tableId.startsWith('Q') ? 'คิว' : 'โต๊ะ'} ${tableId})`;
             const body = document.getElementById('infoModalBody');
             body.innerHTML = '<p style="text-align:center; color:#999; padding:20px;">กำลังโหลดข้อมูล...</p>';
             document.getElementById('infoModal').style.display = 'flex';
@@ -739,7 +759,7 @@
                 if (res.ok) {
                     const orders = await res.json();
                     if (orders.length === 0) {
-                        body.innerHTML = '<p style="text-align:center; color:#999; padding:20px;">ยังไม่มีประวัติการสั่งอาหารสำหรับโต๊ะนี้</p>';
+                        body.innerHTML = '<p style="text-align:center; color:#999; padding:20px;">ยังไม่มีประวัติการสั่งอาหารสำหรับรายการนี้</p>';
                         return;
                     }
                     
@@ -812,7 +832,8 @@
             }
         }
 
-        fetchMenu();
+        // เริ่มต้นการทำงานหน้าเว็บ
+        initPage();
     </script>
 </body>
 </html>
