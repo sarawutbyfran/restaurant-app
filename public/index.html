@@ -445,30 +445,20 @@
 
     <script>
         const urlParams = new URLSearchParams(window.location.search);
-        let tableId = urlParams.get('table');
+        let urlTable = urlParams.get('table');
         let isQueue = urlParams.get('queue') === 'true';
+        let tableId = ''; // จะถูกกำหนดค่าเมื่อมีการโหลดหรือกดส่งออเดอร์
 
         async function initPage() {
-            if (isQueue || !tableId) {
-                // ถ้าเป็นลูกค้าสั่งหน้าร้าน ให้เรียก API ขอเลขคิวอัตโนมัติ
-                try {
-                    const res = await fetch('/api/walk-in-queue', { method: 'POST' });
-                    const data = await res.json();
-                    if (data.success) {
-                        tableId = data.queue_id;
-                    } else {
-                        tableId = 'Q001';
-                    }
-                } catch (err) {
-                    console.error('Error fetching queue:', err);
-                    tableId = 'Q001';
-                }
+            if (isQueue || !urlTable) {
+                // ถ้าเป็นลูกค้าสั่งหน้าร้าน ตอนเปิดหน้าเว็บยังไม่ขอคิวทันที ป้องกันคิวซ้อนกันตอนเปิดพร้อมกัน
+                tableId = 'PENDING_QUEUE';
+                document.getElementById('table-badge').innerText = 'คิว: กำลังรอรับคิว...';
             } else {
-                tableId = tableId.toUpperCase();
+                tableId = urlTable.toUpperCase();
+                const badgePrefix = tableId.startsWith('Q') ? 'คิว: ' : 'โต๊ะ: ';
+                document.getElementById('table-badge').innerText = `${badgePrefix}${tableId}`;
             }
-
-            const badgePrefix = tableId.startsWith('Q') ? 'คิว: ' : 'โต๊ะ: ';
-            document.getElementById('table-badge').innerText = `${badgePrefix}${tableId}`;
             
             fetchMenu();
         }
@@ -532,13 +522,11 @@
 
             const keyword = document.getElementById('searchInput').value.trim().toLowerCase();
 
-            // 1. กรองเมนูของ AdminController ออกไม่ให้ลูกค้าเห็นเสมอ
             let availableMenus = allMenus.filter(m => {
                 const catName = m.category_name || categoryMap[m.category_id] || '';
                 return catName !== 'AdminController';
             });
 
-            // 2. กรองตามหมวดหมู่ที่เลือก
             let filtered = currentCategory === 'ทั้งหมด' 
                 ? availableMenus 
                 : availableMenus.filter(m => {
@@ -549,7 +537,6 @@
                     return catName === currentCategory;
                 });
 
-            // 3. กรองตามคำค้นหา (Search)
             if (keyword !== '') {
                 filtered = filtered.filter(m => {
                     const itemName = (m.name || '').toLowerCase();
@@ -749,6 +736,11 @@
         }
 
         async function openOrderedHistory() {
+            if (tableId === 'PENDING_QUEUE') {
+                alert('กรุณาสั่งอาหารและยืนยันออเดอร์ก่อน จึงจะสามารถดูรายการที่สั่งได้ครับ');
+                return;
+            }
+
             document.getElementById('infoModalTitle').innerText = `📋 รายการอาหารที่สั่งแล้ว (${tableId.startsWith('Q') ? 'คิว' : 'โต๊ะ'} ${tableId})`;
             const body = document.getElementById('infoModalBody');
             body.innerHTML = '<p style="text-align:center; color:#999; padding:20px;">กำลังโหลดข้อมูล...</p>';
@@ -795,23 +787,35 @@
                 return;
             }
 
-            let orderItems = cart.map(item => {
-                let finalItemName = item.name;
-                if (item.notes && item.notes.trim() !== '') {
-                    finalItemName += ` [โน๊ต: ${item.notes.trim()}]`;
+            try {
+                // หากเป็นคิวหน้าร้าน และยังไม่ได้รับเลขคิว ให้ขอเลขคิวสดๆ ทันทีในจังหวะกดสั่ง
+                if (isQueue && (tableId === 'PENDING_QUEUE' || !tableId)) {
+                    const qRes = await fetch('/api/walk-in-queue', { method: 'POST' });
+                    const qData = await qRes.json();
+                    if (qData.success) {
+                        tableId = qData.queue_id;
+                        document.getElementById('table-badge').innerText = `คิว: ${tableId}`;
+                    } else {
+                        tableId = 'Q001';
+                    }
                 }
 
-                return {
-                    menu_item_id: item.id,
-                    name: finalItemName,
-                    quantity: item.quantity,
-                    price: item.price,
-                    notes: item.notes || null,
-                    options: item.optionsText || null
-                };
-            });
+                let orderItems = cart.map(item => {
+                    let finalItemName = item.name;
+                    if (item.notes && item.notes.trim() !== '') {
+                        finalItemName += ` [โน๊ต: ${item.notes.trim()}]`;
+                    }
 
-            try {
+                    return {
+                        menu_item_id: item.id,
+                        name: finalItemName,
+                        quantity: item.quantity,
+                        price: item.price,
+                        notes: item.notes || null,
+                        options: item.optionsText || null
+                    };
+                });
+
                 const res = await fetch('/api/orders', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -820,7 +824,7 @@
 
                 const result = await res.json();
                 if (res.ok) {
-                    alert('🎉 สั่งอาหารสำเร็จ! ส่งตรงเข้าครัวเรียบร้อย');
+                    alert(`🎉 สั่งอาหารสำเร็จ! หมายเลขคิว/โต๊ะของคุณคือ: ${tableId}`);
                     cart = [];
                     closeCartModal();
                     updateSummary();

@@ -26,7 +26,6 @@
             padding: 0;
             color: var(--text);
             display: grid;
-            /* ปรับโครงสร้างหลักให้รองรับการย่อขยายหน้าจอแบบยืดหยุ่น (Responsive Grid) */
             grid-template-columns: 160px minmax(280px, 1.2fr) minmax(260px, 1fr) 320px;
             height: 100vh;
             box-sizing: border-box;
@@ -335,7 +334,6 @@
             font-size: 12px;
         }
 
-        /* รองรับ Media Query สำหรับหน้าจอขนาดเล็กหรือเวลาผู้ใช้ย่อหน้าต่างเบราว์เซอร์ให้แคบลง */
         @media (max-width: 1024px) {
             body {
                 grid-template-columns: 140px 1fr 1fr;
@@ -487,6 +485,14 @@
                                 <option value="AdminController">AdminController</option>
                             </select>
                         </div>
+                        <div class="form-group">
+                            <label>🎯 จุดส่งออเดอร์ (ครัว/เครื่องดื่ม)</label>
+                            <select id="newMenuKitchenType" class="form-control">
+                                <option value="kitchen_1">🍳 ครัวที่ 1 (ครัวหลัก)</option>
+                                <option value="kitchen_2">🌿 ครัวที่ 2 (เช่น อาหารป่า)</option>
+                                <option value="drink">🧋 โซนเครื่องดื่ม</option>
+                            </select>
+                        </div>
                         <div class="form-group" style="display: flex; flex-direction: column; gap: 4px; margin: 6px 0;">
                             <label style="display: flex; align-items: center; gap: 5px; cursor: pointer; font-size: 11px;">
                                 <input type="checkbox" id="newMenuIsRec"> ⭐ เมนูแนะนำ
@@ -498,14 +504,6 @@
                                 <input type="checkbox" id="newMenuAllowEgg"> 🍳 เปิดใช้ตัวเลือกไข่ดาว/ไข่เจียว (allow_egg)
                             </label>
                         </div>
-                        <div class="form-group">
-    <label>🎯 กำหนดจุดส่งออเดอร์ (ครัว/เครื่องดื่ม)</label>
-    <select id="newMenuKitchenType" class="form-control">
-        <option value="kitchen_1">🍳 ครัวที่ 1 (ครัวหลัก)</option>
-        <option value="kitchen_2">🌿 ครัวที่ 2 (เช่น อาหารป่า)</option>
-        <option value="drink">🧋 โซนเครื่องดื่ม</option>
-    </select>
-</div>
                         <div class="form-group">
                             <label>รูปภาพอาหาร (อัปโหลดไฟล์)</label>
                             <input type="file" id="newMenuImageFile" accept="image/*" style="background: white; padding: 4px;">
@@ -574,6 +572,7 @@
         </div>
     </div>
 
+    <!-- Modal แก้ไขเมนู -->
     <div class="modal" id="editMenuModal">
         <div class="modal-content" style="width: 400px;">
             <h3 style="margin-top:0; color:var(--primary); font-size: 15px;">✏️ แก้ไขข้อมูลเมนูอาหาร</h3>
@@ -599,6 +598,14 @@
                         <option value="อาหารตามสั่ง">🍛 ตามสั่ง</option>
                         <option value="เครื่องดื่ม">🧋 เครื่องดื่ม</option>
                         <option value="AdminController">AdminController</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>🎯 กำหนดจุดส่งออเดอร์ (ครัว/เครื่องดื่ม)</label>
+                    <select id="editMenuKitchenType" class="form-control">
+                        <option value="kitchen_1">🍳 ครัวที่ 1 (ครัวหลัก)</option>
+                        <option value="kitchen_2">🌿 ครัวที่ 2 (เช่น อาหารป่า)</option>
+                        <option value="drink">🧋 โซนเครื่องดื่ม</option>
                     </select>
                 </div>
                 <div class="form-group" style="display: flex; flex-direction: column; gap: 4px; margin: 8px 0;">
@@ -643,6 +650,20 @@
             8: 'เมนูแนะนำ',
             9: 'AdminController'
         };
+
+        // ฟังก์ชันช่วยยุบรวมรายการอาหารที่ซ้ำกัน
+        function consolidateItems(items) {
+            const map = {};
+            items.forEach(item => {
+                const key = `${item.name}_${item.notes || ''}_${item.price}`;
+                if (map[key]) {
+                    map[key].quantity += Number(item.quantity);
+                } else {
+                    map[key] = { ...item, quantity: Number(item.quantity) };
+                }
+            });
+            return Object.values(map);
+        }
 
         async function fetchAdminData() {
             try {
@@ -1037,18 +1058,25 @@
                 const res = await fetch(`/api/orders/table/${activeTableId}`);
                 const orders = await res.json();
 
-                let submittedItemsHtml = '';
+                // รวมรายการอาหารทั้งหมดจากทุกออเดอร์ย่อยเข้าด้วยกัน แล้วยุบรวมรายการที่ซ้ำกัน
+                let allRawItems = [];
                 orders.forEach(ord => {
                     if (ord.items) {
-                        ord.items.forEach((i, itemIndex) => {
-                            submittedItemsHtml += `
-                                <div style="display:flex; justify-content:space-between; align-items:center; padding:2px 0; border-bottom:1px solid #f8f9fa;">
-                                    <span>${i.name} x ${i.quantity} (${(i.price * i.quantity).toFixed(2)}฿)</span>
-                                    <button onclick="deleteSingleOrderItem('${ord.id}', ${itemIndex})" style="background:#ff4757; color:white; border:none; padding:1px 4px; border-radius:3px; cursor:pointer; font-size:9px;">❌</button>
-                                </div>
-                            `;
+                        ord.items.forEach(i => {
+                            allRawItems.push(i);
                         });
                     }
+                });
+                let uniqueSubmittedItems = consolidateItems(allRawItems);
+
+                let submittedItemsHtml = '';
+                uniqueSubmittedItems.forEach((i, itemIndex) => {
+                    submittedItemsHtml += `
+                        <div style="display:flex; justify-content:space-between; align-items:center; padding:2px 0; border-bottom:1px solid #f8f9fa;">
+                            <span>${i.name} x ${i.quantity} (${(i.price * i.quantity).toFixed(2)}฿)</span>
+                            <button onclick="deleteAggregatedOrderItem('${activeTableId}', '${i.name}')" style="background:#ff4757; color:white; border:none; padding:1px 4px; border-radius:3px; cursor:pointer; font-size:9px;">❌</button>
+                        </div>
+                    `;
                 });
 
                 let cartItemsHtml = '';
@@ -1091,23 +1119,30 @@
             }
         }
 
-        async function deleteSingleOrderItem(orderId, itemIndex) {
-            if(!confirm('ต้องการลบรายการอาหารนี้ใช่หรือไม่?')) return;
+        // ฟังก์ชันช่วยลบรายการอาหารที่ถูกยุบรวมในโต๊ะ
+        async function deleteAggregatedOrderItem(tableId, itemName) {
+            if(!confirm(`ต้องการลบเมนู "${itemName}" ทั้งหมดออกจากโต๊ะนี้ใช่หรือไม่?`)) return;
             try {
-                const res = await fetch(`/api/orders/${orderId}/item/${itemIndex}`, {
-                    method: 'DELETE'
-                });
-                if(res.ok) {
-                    renderSummaryBox();
-                    if(document.getElementById('tableModal').style.display === 'flex') {
-                        loadTableOrders(activeTableId);
+                const res = await fetch(`/api/orders/table/${tableId}`);
+                const orders = await res.json();
+                
+                // วนลูปหาออเดอร์ที่มีสินค้านี้แล้วทำการลบ
+                for (let ord of orders) {
+                    if (ord.items) {
+                        for (let i = ord.items.length - 1; i >= 0; i--) {
+                            if (ord.items[i].name === itemName) {
+                                await fetch(`/api/orders/${ord.id}/item/${i}`, { method: 'DELETE' });
+                            }
+                        }
                     }
-                    fetchKitchenOrders();
-                } else {
-                    alert('ไม่สามารถลบรายการได้');
                 }
+                renderSummaryBox();
+                if(document.getElementById('tableModal').style.display === 'flex') {
+                    loadTableOrders(activeTableId);
+                }
+                fetchKitchenOrders();
             } catch(e) {
-                alert('เกิดข้อผิดพลาดในการเชื่อมต่อ');
+                alert('เกิดข้อผิดพลาดในการลบรายการ');
             }
         }
 
@@ -1130,25 +1165,31 @@
                     return;
                 }
 
+                let allRawItems = [];
                 orders.forEach(ord => {
-                    let itemsHtml = '';
                     if (ord.items) {
-                        ord.items.forEach((i, itemIndex) => {
-                            itemsHtml += `
-                                <div style="display:flex; justify-content:space-between; align-items:center; padding:2px 0; border-bottom:1px solid #f0f0f0;">
-                                    <span>${i.name} x ${i.quantity} (${(i.price * i.quantity).toFixed(2)}฿)</span>
-                                    <button onclick="deleteSingleOrderItem('${ord.id}', ${itemIndex})" style="background:#ff4757; color:white; border:none; padding:2px 5px; border-radius:3px; cursor:pointer; font-size:9px;">❌ ลบ</button>
-                                </div>
-                            `;
+                        ord.items.forEach(i => {
+                            allRawItems.push(i);
                         });
                     }
-                    container.innerHTML += `
-                        <div style="margin-bottom:6px; border:1px solid #ddd; padding:5px; border-radius:4px; background:white;">
-                            <div style="font-size:10px; color:var(--gray); margin-bottom:3px;">สถานะ: ${ord.status} | เวลา: ${new Date(ord.created_at).toLocaleTimeString()}</div>
-                            ${itemsHtml}
+                });
+                let uniqueItems = consolidateItems(allRawItems);
+
+                let itemsHtml = '';
+                uniqueItems.forEach((i) => {
+                    itemsHtml += `
+                        <div style="display:flex; justify-content:space-between; align-items:center; padding:4px 0; border-bottom:1px solid #f0f0f0;">
+                            <span>${i.name} x ${i.quantity} (${(i.price * i.quantity).toFixed(2)}฿)</span>
+                            <button onclick="deleteAggregatedOrderItem('${tableId}', '${i.name}')" style="background:#ff4757; color:white; border:none; padding:2px 5px; border-radius:3px; cursor:pointer; font-size:9px;">❌ ลบ</button>
                         </div>
                     `;
                 });
+
+                container.innerHTML = `
+                    <div style="margin-bottom:6px; border:1px solid #ddd; padding:8px; border-radius:4px; background:white;">
+                        ${itemsHtml}
+                    </div>
+                `;
             } catch (e) {
                 document.getElementById('tableOrderItemsList').innerHTML = '<p style="color:var(--primary);">ไม่สามารถโหลดข้อมูลได้</p>';
             }
@@ -1319,49 +1360,49 @@
         }
 
         async function loadManageMenuList() {
-    const container = document.getElementById('manageMenuList');
-    container.innerHTML = '<p style="color:var(--gray);">กำลังโหลด...</p>';
-    try {
-        const res = await fetch('/api/menu');
-        const menus = await res.json();
-        container.innerHTML = '';
+            const container = document.getElementById('manageMenuList');
+            container.innerHTML = '<p style="color:var(--gray);">กำลังโหลด...</p>';
+            try {
+                const res = await fetch('/api/menu');
+                const menus = await res.json();
+                container.innerHTML = '';
 
-        if(menus.length === 0) {
-            container.innerHTML = '<p style="color:var(--gray);">ไม่มีเมนูอาหาร</p>';
-            return;
-        }
+                if(menus.length === 0) {
+                    container.innerHTML = '<p style="color:var(--gray);">ไม่มีเมนูอาหาร</p>';
+                    return;
+                }
 
-        menus.forEach(m => {
-            const cName = m.category_name || categoryMap[m.category_id] || 'ไม่ระบุ';
-            // ป้องกันปัญหาการส่งค่าชื่อเมนูที่มีเครื่องหมายคำพูดเดี่ยว
-            const safeName = m.name.replace(/'/g, "\\'");
-            
-            container.innerHTML += `
-                <div class="manage-menu-item-row" style="display:flex; justify-content:space-between; align-items:center; background:white; padding:5px; margin-bottom:3px; border-radius:4px;">
-                    <div style="display: flex; align-items: center; gap: 6px;">
-                        <img src="${m.image_url || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c'}" style="width: 30px; height: 30px; object-fit: cover; border-radius: 4px;">
-                        <div>
-                            <strong style="font-size:11px;">${m.name}</strong><br>
-                            <span style="color:var(--primary); font-size:10px;">${parseFloat(m.price).toFixed(2)}฿ (${cName})</span>
+                menus.forEach(m => {
+                    const cName = m.category_name || categoryMap[m.category_id] || 'ไม่ระบุ';
+                    const safeName = m.name.replace(/'/g, "\\'");
+                    
+                    container.innerHTML += `
+                        <div class="manage-menu-item-row" style="display:flex; justify-content:space-between; align-items:center; background:white; padding:5px; margin-bottom:3px; border-radius:4px;">
+                            <div style="display: flex; align-items: center; gap: 6px;">
+                                <img src="${m.image_url || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c'}" style="width: 30px; height: 30px; object-fit: cover; border-radius: 4px;">
+                                <div>
+                                    <strong style="font-size:11px;">${m.name}</strong><br>
+                                    <span style="color:var(--primary); font-size:10px;">${parseFloat(m.price).toFixed(2)}฿ (${cName})</span>
+                                </div>
+                            </div>
+                            <div style="display:flex; gap:3px;">
+                                <button onclick="openEditMenuModal(${m.id}, '${safeName}', ${m.price}, '${cName}', ${m.is_admin_menu || 0}, ${m.is_recommended || 0}, ${m.allow_egg || 0}, '${m.kitchen_type || 'kitchen_1'}')" style="background:#ffa502; color:white; border:none; padding:2px 5px; border-radius:3px; cursor:pointer; font-size:10px;">✏️</button>
+                                <button onclick="deleteMenuItem(${m.id})" style="background:#ff4757; color:white; border:none; padding:2px 5px; border-radius:3px; cursor:pointer; font-size:10px;">🗑️</button>
+                            </div>
                         </div>
-                    </div>
-                    <div style="display:flex; gap:3px;">
-                        <button onclick="openEditMenuModal(${m.id}, '${safeName}', ${m.price}, '${cName}', ${m.is_admin_menu || 0}, ${m.is_recommended || 0}, ${m.allow_egg || 0})" style="background:#ffa502; color:white; border:none; padding:2px 5px; border-radius:3px; cursor:pointer; font-size:10px;">✏️</button>
-                        <button onclick="deleteMenuItem(${m.id})" style="background:#ff4757; color:white; border:none; padding:2px 5px; border-radius:3px; cursor:pointer; font-size:10px;">🗑️</button>
-                    </div>
-                </div>
-            `;
-        });
-    } catch(e) {
-        container.innerHTML = '<p style="color:red;">โหลดรายการไม่สำเร็จ</p>';
-    }
-}
+                    `;
+                });
+            } catch(e) {
+                container.innerHTML = '<p style="color:red;">โหลดรายการไม่สำเร็จ</p>';
+            }
+        }
 
         async function addNewMenu(event) {
             event.preventDefault();
             const name = document.getElementById('newMenuName').value;
             const price = document.getElementById('newMenuPrice').value;
             const category_name = document.getElementById('newMenuCategory').value;
+            const kitchen_type = document.getElementById('newMenuKitchenType').value;
             
             const isAdminMenu = document.getElementById('newMenuIsAdmin').checked ? 1 : 0;
             const isRecommended = document.getElementById('newMenuIsRec').checked ? 1 : 0;
@@ -1373,6 +1414,7 @@
             formData.append('name', name);
             formData.append('price', price);
             formData.append('category_name', category_name);
+            formData.append('kitchen_type', kitchen_type);
             formData.append('is_admin_menu', isAdminMenu);
             formData.append('is_recommended', isRecommended);
             formData.append('allow_egg', allowEgg);
@@ -1399,25 +1441,30 @@
             }
         }
 
-        function openEditMenuModal(id, name, price, categoryName, isAdminMenu, isRecommended, allowEgg) {
-    document.getElementById('editMenuId').value = id;
-    document.getElementById('editMenuName').value = name;
-    document.getElementById('editMenuPrice').value = price;
-    
-    const catSelect = document.getElementById('editMenuCategory');
-    if(catSelect) {
-        catSelect.value = categoryName;
-    }
+        function openEditMenuModal(id, name, price, categoryName, isAdminMenu, isRecommended, allowEgg, kitchenType) {
+            document.getElementById('editMenuId').value = id;
+            document.getElementById('editMenuName').value = name;
+            document.getElementById('editMenuPrice').value = price;
+            
+            const catSelect = document.getElementById('editMenuCategory');
+            if(catSelect) {
+                catSelect.value = categoryName;
+            }
 
-    document.getElementById('editMenuIsAdmin').checked = Number(isAdminMenu) === 1;
-    document.getElementById('editMenuIsRec').checked = Number(isRecommended) === 1;
-    document.getElementById('editMenuAllowEgg').checked = Number(allowEgg) === 1;
-    
-    // เคลียร์ค่า input file เพื่อไม่ให้ติดค่ารูปเดิมค้าง
-    document.getElementById('editMenuImageFile').value = '';
-    
-    document.getElementById('editMenuModal').style.display = 'flex';
-}
+            const kitchenSelect = document.getElementById('editMenuKitchenType');
+            if(kitchenSelect) {
+                kitchenSelect.value = kitchenType || 'kitchen_1';
+            }
+
+            document.getElementById('editMenuIsAdmin').checked = Number(isAdminMenu) === 1;
+            document.getElementById('editMenuIsRec').checked = Number(isRecommended) === 1;
+            document.getElementById('editMenuAllowEgg').checked = Number(allowEgg) === 1;
+            
+            document.getElementById('editMenuImageFile').value = '';
+            
+            document.getElementById('editMenuModal').style.display = 'flex';
+        }
+
         function closeEditMenuModal() {
             document.getElementById('editMenuModal').style.display = 'none';
         }
@@ -1428,6 +1475,7 @@
             const name = document.getElementById('editMenuName').value;
             const price = document.getElementById('editMenuPrice').value;
             const category_name = document.getElementById('editMenuCategory').value;
+            const kitchen_type = document.getElementById('editMenuKitchenType').value;
             
             const isAdminMenu = document.getElementById('editMenuIsAdmin').checked ? 1 : 0;
             const isRecommended = document.getElementById('editMenuIsRec').checked ? 1 : 0;
@@ -1439,6 +1487,7 @@
             formData.append('name', name);
             formData.append('price', price);
             formData.append('category_name', category_name);
+            formData.append('kitchen_type', kitchen_type);
             formData.append('is_admin_menu', isAdminMenu);
             formData.append('is_recommended', isRecommended);
             formData.append('allow_egg', allowEgg);
