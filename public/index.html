@@ -461,6 +461,7 @@
             }
             
             fetchMenu();
+            startSessionMonitor();
         }
 
         let allMenus = [];
@@ -807,9 +808,45 @@
             }
         }
 
+        // --- ระบบตรวจสอบสถานะโต๊ะ/คิว (ป้องกันสั่งซ้ำหลังเช็คบิล) ---
+        async function checkTableStatus() {
+            if (tableId === 'PENDING_QUEUE' || !tableId) return true;
+            try {
+                const res = await fetch(`/api/check-table-status/${tableId}`);
+                const data = await res.json();
+                return data.active;
+            } catch (e) {
+                return true; // หากเชื่อมต่อไม่ได้ให้ผ่านไปก่อนเพื่อไม่ให้ติดขัด
+            }
+        }
+
+        function startSessionMonitor() {
+            setInterval(async () => {
+                if (tableId && tableId !== 'PENDING_QUEUE' && !isQueue) {
+                    const isActive = await checkTableStatus();
+                    if (!isActive) {
+                        document.body.innerHTML = `
+                            <div style="display:flex; flex-direction:column; justify-content:center; align-items:center; height:100vh; text-align:center; padding:20px; font-family:'Prompt',sans-serif;">
+                                <h2 style="color:#ff4757; font-size:24px;">🚫 โต๊ะ/คิวนี้ถูกเช็คบิลปิดบริการแล้ว</h2>
+                                <p style="color:#747d8c; font-size:16px; margin-top:10px;">หากต้องการสั่งอาหารเพิ่ม กรุณาสแกน QR Code ใหม่อีกครั้งที่โต๊ะ</p>
+                            </div>
+                        `;
+                    }
+                }
+            }, 10000); // เช็คทุก 10 วินาที
+        }
+
         async function submitOrder() {
             if (cart.length === 0) {
                 alert('กรุณาเลือกเมนูอาหารอย่างน้อย 1 รายการครับ');
+                return;
+            }
+
+            // เช็คสถานะก่อนส่งออเดอร์
+            const isActive = await checkTableStatus();
+            if (!isActive && tableId !== 'PENDING_QUEUE') {
+                alert('โต๊ะหรือคิวนี้ได้ทำการเช็คบิลไปแล้ว ไม่สามารถสั่งอาหารเพิ่มได้ กรุณาสแกน QR Code ใหม่');
+                window.location.reload();
                 return;
             }
 

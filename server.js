@@ -158,6 +158,27 @@ app.get('/api/menu', async (req, res) => {
     }
 });
 
+// API ตรวจสอบสถานะโต๊ะหรือคิว (สำหรับป้องกันการสั่งซ้ำหลังเช็คบิล)
+app.get('/api/check-table-status/:tableId', async (req, res) => {
+    const tableId = String(req.params.tableId).toUpperCase();
+    try {
+        if (tableId === 'PENDING_QUEUE') {
+            return res.json({ active: true });
+        }
+
+        const result = await pool.query(
+            "SELECT COUNT(*) FROM orders WHERE UPPER(table_id) = $1 AND status != 'เสร็จสิ้น'",
+            [tableId]
+        );
+        const hasActiveOrder = parseInt(result.rows[0].count) > 0;
+        
+        // ส่งค่า active เป็น true ถ้ายัังมีออเดอร์ค้าง (หรือยังไม่เช็คบิล)
+        res.json({ active: hasActiveOrder });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 app.post('/api/walk-in-queue', async (req, res) => {
     try {
         const activeOrders = await pool.query("SELECT DISTINCT table_id FROM orders WHERE table_id LIKE 'Q%'");
