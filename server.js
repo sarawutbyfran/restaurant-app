@@ -171,14 +171,17 @@ app.post('/api/open-table', async (req, res) => {
     if (!table_id) return res.status(400).json({ error: 'Missing table_id' });
     
     const tableId = String(table_id).toUpperCase();
+    const newToken = Math.random().toString(36).substring(7); // สร้างรหัสลับ
+    
     try {
         await pool.query(`
-            INSERT INTO tables (table_id, status, updated_at) 
-            VALUES ($1, 'active', CURRENT_TIMESTAMP) 
+            INSERT INTO tables (table_id, status, session_token, updated_at) 
+            VALUES ($1, 'active', $2, CURRENT_TIMESTAMP) 
             ON CONFLICT (table_id) 
-            DO UPDATE SET status = 'active', updated_at = CURRENT_TIMESTAMP
-        `, [tableId]);
-        res.json({ success: true });
+            DO UPDATE SET status = 'active', session_token = $2, updated_at = CURRENT_TIMESTAMP
+        `, [tableId, newToken]);
+        
+        res.json({ success: true, token: newToken });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -213,16 +216,26 @@ app.post('/api/walk-in-queue', async (req, res) => {
 });
 
 app.post('/api/orders', async (req, res) => {
-    const { table_id, items } = req.body;
-    if (!table_id || !items || items.length === 0) {
-        return res.status(400).json({ error: 'ข้อมูลออเดอร์ไม่ครบถ้วน' });
+    const { table_id, token, items } = req.body;
+    if (!table_id || !token || !items || items.length === 0) {
+        return res.status(400).json({ error: 'ข้อมูลไม่ครบถ้วน' });
     }
+    
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
         const upperTableId = String(table_id).toUpperCase();
         
-        await client.query(`INSERT INTO tables (table_id, status) VALUES ($1, 'active') ON CONFLICT (table_id) DO UPDATE SET status = 'active', updated_at = CURRENT_TIMESTAMP`, [upperTableId]);
+        // ตรวจสอบว่าโต๊ะนี้ active และ token ยังถูกต้องอยู่ไหม
+        const check = await client.query(
+            "SELECT status FROM tables WHERE table_id = $1 AND session_token = $2", 
+            [upperTableId, token]
+        );
+
+        if (check.rows.length === 0 || check.rows[0].status === 'closed') {
+            await client.query('ROLLBACK');
+            return res.status(403).json({ error: 'โต๊ะนี้เช็คบิลแล้ว ขอบคุณที่ใช้บริการ' });
+        }
         
         const orderResult = await client.query('INSERT INTO orders (table_id) VALUES ($1) RETURNING id', [upperTableId]);
         const orderId = orderResult.rows[0].id;

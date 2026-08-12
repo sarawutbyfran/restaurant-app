@@ -421,41 +421,36 @@
     <script>
         const urlParams = new URLSearchParams(window.location.search);
         let urlTable = urlParams.get('table');
+        let urlToken = urlParams.get('token'); 
         let isQueue = urlParams.get('queue') === 'true';
-        let tableId = ''; 
+        let tableId = urlTable ? urlTable.toUpperCase() : 'PENDING_QUEUE';
 
         async function initPage() {
-            if (isQueue || !urlTable) {
-                tableId = 'PENDING_QUEUE';
-                document.getElementById('table-badge').innerText = 'คิว: รอเลือกเมนูและยืนยัน';
-            } else {
-                tableId = urlTable.toUpperCase();
-                const badgePrefix = tableId.startsWith('Q') ? 'คิว: ' : 'โต๊ะ: ';
-                document.getElementById('table-badge').innerText = `${badgePrefix}${tableId}`;
-
-                // ล็อคป้องกันการเปิดซ้ำซ้อนด้วย sessionStorage เฉพาะตอนรีเฟรช
-                const sessionKey = `scanned_table_${tableId}`;
-                if (!sessionStorage.getItem(sessionKey)) {
-                    try {
-                        await fetch('/api/open-table', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ table_id: tableId })
-                        });
-                        sessionStorage.setItem(sessionKey, 'true');
-                    } catch (e) {
-                        console.error('Open table error', e);
-                    }
+            // 1. ถ้ายังไม่มี Token หรือโต๊ะ (เช่น เพิ่งสแกนเข้ามาครั้งแรก)
+            if (!urlToken) {
+                // ถ้าเป็นคิวหน้าร้าน ขอเลขคิวจริงก่อน
+                if (isQueue && tableId === 'PENDING_QUEUE') {
+                    const qRes = await fetch('/api/walk-in-queue', { method: 'POST' });
+                    const qData = await qRes.json();
+                    if (qData.success) tableId = qData.queue_id;
                 }
+
+                // ขอ Token ใหม่จาก Server
+                const res = await fetch('/api/open-table', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ table_id: tableId })
+                });
+                const data = await res.json();
+                
+                // ย้าย URL ให้มี Token ติดตัวไปตลอด
+                window.location.href = `${window.location.pathname}?table=${tableId}&token=${data.token}${isQueue ? '&queue=true' : ''}`;
+                return;
             }
 
-            if (tableId !== 'PENDING_QUEUE') {
-                const active = await checkTableActiveStatus();
-                if (!active) {
-                    showClosedScreen();
-                    return;
-                }
-            }
+            // 2. ถ้ามี Token แล้ว แสดงข้อมูลโต๊ะ
+            const badgePrefix = tableId.startsWith('Q') ? 'คิว: ' : 'โต๊ะ: ';
+            document.getElementById('table-badge').innerText = `${badgePrefix}${tableId}`;
             
             fetchMenu();
             startSessionMonitor();
@@ -751,57 +746,51 @@
 
         async function submitOrder() {
             if (cart.length === 0) {
-                alert('กรุณาเลือกเมนูอาหารอย่างน้อย 1 รายการครับ');
+                alert('กรุณาเลือกเมนูอาหารก่อนครับ');
                 return;
             }
 
             try {
-                // ถ้าเป็นคิวหน้าร้านและยังเป็น PENDING_QUEUE ให้ขอเลขคิวจริงทันทีเมื่อกดสั่งครั้งแรก
-                if (isQueue && tableId === 'PENDING_QUEUE') {
-                    const qRes = await fetch('/api/walk-in-queue', { method: 'POST' });
-                    const qData = await qRes.json();
-                    if (qData.success) {
-                        tableId = qData.queue_id;
-                        document.getElementById('table-badge').innerText = `คิว: ${tableId}`;
-                        
-                        // ล็อคเปลี่ยน URL ทันทีเป็นเลขคิวจริง เพื่อป้องกันการขอคิวซ้ำซ้อนเวลารีเฟรช
-                        const newUrl = `${window.location.pathname}?table=${tableId}&queue=true`;
-                        window.history.replaceState({path: newUrl}, '', newUrl);
-                    } else {
-                        alert('ไม่สามารถสร้างคิวได้ กรุณาลองใหม่อีกครั้ง');
-                        return;
-                    }
-                }
-
-                let orderItems = cart.map(item => {
-                    let finalItemName = item.name;
-                    if (item.notes && item.notes.trim() !== '') {
-                        finalItemName += ` [โน๊ต: ${item.notes.trim()}]`;
-                    }
-                    return {
-                        menu_item_id: item.id, name: finalItemName, quantity: item.quantity,
-                        price: item.price, notes: item.notes || null, options: item.optionsText || null
-                    };
-                });
+                let orderItems = cart.map(item => ({
+                    menu_item_id: item.id, name: item.name, quantity: item.quantity,
+                    price: item.price, notes: item.notes || null, options: item.optionsText || null
+                }));
 
                 const res = await fetch('/api/orders', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ table_id: tableId, items: orderItems })
+                    body: JSON.stringify({ 
+                        table_id: tableId, 
+                        token: urlToken, // ส่ง Token ไปเช็คกับ Server
+                        items: orderItems 
+                    })
                 });
 
-                const result = await res.json();
+                if (res.status === 403) {
+                    showClosedScreen('โต๊ะนี้เช็คบิลแล้ว ขอบคุณที่ใช้บริการ');
+                    return;
+                }
+
                 if (res.ok) {
-                    alert(`🎉 สั่งอาหารสำเร็จ! หมายเลขคิว/โต๊ะของคุณคือ: ${tableId}`);
+                    alert('สั่งอาหารสำเร็จ!');
                     cart = [];
-                    closeCartModal();
                     updateSummary();
+                    closeCartModal();
                 } else {
-                    alert('เกิดข้อผิดพลาด: ' + (result.error || 'ไม่สามารถส่งออเดอร์ได้'));
+                    alert('เกิดข้อผิดพลาดในการสั่งอาหาร');
                 }
             } catch (err) {
-                alert('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้');
+                alert('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์');
             }
+        }
+
+        function showClosedScreen(msg = '🚫 โต๊ะนี้ถูกปิดแล้ว') {
+            document.body.innerHTML = `
+                <div style="text-align:center; padding:50px; font-family:Prompt;">
+                    <h2>${msg}</h2>
+                    <p>กรุณาติดต่อพนักงาน หรือสแกนใหม่หากเป็นลูกค้าท่านใหม่</p>
+                </div>
+            `;
         }
 
         initPage();
