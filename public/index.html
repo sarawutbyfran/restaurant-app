@@ -84,7 +84,6 @@
         .store-header h1 { margin: 0; font-size: 20px; font-weight: 600; }
         .store-header p { margin: 4px 0 0 0; font-size: 13px; opacity: 0.9; }
 
-        /* ช่องค้นหาเมนูอาหาร */
         .search-container {
             max-width: 800px;
             margin: 15px auto 0 auto;
@@ -449,7 +448,6 @@
         let urlTable = urlParams.get('table');
         let isQueue = urlParams.get('queue') === 'true';
         let tableId = ''; 
-        let hasActiveOrderInSession = false; // จำไว้ว่าเครื่องนี้เคยกดสั่งไปแล้วในรอบนี้
 
         async function initPage() {
             if (isQueue || !urlTable) {
@@ -461,7 +459,7 @@
                 document.getElementById('table-badge').innerText = `${badgePrefix}${tableId}`;
             }
 
-            // ตรวจสอบสถานะการใช้งานจริงจากฐานข้อมูลทันที
+            // ตรวจสอบสถานะจาก Server ทันทีตั้งแต่เปิดหน้าเว็บหรือกดรีโหลด
             const active = await checkTableActiveStatus();
             if (!active) {
                 showClosedScreen();
@@ -813,33 +811,16 @@
             }
         }
 
-        // --- ระบบเช็คสถานะโต๊ะ/คิวจาก Backend 100% ---
+        // --- ระบบเช็คสถานะจาก Backend 100% ป้องกันการรีโหลดรันคิวใหม่ ---
         async function checkTableActiveStatus() {
-            // ถ้าเป็นหน้าจอรอรับคิว (ยังไม่กดสั่งออเดอร์แรก) อนุญาตให้ผ่านได้
-            if (tableId === 'PENDING_QUEUE' || (!urlTable && isQueue)) return true;
+            if (tableId === 'PENDING_QUEUE') return true;
 
             try {
-                // เช็คสถานะ Active จากเซิร์ฟเวอร์
                 const res = await fetch(`/api/check-table-status/${tableId}`);
                 const data = await res.json();
-
-                // หากเซิร์ฟเวอร์ระบุว่า active: false (แปลว่าถูกเช็คบิลลบข้อมูลออกไปแล้ว)
-                if (!data.active) {
-                    return false;
-                }
-
-                // กรณีเพิ่มเติมสำหรับคิวหน้าร้าน: เช็คด้วยว่าตาราง orders ของคิวนี้ยังมีออเดอร์ค้างอยู่จริงไหม
-                const orderRes = await fetch(`/api/orders/table/${tableId}`);
-                const orders = await orderRes.json();
-
-                // หากเคยสั่งไปแล้ว (มีค่า hasActiveOrderInSession เป็น true) แต่ออเดอร์ในฐานข้อมูลถูกลบเกลี้ยง (แปลว่าพนักงานกดเช็คบิลแล้ว)
-                if (hasActiveOrderInSession && orders.length === 0) {
-                    return false;
-                }
-
-                return true;
+                return data.active;
             } catch (e) {
-                return true; // ถ้าเน็ตหลุดชั่วคราว ให้หน้าจอทำงานต่อได้เพื่อไม่ให้ค้าง
+                return true;
             }
         }
 
@@ -847,7 +828,7 @@
             document.body.innerHTML = `
                 <div style="display:flex; flex-direction:column; justify-content:center; align-items:center; height:100vh; text-align:center; padding:20px; font-family:'Prompt',sans-serif;">
                     <h2 style="color:#ff4757; font-size:24px;">🚫 โต๊ะ/คิวนี้ถูกเช็คบิลปิดบริการแล้ว</h2>
-                    <p style="color:#747d8c; font-size:16px; margin-top:10px;">หากต้องการสั่งอาหารเพิ่ม กรุณาสแกน QR Code ใหม่อีกครั้งที่โต๊ะ หรือติดต่อพนักงานหน้าร้าน</p>
+                    <p style="color:#747d8c; font-size:16px; margin-top:10px;">หากต้องการสั่งอาหารเพิ่ม กรุณาสแกน QR Code ใหม่อีกครั้ง หรือติดต่อพนักงานหน้าร้าน</p>
                 </div>
             `;
         }
@@ -860,7 +841,7 @@
                         showClosedScreen();
                     }
                 }
-            }, 8000); // ตรวจสอบทุกๆ 8 วินาที
+            }, 8000);
         }
 
         async function submitOrder() {
@@ -870,14 +851,15 @@
             }
 
             try {
-                // กรณีที่เป็นหน้าจอคิวหน้าร้านที่ยังไม่มีหมายเลขคิว ให้ขอคิวใหม่เฉพาะตอนกด "ยืนยันสั่งอาหาร" ครั้งแรกเท่านั้น
-                if (isQueue && (tableId === 'PENDING_QUEUE' || !urlTable)) {
+                // ขอคิวใหม่เฉพาะตอนกดส่งออเดอร์ครั้งแรกในสถานะ PENDING_QUEUE
+                if (isQueue && tableId === 'PENDING_QUEUE') {
                     const qRes = await fetch('/api/walk-in-queue', { method: 'POST' });
                     const qData = await qRes.json();
                     if (qData.success) {
                         tableId = qData.queue_id;
                         document.getElementById('table-badge').innerText = `คิว: ${tableId}`;
-                        // อัปเดต URL บนมือถือให้เป็นคิวปัจจุบัน เพื่อให้หน้านี้ผูกติดกับคิวนี้โดยตรง ป้องกันการรันคิวใหม่มั่วซ้ำซ้อน
+                        
+                        // ล็อก URL บนมือถือไม่ให้ขอคิวใหม่ซ้ำซ้อนเวลารีโหลด
                         const newUrl = `${window.location.pathname}?table=${tableId}&queue=true`;
                         window.history.replaceState({path: newUrl}, '', newUrl);
                     } else {
@@ -909,8 +891,6 @@
 
                 const result = await res.json();
                 if (res.ok) {
-                    hasActiveOrderInSession = true; // ทำเครื่องหมายว่าเครื่องนี้ส่งออเดอร์ของคิว/โต๊ะนี้สำเร็จแล้ว
-
                     alert(`🎉 สั่งอาหารสำเร็จ! หมายเลขคิว/โต๊ะของคุณคือ: ${tableId}`);
                     cart = [];
                     closeCartModal();
