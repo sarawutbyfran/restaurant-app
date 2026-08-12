@@ -457,9 +457,20 @@
                 tableId = urlTable.toUpperCase();
                 const badgePrefix = tableId.startsWith('Q') ? 'คิว: ' : 'โต๊ะ: ';
                 document.getElementById('table-badge').innerText = `${badgePrefix}${tableId}`;
+
+                // --- เพิ่มส่วนนี้: ส่งสัญญาณไปเปิดโต๊ะเฉพาะตอนสแกนเข้ามาใหม่ ---
+                try {
+                    await fetch('/api/open-table', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ table_id: tableId })
+                    });
+                } catch (e) {
+                    console.error('Open table error', e);
+                }
             }
 
-            // ถ้ารอรับคิวอยู่ยังไม่ต้องเช็คสถานะฐานข้อมูล ให้ผ่านไปโหลดเมนูได้เลย
+            // ตรวจสอบสถานะฐานข้อมูล
             if (tableId !== 'PENDING_QUEUE') {
                 const active = await checkTableActiveStatus();
                 if (!active) {
@@ -813,7 +824,6 @@
             }
         }
 
-        // --- ระบบเช็คสถานะจาก Backend 100% ป้องกันการรีโหลดรันคิวใหม่ ---
         async function checkTableActiveStatus() {
             if (tableId === 'PENDING_QUEUE') return true;
 
@@ -853,7 +863,6 @@
             }
 
             try {
-                // ขอคิวใหม่เฉพาะตอนกดส่งออเดอร์ครั้งแรกในสถานะ PENDING_QUEUE
                 if (isQueue && tableId === 'PENDING_QUEUE') {
                     const qRes = await fetch('/api/walk-in-queue', { method: 'POST' });
                     const qData = await qRes.json();
@@ -861,7 +870,6 @@
                         tableId = qData.queue_id;
                         document.getElementById('table-badge').innerText = `คิว: ${tableId}`;
                         
-                        // ล็อก URL บนมือถือไม่ให้ขอคิวใหม่ซ้ำซ้อนเวลารีโหลด
                         const newUrl = `${window.location.pathname}?table=${tableId}&queue=true`;
                         window.history.replaceState({path: newUrl}, '', newUrl);
                     } else {

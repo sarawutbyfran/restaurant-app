@@ -167,7 +167,7 @@ app.get('/api/menu', async (req, res) => {
     }
 });
 
-// API ตรวจสอบสถานะโต๊ะหรือคิว
+// API ตรวจสอบสถานะโต๊ะหรือคิว (เช็คอย่างเดียว ห้ามเปิดโต๊ะเอง ป้องกันคนรีโหลดที่บ้าน)
 app.get('/api/check-table-status/:tableId', async (req, res) => {
     const tableId = String(req.params.tableId).toUpperCase();
     try {
@@ -185,6 +185,26 @@ app.get('/api/check-table-status/:tableId', async (req, res) => {
         }
 
         res.json({ active: true });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// API สำหรับเปิดโต๊ะ (ใช้เฉพาะตอนลูกค้ายิงสแกน QR Code เข้ามาที่ร้าน)
+app.post('/api/open-table', async (req, res) => {
+    const { table_id } = req.body;
+    if (!table_id) return res.status(400).json({ error: 'Missing table_id' });
+    
+    const tableId = String(table_id).toUpperCase();
+    try {
+        await pool.query(`
+            INSERT INTO tables (table_id, status, updated_at) 
+            VALUES ($1, 'active', CURRENT_TIMESTAMP) 
+            ON CONFLICT (table_id) 
+            DO UPDATE SET status = 'active', updated_at = CURRENT_TIMESTAMP
+        `, [tableId]);
+        
+        res.json({ success: true });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
