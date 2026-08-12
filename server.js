@@ -513,6 +513,7 @@ app.get('/api/admin/kitchen-split-orders', async (req, res) => {
                     table_label: locationLabel,
                     name: item.name,
                     quantity: item.quantity,
+                    price: item.price, // <-- เพิ่มบรรทัดนี้เพื่อให้ส่งราคาไปที่ Print Agent ด้วยครับ
                     notes: item.notes,
                     created_at: ord.created_at
                 };
