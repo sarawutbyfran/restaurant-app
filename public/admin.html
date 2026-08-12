@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard - ระบบจัดการร้านอาหาร</title>
+    <title>Admin Dashboard - ระบบจัดการร้านอาหาร (3-Kitchen Split View)</title>
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -26,7 +26,7 @@
             padding: 0;
             color: var(--text);
             display: grid;
-            grid-template-columns: 160px minmax(280px, 1.2fr) minmax(260px, 1fr) 320px;
+            grid-template-columns: 160px minmax(280px, 1.2fr) minmax(260px, 1fr) 340px;
             height: 100vh;
             box-sizing: border-box;
             overflow: hidden;
@@ -411,7 +411,7 @@
 
     <div class="sidebar-right">
         <div class="kitchen-section">
-            <h3 style="margin:0 0 8px 0; font-size:13px; color:var(--primary);">👨‍🍳 ออเดอร์ในครัวล่าสุด</h3>
+            <h3 style="margin:0 0 8px 0; font-size:13px; color:var(--primary);">👨‍🍳 สถานะการพิมพ์ออเดอร์ในครัว</h3>
             <div id="kitchen-orders-list" style="max-height: calc(100vh - 160px); overflow-y: auto; padding-right: 4px;">
                 <p style="color:var(--gray); font-size:12px;">กำลังโหลดออเดอร์...</p>
             </div>
@@ -651,7 +651,6 @@
             9: 'AdminController'
         };
 
-        // ฟังก์ชันช่วยยุบรวมรายการอาหารที่ซ้ำกัน
         function consolidateItems(items) {
             const map = {};
             items.forEach(item => {
@@ -862,19 +861,33 @@
                         });
                     }
                     
-                    const isPrinted = ord.status === 'พิมพ์แล้ว'; 
-                    let cardClass = isPrinted ? 'kitchen-card' : 'kitchen-card unprinted-blink';
-                    let cardStyle = isPrinted ? 'border-left-color: #3742fa; background: #f0f4ff;' : '';
+                    // แสดงสถานะการพิมพ์แยกตามโซน (Kitchen 1, Kitchen 2, Drinks)
+                    let p1 = ord.printed_kitchen_1 === 1;
+                    let p2 = ord.printed_kitchen_2 === 1;
+                    let p3 = ord.printed_drink === 1;
+
+                    let statusBadge = `
+                        <div style="font-size:10px; margin-top:2px; display:flex; gap:6px;">
+                            <span style="color:${p1 ? '#2ed573' : '#ffa502'}">ครัว 1: ${p1 ? '🖨️ พิมพ์แล้ว' : '⏳ รอพิมพ์'}</span>
+                            <span style="color:${p2 ? '#2ed573' : '#ffa502'}">ครัว 2: ${p2 ? '🖨️ พิมพ์แล้ว' : '⏳ รอพิมพ์'}</span>
+                            <span style="color:${p3 ? '#2ed573' : '#ffa502'}">เครื่องดื่ม: ${p3 ? '🖨️ พิมพ์แล้ว' : '⏳ รอพิมพ์'}</span>
+                        </div>
+                    `;
+
+                    let allPrinted = p1 && p2 && p3;
+                    let cardClass = allPrinted ? 'kitchen-card' : 'kitchen-card unprinted-blink';
+                    let cardStyle = allPrinted ? 'border-left-color: #3742fa; background: #f0f4ff;' : '';
 
                     container.innerHTML += `
                         <div class="${cardClass}" style="${cardStyle}">
                             <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 1px dashed #eee; padding-bottom: 3px; margin-bottom: 3px;">
                                 <span style="font-weight:bold; color:var(--primary); font-size: 12px;">📍 ${locationLabel}</span>
                                 <span style="font-size:10px; color:var(--gray);">
-                                    ${isPrinted ? '🖨️ พิมพ์แล้ว' : '⏳ รอพิมพ์'}
+                                    ${allPrinted ? '✅ ครบทุกโซน' : '⏳ กำลังพิมพ์'}
                                 </span>
                             </div>
                             <div style="color:var(--text); margin:4px 0; line-height: 1.4;">${itemsHtml}</div>
+                            ${statusBadge}
                             <div style="display:flex; justify-content:flex-end; gap:4px; margin-top:6px; border-top: 1px solid #eee; padding-top: 4px;">
                                 <button class="btn-action" onclick="completeSingleOrder('${ord.id}')">✔️ เสร็จ</button>
                                 <button class="btn-print" onclick="resetOrderToPrint('${ord.id}')">🔄 พิมพ์ใหม่</button>
@@ -1058,7 +1071,6 @@
                 const res = await fetch(`/api/orders/table/${activeTableId}`);
                 const orders = await res.json();
 
-                // รวมรายการอาหารทั้งหมดจากทุกออเดอร์ย่อยเข้าด้วยกัน แล้วยุบรวมรายการที่ซ้ำกัน
                 let allRawItems = [];
                 orders.forEach(ord => {
                     if (ord.items) {
@@ -1119,14 +1131,12 @@
             }
         }
 
-        // ฟังก์ชันช่วยลบรายการอาหารที่ถูกยุบรวมในโต๊ะ
         async function deleteAggregatedOrderItem(tableId, itemName) {
             if(!confirm(`ต้องการลบเมนู "${itemName}" ทั้งหมดออกจากโต๊ะนี้ใช่หรือไม่?`)) return;
             try {
                 const res = await fetch(`/api/orders/table/${tableId}`);
                 const orders = await res.json();
                 
-                // วนลูปหาออเดอร์ที่มีสินค้านี้แล้วทำการลบ
                 for (let ord of orders) {
                     if (ord.items) {
                         for (let i = ord.items.length - 1; i >= 0; i--) {
