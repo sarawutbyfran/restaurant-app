@@ -2,7 +2,6 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <!-- ป้องกันหน้าจอมือถือซูมอัตโนมัติ -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Mobile Order - สั่งอาหารที่โต๊ะ</title>
     <style>
@@ -107,9 +106,7 @@
             outline: none;
             transition: border-color 0.2s;
         }
-        .search-input:focus {
-            border-color: var(--primary);
-        }
+        .search-input:focus { border-color: var(--primary); }
         .search-icon {
             position: absolute;
             left: 14px;
@@ -169,9 +166,7 @@
             position: relative;
             overflow: hidden;
         }
-        .menu-card:active {
-            transform: scale(0.97);
-        }
+        .menu-card:active { transform: scale(0.97); }
 
         .recommend-badge {
             position: absolute;
@@ -204,9 +199,7 @@
             transition: transform 0.3s ease;
         }
 
-        .menu-card:hover .menu-img {
-            transform: scale(1.05);
-        }
+        .menu-card:hover .menu-img { transform: scale(1.05); }
 
         .menu-info h3 { margin: 0 0 4px 0; font-size: 15px; color: var(--text); }
         .menu-info .price { margin: 0 0 8px 0; color: var(--primary); font-weight: bold; font-size: 14px; }
@@ -309,15 +302,8 @@
             cursor: pointer;
         }
         
-        .form-group {
-            margin-bottom: 15px;
-        }
-        .form-group label {
-            display: block;
-            font-weight: bold;
-            margin-bottom: 5px;
-            font-size: 14px;
-        }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 14px; }
         .form-control {
             width: 100%;
             padding: 10px;
@@ -338,11 +324,7 @@
             border-radius: 8px;
             flex: 1;
         }
-        .checkbox-label input {
-            width: 18px;
-            height: 18px;
-            accent-color: var(--primary);
-        }
+        .checkbox-label input { width: 18px; height: 18px; accent-color: var(--primary); }
     </style>
 </head>
 <body>
@@ -357,7 +339,6 @@
         <p>โทร 090-1318376</p>
     </div>
 
-    <!-- ช่องค้นหาเมนูอาหาร -->
     <div class="search-container">
         <div class="search-box-wrapper">
             <span class="search-icon">🔍</span>
@@ -388,16 +369,13 @@
         <button class="btn-order" onclick="submitOrder()">ยืนยันสั่งอาหาร</button>
     </div>
 
-    <!-- Modal สำหรับปรับแต่งเมนูก่อนใส่ตะกร้า -->
     <div class="modal" id="customizeModal">
         <div class="modal-content">
             <div class="modal-header">
                 <h2 id="modalItemTitle">เพิ่มรายการอาหาร</h2>
                 <button class="close-btn" onclick="closeCustomizeModal()">&times;</button>
             </div>
-            
             <div id="customizeExtraOptions"></div>
-
             <div class="form-group">
                 <label>จำนวน</label>
                 <div style="display: flex; align-items: center; gap: 15px; background: var(--light-gray); padding: 10px; border-radius: 8px; width: fit-content;">
@@ -406,16 +384,14 @@
                     <button type="button" onclick="changeCustomModalQty(1)" style="background: white; border: 1px solid #ddd; width: 35px; height: 35px; border-radius: 6px; font-weight: bold; cursor: pointer;">+</button>
                 </div>
             </div>
-
             <div class="form-group">
-                <label>หมายเหตุ / รายละเอียดเพิ่มเติม (เช่น ไม่เผ็ด, เผ็ดน้อย, ไม่ใส่ผัก)</label>
+                <label>หมายเหตุ / รายละเอียดเพิ่มเติม</label>
                 <input type="text" id="itemNotesInput" class="form-control" placeholder="ระบุความต้องการเพิ่มเติม...">
             </div>
             <button class="btn-order" style="width: 100%; margin-top: 10px;" onclick="confirmAddToCart()">เพิ่มลงตะกร้า</button>
         </div>
     </div>
 
-    <!-- Modal ตะกร้าสินค้า -->
     <div class="modal" id="cartModal">
         <div class="modal-content">
             <div class="modal-header">
@@ -430,7 +406,6 @@
         </div>
     </div>
 
-    <!-- Modal ประวัติรายการที่สั่ง -->
     <div class="modal" id="infoModal">
         <div class="modal-content">
             <div class="modal-header">
@@ -452,25 +427,28 @@
         async function initPage() {
             if (isQueue || !urlTable) {
                 tableId = 'PENDING_QUEUE';
-                document.getElementById('table-badge').innerText = 'คิว: กำลังรอรับคิว...';
+                document.getElementById('table-badge').innerText = 'คิว: รอเลือกเมนูและยืนยัน';
             } else {
                 tableId = urlTable.toUpperCase();
                 const badgePrefix = tableId.startsWith('Q') ? 'คิว: ' : 'โต๊ะ: ';
                 document.getElementById('table-badge').innerText = `${badgePrefix}${tableId}`;
 
-                // --- เพิ่มส่วนนี้: ส่งสัญญาณไปเปิดโต๊ะเฉพาะตอนสแกนเข้ามาใหม่ ---
-                try {
-                    await fetch('/api/open-table', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ table_id: tableId })
-                    });
-                } catch (e) {
-                    console.error('Open table error', e);
+                // ล็อคป้องกันการเปิดซ้ำซ้อนด้วย sessionStorage เฉพาะตอนรีเฟรช
+                const sessionKey = `scanned_table_${tableId}`;
+                if (!sessionStorage.getItem(sessionKey)) {
+                    try {
+                        await fetch('/api/open-table', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ table_id: tableId })
+                        });
+                        sessionStorage.setItem(sessionKey, 'true');
+                    } catch (e) {
+                        console.error('Open table error', e);
+                    }
                 }
             }
 
-            // ตรวจสอบสถานะฐานข้อมูล
             if (tableId !== 'PENDING_QUEUE') {
                 const active = await checkTableActiveStatus();
                 if (!active) {
@@ -490,29 +468,13 @@
         let currentCustomQty = 1;
 
         const categoryOrder = {
-            'เมนูแนะนำ': 1,
-            'อาหารป่า': 2,
-            'ผัด': 3,
-            'ต้มยำ': 4,
-            'ยำ': 5,
-            'ทอด': 6,
-            'อีสาน': 7,
-            'อาหารตามสั่ง': 8,
-            'เครื่องดื่ม': 9,
-            'AdminController': 10
+            'เมนูแนะนำ': 1, 'อาหารป่า': 2, 'ผัด': 3, 'ต้มยำ': 4, 'ยำ': 5,
+            'ทอด': 6, 'อีสาน': 7, 'อาหารตามสั่ง': 8, 'เครื่องดื่ม': 9, 'AdminController': 10
         };
 
         const categoryMap = {
-            1: 'อาหารตามสั่ง', 
-            2: 'อาหารป่า',
-            3: 'ทอด',
-            4: 'ผัด',
-            5: 'ต้มยำ',
-            6: 'ยำ',
-            7: 'เครื่องดื่ม',
-            8: 'เมนูแนะนำ',
-            9: 'AdminController',
-            10: 'อีสาน'
+            1: 'อาหารตามสั่ง', 2: 'อาหารป่า', 3: 'ทอด', 4: 'ผัด', 5: 'ต้มยำ',
+            6: 'ยำ', 7: 'เครื่องดื่ม', 8: 'เมนูแนะนำ', 9: 'AdminController', 10: 'อีสาน'
         };
 
         async function fetchMenu() {
@@ -534,18 +496,12 @@
             renderMenus();
         }
 
-        function filterMenus() {
-            renderMenus();
-        }
-
-        function isRecommendedItem(item) {
-            return Number(item.is_recommended) === 1;
-        }
+        function filterMenus() { renderMenus(); }
+        function isRecommendedItem(item) { return Number(item.is_recommended) === 1; }
 
         function renderMenus() {
             const container = document.getElementById('menu-list');
             container.innerHTML = '';
-
             const keyword = document.getElementById('searchInput').value.trim().toLowerCase();
 
             let availableMenus = allMenus.filter(m => {
@@ -556,31 +512,19 @@
             let filtered = currentCategory === 'ทั้งหมด' 
                 ? availableMenus 
                 : availableMenus.filter(m => {
-                    if (currentCategory === 'เมนูแนะนำ') {
-                        return isRecommendedItem(m);
-                    }
-                    const catName = m.category_name || categoryMap[m.category_id] || '';
-                    return catName === currentCategory;
+                    if (currentCategory === 'เมนูแนะนำ') return isRecommendedItem(m);
+                    return (m.category_name || categoryMap[m.category_id] || '') === currentCategory;
                 });
 
             if (keyword !== '') {
-                filtered = filtered.filter(m => {
-                    const itemName = (m.name || '').toLowerCase();
-                    return itemName.includes(keyword);
-                });
+                filtered = filtered.filter(m => (m.name || '').toLowerCase().includes(keyword));
             }
 
             if (keyword === '') {
                 filtered.sort((a, b) => {
                     const catA = a.category_name || categoryMap[a.category_id] || '';
                     const catB = b.category_name || categoryMap[b.category_id] || '';
-                    const orderA = categoryOrder[catA] || 99;
-                    const orderB = categoryOrder[catB] || 99;
-                    
-                    if (orderA !== orderB) {
-                        return orderA - orderB;
-                    }
-                    return a.id - b.id;
+                    return (categoryOrder[catA] || 99) - (categoryOrder[catB] || 99) || a.id - b.id;
                 });
             }
 
@@ -592,7 +536,6 @@
             filtered.forEach(item => {
                 const imgSrc = item.image_url || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c';
                 const showBadge = isRecommendedItem(item);
-
                 container.innerHTML += `
                     <div class="menu-card" onclick="openCustomizeModal(${item.id})">
                         <div>
@@ -630,16 +573,11 @@
             if (allowEgg) {
                 extraContainer.innerHTML = `
                     <div class="form-group" style="display: flex; gap: 10px;">
-                        <label class="checkbox-label">
-                            <input type="checkbox" id="addEggCheckbox" value="ไข่ดาว"> ไข่ดาว (+10฿)
-                        </label>
-                        <label class="checkbox-label">
-                            <input type="checkbox" id="addOmeletCheckbox" value="ไข่เจียว"> ไข่เจียว (+10฿)
-                        </label>
+                        <label class="checkbox-label"><input type="checkbox" id="addEggCheckbox" value="ไข่ดาว"> ไข่ดาว (+10฿)</label>
+                        <label class="checkbox-label"><input type="checkbox" id="addOmeletCheckbox" value="ไข่เจียว"> ไข่เจียว (+10฿)</label>
                     </div>
                 `;
             }
-
             document.getElementById('customizeModal').style.display = 'flex';
         }
 
@@ -660,7 +598,6 @@
             const notes = document.getElementById('itemNotesInput').value.trim();
             const eggCheckbox = document.getElementById('addEggCheckbox');
             const omeletCheckbox = document.getElementById('addOmeletCheckbox');
-            
             const hasEgg = eggCheckbox ? eggCheckbox.checked : false;
             const hasOmelet = omeletCheckbox ? omeletCheckbox.checked : false;
 
@@ -668,18 +605,9 @@
             let itemCustomName = selectedItemForCustom.name;
             let optionsTextArr = [];
 
-            if (hasEgg) {
-                finalPrice += 10;
-                optionsTextArr.push('ไข่ดาว');
-            }
-            if (hasOmelet) {
-                finalPrice += 10;
-                optionsTextArr.push('ไข่เจียว');
-            }
-
-            if (optionsTextArr.length > 0) {
-                itemCustomName += ` (+${optionsTextArr.join(', ')})`;
-            }
+            if (hasEgg) { finalPrice += 10; optionsTextArr.push('ไข่ดาว'); }
+            if (hasOmelet) { finalPrice += 10; optionsTextArr.push('ไข่เจียว'); }
+            if (optionsTextArr.length > 0) itemCustomName += ` (+${optionsTextArr.join(', ')})`;
 
             const existingIndex = cart.findIndex(c => 
                 c.id === selectedItemForCustom.id && c.notes === notes && c.hasEgg === hasEgg && c.hasOmelet === hasOmelet
@@ -689,31 +617,19 @@
                 cart[existingIndex].quantity += currentCustomQty;
             } else {
                 cart.push({
-                    id: selectedItemForCustom.id,
-                    name: itemCustomName,
-                    basePrice: parseFloat(selectedItemForCustom.price),
-                    price: finalPrice,
-                    quantity: currentCustomQty,
-                    notes: notes,
-                    hasEgg: hasEgg,
-                    hasOmelet: hasOmelet,
-                    optionsText: optionsTextArr.join(', ')
+                    id: selectedItemForCustom.id, name: itemCustomName, basePrice: parseFloat(selectedItemForCustom.price),
+                    price: finalPrice, quantity: currentCustomQty, notes: notes, hasEgg: hasEgg, hasOmelet: hasOmelet, optionsText: optionsTextArr.join(', ')
                 });
             }
-
             closeCustomizeModal();
             updateSummary();
         }
 
         function changeCartQty(index, delta) {
             cart[index].quantity += delta;
-            if (cart[index].quantity <= 0) {
-                cart.splice(index, 1);
-            }
+            if (cart[index].quantity <= 0) cart.splice(index, 1);
             updateSummary();
-            if (document.getElementById('cartModal').style.display === 'flex') {
-                openCartModal();
-            }
+            if (document.getElementById('cartModal').style.display === 'flex') openCartModal();
         }
 
         function removeItem(index) {
@@ -723,14 +639,8 @@
         }
 
         function updateSummary() {
-            let total = 0;
-            let totalCount = 0;
-
-            cart.forEach(item => {
-                total += item.quantity * item.price;
-                totalCount += item.quantity;
-            });
-
+            let total = 0, totalCount = 0;
+            cart.forEach(item => { total += item.quantity * item.price; totalCount += item.quantity; });
             document.getElementById('grand-total').innerText = total.toFixed(2);
             document.getElementById('modal-grand-total').innerText = total.toFixed(2);
             document.getElementById('cart-count').innerText = totalCount;
@@ -739,13 +649,11 @@
         function openCartModal() {
             const container = document.getElementById('modal-cart-items');
             container.innerHTML = '';
-
             if (cart.length === 0) {
                 container.innerHTML = '<p style="text-align:center; color:#999; padding:20px;">ยังไม่มีสินค้าในตะกร้าของคุณ</p>';
                 document.getElementById('cartModal').style.display = 'flex';
                 return;
             }
-
             cart.forEach((item, index) => {
                 const priceTotal = item.quantity * item.price;
                 container.innerHTML += `
@@ -766,24 +674,17 @@
                     </div>
                 `;
             });
-
             document.getElementById('cartModal').style.display = 'flex';
         }
 
-        function closeCartModal() {
-            document.getElementById('cartModal').style.display = 'none';
-        }
-
-        function closeInfoModal() {
-            document.getElementById('infoModal').style.display = 'none';
-        }
+        function closeCartModal() { document.getElementById('cartModal').style.display = 'none'; }
+        function closeInfoModal() { document.getElementById('infoModal').style.display = 'none'; }
 
         async function openOrderedHistory() {
             if (tableId === 'PENDING_QUEUE') {
                 alert('กรุณาสั่งอาหารและยืนยันออเดอร์ก่อน จึงจะสามารถดูรายการที่สั่งได้ครับ');
                 return;
             }
-
             document.getElementById('infoModalTitle').innerText = `📋 รายการอาหารที่สั่งแล้ว (${tableId.startsWith('Q') ? 'คิว' : 'โต๊ะ'} ${tableId})`;
             const body = document.getElementById('infoModalBody');
             body.innerHTML = '<p style="text-align:center; color:#999; padding:20px;">กำลังโหลดข้อมูล...</p>';
@@ -797,13 +698,10 @@
                         body.innerHTML = '<p style="text-align:center; color:#999; padding:20px;">ยังไม่มีประวัติการสั่งอาหารสำหรับรายการนี้</p>';
                         return;
                     }
-                    
                     let html = '<div style="display:flex; flex-direction:column; gap:10px;">';
                     orders.forEach((ord, index) => {
-                        html += `
-                            <div style="background:#f7f9fa; padding:12px; border-radius:10px;">
-                                <div style="font-weight:bold; color:var(--primary); margin-bottom:5px;">ออเดอร์ที่ #${index + 1} (${ord.status || 'กำลังทำอาหาร'})</div>
-                        `;
+                        html += `<div style="background:#f7f9fa; padding:12px; border-radius:10px;">
+                            <div style="font-weight:bold; color:var(--primary); margin-bottom:5px;">ออเดอร์ที่ #${index + 1} (${ord.status || 'กำลังทำอาหาร'})</div>`;
                         if (ord.items) {
                             ord.items.forEach(i => {
                                 html += `<div style="display:flex; justify-content:space-between; font-size:14px; padding:2px 0;">
@@ -826,14 +724,11 @@
 
         async function checkTableActiveStatus() {
             if (tableId === 'PENDING_QUEUE') return true;
-
             try {
                 const res = await fetch(`/api/check-table-status/${tableId}`);
                 const data = await res.json();
                 return data.active;
-            } catch (e) {
-                return true;
-            }
+            } catch (e) { return true; }
         }
 
         function showClosedScreen() {
@@ -849,9 +744,7 @@
             setInterval(async () => {
                 if (tableId && tableId !== 'PENDING_QUEUE') {
                     const active = await checkTableActiveStatus();
-                    if (!active) {
-                        showClosedScreen();
-                    }
+                    if (!active) showClosedScreen();
                 }
             }, 8000);
         }
@@ -863,6 +756,7 @@
             }
 
             try {
+                // ถ้าเป็นคิวหน้าร้านและยังเป็น PENDING_QUEUE ให้ขอเลขคิวจริงทันทีเมื่อกดสั่งครั้งแรก
                 if (isQueue && tableId === 'PENDING_QUEUE') {
                     const qRes = await fetch('/api/walk-in-queue', { method: 'POST' });
                     const qData = await qRes.json();
@@ -870,10 +764,12 @@
                         tableId = qData.queue_id;
                         document.getElementById('table-badge').innerText = `คิว: ${tableId}`;
                         
+                        // ล็อคเปลี่ยน URL ทันทีเป็นเลขคิวจริง เพื่อป้องกันการขอคิวซ้ำซ้อนเวลารีเฟรช
                         const newUrl = `${window.location.pathname}?table=${tableId}&queue=true`;
                         window.history.replaceState({path: newUrl}, '', newUrl);
                     } else {
-                        tableId = 'Q001';
+                        alert('ไม่สามารถสร้างคิวได้ กรุณาลองใหม่อีกครั้ง');
+                        return;
                     }
                 }
 
@@ -882,14 +778,9 @@
                     if (item.notes && item.notes.trim() !== '') {
                         finalItemName += ` [โน๊ต: ${item.notes.trim()}]`;
                     }
-
                     return {
-                        menu_item_id: item.id,
-                        name: finalItemName,
-                        quantity: item.quantity,
-                        price: item.price,
-                        notes: item.notes || null,
-                        options: item.optionsText || null
+                        menu_item_id: item.id, name: finalItemName, quantity: item.quantity,
+                        price: item.price, notes: item.notes || null, options: item.optionsText || null
                     };
                 });
 

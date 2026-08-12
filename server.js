@@ -51,7 +51,6 @@ pool.connect((err, client, release) => {
 
 async function initDatabase() {
     try {
-        // เพิ่มตารางจัดการสถานะโต๊ะและคิว
         await pool.query(`
             CREATE TABLE IF NOT EXISTS tables (
                 table_id VARCHAR(50) PRIMARY KEY,
@@ -84,13 +83,6 @@ async function initDatabase() {
         `);
 
         await pool.query(`
-            ALTER TABLE menu_items ADD COLUMN IF NOT EXISTS is_recommended INT2 DEFAULT 0;
-            ALTER TABLE menu_items ADD COLUMN IF NOT EXISTS is_admin_menu INT2 DEFAULT 0;
-            ALTER TABLE menu_items ADD COLUMN IF NOT EXISTS allow_egg INT2 DEFAULT 0;
-            ALTER TABLE menu_items ADD COLUMN IF NOT EXISTS kitchen_type VARCHAR(50) DEFAULT 'kitchen_1';
-        `);
-
-        await pool.query(`
             CREATE TABLE IF NOT EXISTS orders (
                 id SERIAL PRIMARY KEY,
                 table_id VARCHAR(50) NOT NULL,
@@ -100,12 +92,6 @@ async function initDatabase() {
                 printed_drink INT2 DEFAULT 0,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
-        `);
-
-        await pool.query(`
-            ALTER TABLE orders ADD COLUMN IF NOT EXISTS printed_kitchen_1 INT2 DEFAULT 0;
-            ALTER TABLE orders ADD COLUMN IF NOT EXISTS printed_kitchen_2 INT2 DEFAULT 0;
-            ALTER TABLE orders ADD COLUMN IF NOT EXISTS printed_drink INT2 DEFAULT 0;
         `);
 
         await pool.query(`
@@ -131,10 +117,6 @@ async function initDatabase() {
                 print_status VARCHAR(50) DEFAULT 'รอพิมพ์ใบเสร็จ',
                 checked_out_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
-        `);
-
-        await pool.query(`
-            ALTER TABLE sales_history ADD COLUMN IF NOT EXISTS print_status VARCHAR(50) DEFAULT 'รอพิมพ์ใบเสร็จ';
         `);
     
         console.log('Database tables checked/initialized successfully.');
@@ -167,30 +149,23 @@ app.get('/api/menu', async (req, res) => {
     }
 });
 
-// API ตรวจสอบสถานะโต๊ะหรือคิว (เช็คอย่างเดียว ห้ามเปิดโต๊ะเอง ป้องกันคนรีโหลดที่บ้าน)
+// ตรวจสอบสถานะโต๊ะ/คิว
 app.get('/api/check-table-status/:tableId', async (req, res) => {
     const tableId = String(req.params.tableId).toUpperCase();
     try {
-        if (tableId === 'PENDING_QUEUE') {
-            return res.json({ active: true });
-        }
+        if (tableId === 'PENDING_QUEUE') return res.json({ active: true });
 
-        const result = await pool.query(
-            "SELECT status FROM tables WHERE UPPER(table_id) = $1",
-            [tableId]
-        );
-
+        const result = await pool.query("SELECT status FROM tables WHERE UPPER(table_id) = $1", [tableId]);
         if (result.rows.length === 0 || result.rows[0].status === 'closed') {
             return res.json({ active: false });
         }
-
         res.json({ active: true });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
 
-// API สำหรับเปิดโต๊ะ (ใช้เฉพาะตอนลูกค้ายิงสแกน QR Code เข้ามาที่ร้าน)
+// เปิดโต๊ะเฉพาะตอนสแกน QR Code จริงๆ
 app.post('/api/open-table', async (req, res) => {
     const { table_id } = req.body;
     if (!table_id) return res.status(400).json({ error: 'Missing table_id' });
@@ -203,13 +178,13 @@ app.post('/api/open-table', async (req, res) => {
             ON CONFLICT (table_id) 
             DO UPDATE SET status = 'active', updated_at = CURRENT_TIMESTAMP
         `, [tableId]);
-        
         res.json({ success: true });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
 
+// สร้างเลขคิวใหม่สำหรับ Walk-in
 app.post('/api/walk-in-queue', async (req, res) => {
     try {
         const activeOrders = await pool.query("SELECT DISTINCT table_id FROM orders WHERE table_id LIKE 'Q%'");
@@ -222,6 +197,15 @@ app.post('/api/walk-in-queue', async (req, res) => {
             nextQNum = Math.max(...nums) + 1;
         }
         const newQueueId = `Q${String(nextQNum).padStart(3, '0')}`;
+        
+        // เปิดสถานะคิวใหม่ในตาราง tables ทันที
+        await pool.query(`
+            INSERT INTO tables (table_id, status, updated_at) 
+            VALUES ($1, 'active', CURRENT_TIMESTAMP) 
+            ON CONFLICT (table_id) 
+            DO UPDATE SET status = 'active', updated_at = CURRENT_TIMESTAMP
+        `, [newQueueId]);
+
         res.json({ success: true, queue_id: newQueueId });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -238,26 +222,30 @@ app.post('/api/orders', async (req, res) => {
         await client.query('BEGIN');
         const upperTableId = String(table_id).toUpperCase();
         
-        // --- ส่วนที่เพิ่มเพื่อล็อคสถานะโต๊ะ ---
         await client.query(`INSERT INTO tables (table_id, status) VALUES ($1, 'active') ON CONFLICT (table_id) DO UPDATE SET status = 'active', updated_at = CURRENT_TIMESTAMP`, [upperTableId]);
         
         const orderResult = await client.query('INSERT INTO orders (table_id) VALUES ($1) RETURNING id', [upperTableId]);
         const orderId = orderResult.rows[0].id;
+        
         for (const item of items) {
-            await client.query('INSERT INTO order_items (order_id, menu_item_id, quantity, price, notes, options, name) VALUES ($1, $2, $3, $4, $5, $6, $7)', [orderId, item.menu_item_id, item.quantity, item.price, item.notes || null, item.options ? JSON.stringify(item.options) : (item.options_str || null), item.name || null]);
+            await client.query('INSERT INTO order_items (order_id, menu_item_id, quantity, price, notes, options, name) VALUES ($1, $2, $3, $4, $5, $6, $7)', [
+                orderId, item.menu_item_id, item.quantity, item.price, item.notes || null, item.options || null, item.name || null
+            ]);
         }
         await client.query('COMMIT');
         res.json({ message: 'สั่งอาหารสำเร็จ', order_id: orderId });
-    } catch (err) { await client.query('ROLLBACK'); res.status(500).json({ error: err.message }); } finally { client.release(); }
+    } catch (err) { 
+        await client.query('ROLLBACK'); 
+        res.status(500).json({ error: err.message }); 
+    } finally { 
+        client.release(); 
+    }
 });
 
 app.get('/api/orders/table/:tableId', async (req, res) => {
     const tableId = String(req.params.tableId).toUpperCase();
     try {
-        const ordersResult = await pool.query(
-            'SELECT * FROM orders WHERE UPPER(table_id) = $1 ORDER BY created_at DESC',
-            [tableId]
-        );
+        const ordersResult = await pool.query('SELECT * FROM orders WHERE UPPER(table_id) = $1 ORDER BY created_at DESC', [tableId]);
         const orders = ordersResult.rows;
 
         if (orders.length === 0) return res.json([]);
@@ -265,12 +253,10 @@ app.get('/api/orders/table/:tableId', async (req, res) => {
         for (let i = 0; i < orders.length; i++) {
             const itemsResult = await pool.query(`
                 SELECT oi.quantity, oi.price, oi.notes, oi.options, oi.name 
-                FROM order_items oi 
-                WHERE oi.order_id = $1
+                FROM order_items oi WHERE oi.order_id = $1
             `, [orders[i].id]);
             orders[i].items = consolidateItems(itemsResult.rows);
         }
-
         res.json(orders);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -279,9 +265,7 @@ app.get('/api/orders/table/:tableId', async (req, res) => {
 
 app.get('/api/admin/orders', async (req, res) => {
     try {
-        const ordersResult = await pool.query(
-            'SELECT * FROM orders ORDER BY created_at DESC'
-        );
+        const ordersResult = await pool.query('SELECT * FROM orders ORDER BY created_at DESC');
         const orders = ordersResult.rows;
 
         if (orders.length === 0) return res.json([]);
@@ -289,12 +273,10 @@ app.get('/api/admin/orders', async (req, res) => {
         for (let i = 0; i < orders.length; i++) {
             const itemsResult = await pool.query(`
                 SELECT oi.quantity, oi.price, oi.notes, oi.options, oi.name 
-                FROM order_items oi 
-                WHERE oi.order_id = $1
+                FROM order_items oi WHERE oi.order_id = $1
             `, [orders[i].id]);
             orders[i].items = consolidateItems(itemsResult.rows);
         }
-
         res.json(orders);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -304,7 +286,6 @@ app.get('/api/admin/orders', async (req, res) => {
 app.put('/api/admin/orders/:id/status', async (req, res) => {
     const orderId = req.params.id;
     const { status } = req.body;
-
     try {
         await pool.query('UPDATE orders SET status = $1 WHERE id = $2', [status, orderId]);
         res.json({ message: 'อัปเดตสถานะสำเร็จ' });
@@ -326,17 +307,11 @@ app.put('/api/admin/orders/:id/reset-print', async (req, res) => {
 app.delete('/api/orders/:orderId/item/:itemIndex', async (mainReq, mainRes) => {
     const orderId = mainReq.params.orderId;
     const itemIndex = parseInt(mainReq.params.itemIndex);
-
     try {
-        const itemsResult = await pool.query(
-            'SELECT id FROM order_items WHERE order_id = $1 ORDER BY id ASC',
-            [orderId]
-        );
-
+        const itemsResult = await pool.query('SELECT id FROM order_items WHERE order_id = $1 ORDER BY id ASC', [orderId]);
         if (itemsResult.rows.length <= itemIndex) {
             return mainRes.status(404).json({ error: 'ไม่พบรายการอาหารที่ต้องการลบ' });
         }
-
         const targetItemId = itemsResult.rows[itemIndex].id;
         await pool.query('DELETE FROM order_items WHERE id = $1', [targetItemId]);
 
@@ -344,7 +319,6 @@ app.delete('/api/orders/:orderId/item/:itemIndex', async (mainReq, mainRes) => {
         if (parseInt(checkRemaining.rows[0].count) === 0) {
             await pool.query('DELETE FROM orders WHERE id = $1', [orderId]);
         }
-
         mainRes.json({ success: true, message: 'ลบรายการอาหารสำเร็จ' });
     } catch (err) {
         mainRes.status(500).json({ error: err.message });
@@ -354,32 +328,21 @@ app.delete('/api/orders/:orderId/item/:itemIndex', async (mainReq, mainRes) => {
 app.put('/api/orders/table/:tableId/move', async (req, res) => {
     const oldTableId = String(req.params.tableId).toUpperCase();
     const { new_table_id } = req.body;
-
-    if (!new_table_id) {
-        return res.status(400).json({ error: 'กรุณาระบุโต๊ะปลายทาง' });
-    }
+    if (!new_table_id) return res.status(400).json({ error: 'กรุณาระบุโต๊ะปลายทาง' });
 
     const targetNewId = String(new_table_id).toUpperCase();
     const client = await pool.connect();
-
     try {
         await client.query('BEGIN');
-        const updateResult = await client.query(
-            'UPDATE orders SET table_id = $1 WHERE UPPER(table_id) = $2',
-            [targetNewId, oldTableId]
-        );
-
+        const updateResult = await client.query('UPDATE orders SET table_id = $1 WHERE UPPER(table_id) = $2', [targetNewId, oldTableId]);
         if (updateResult.rowCount === 0) {
             await client.query('ROLLBACK');
             return res.status(404).json({ error: 'ไม่พบออเดอร์ของโต๊ะต้นทางที่ต้องการย้าย' });
         }
-
-        // ปิดโต๊ะเก่าและเปิดโต๊ะใหม่ในตาราง tables
         await client.query("UPDATE tables SET status = 'closed' WHERE table_id = $1", [oldTableId]);
         await client.query("INSERT INTO tables (table_id, status) VALUES ($1, 'active') ON CONFLICT (table_id) DO UPDATE SET status = 'active', updated_at = CURRENT_TIMESTAMP", [targetNewId]);
-
         await client.query('COMMIT');
-        res.json({ success: true, message: `ย้ายออเดอร์จาก ${oldTableId} ไปยัง ${targetNewId} สำเร็จ` });
+        res.json({ success: true, message: `ย้ายออเดอร์สำเร็จ` });
     } catch (err) {
         await client.query('ROLLBACK');
         res.status(500).json({ error: err.message });
@@ -388,12 +351,11 @@ app.put('/api/orders/table/:tableId/move', async (req, res) => {
     }
 });
 
+// เช็คบิลโต๊ะ/คิว
 app.delete('/api/orders/table/:tableId', async (req, res) => {
     const tableId = String(req.params.tableId).toUpperCase();
     try {
-        // --- ส่วนที่เพิ่มเพื่อปิดโต๊ะ ---
         await pool.query("UPDATE tables SET status = 'closed' WHERE table_id = $1", [tableId]);
-        
         const ordersResult = await pool.query('SELECT id FROM orders WHERE UPPER(table_id) = $1', [tableId]);
         const orders = ordersResult.rows;
         if (orders.length > 0) {
@@ -402,23 +364,19 @@ app.delete('/api/orders/table/:tableId', async (req, res) => {
             await pool.query('DELETE FROM orders WHERE UPPER(table_id) = $1', [tableId]);
         }
         res.json({ success: true });
-    } catch (err) { res.status(500).json({ error: err.message }); }
+    } catch (err) { 
+        res.status(500).json({ error: err.message }); 
+    }
 });
 
 app.post('/api/menu', upload.single('image'), async (req, res) => {
     const { name, price, category_name, category_id, is_recommended, is_admin_menu, allow_egg, kitchen_type } = req.body;
     const image_url = req.file ? `/uploads/${req.file.filename}` : (req.body.image_url || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c');
-    
     try {
         const result = await pool.query(
             `INSERT INTO menu_items (name, price, category_name, image_url, category_id, is_recommended, is_admin_menu, allow_egg, kitchen_type) 
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id`,
-            [
-                name, price, category_name, image_url, 
-                category_id || 1, is_recommended || 0, 
-                is_admin_menu || 0, allow_egg || 0, 
-                kitchen_type || 'kitchen_1'
-            ]
+            [name, price, category_name, image_url, category_id || 1, is_recommended || 0, is_admin_menu || 0, allow_egg || 0, kitchen_type || 'kitchen_1']
         );
         res.json({ success: true, id: result.rows[0].id });
     } catch (err) {
@@ -429,7 +387,6 @@ app.post('/api/menu', upload.single('image'), async (req, res) => {
 app.put('/api/menu/:id', upload.single('image'), async (req, res) => {
     const menuId = req.params.id;
     const { name, price, category_name, is_recommended, is_admin_menu, allow_egg, kitchen_type } = req.body;
-
     try {
         const recVal = is_recommended !== undefined ? is_recommended : 0;
         const adminVal = is_admin_menu !== undefined ? is_admin_menu : 0;
@@ -447,7 +404,6 @@ app.put('/api/menu/:id', upload.single('image'), async (req, res) => {
             query += ` WHERE id = $8`;
             params.push(menuId);
         }
-
         await pool.query(query, params);
         res.json({ success: true, message: 'อัปเดตเมนูสำเร็จ' });
     } catch (err) {
@@ -469,14 +425,12 @@ app.post('/api/admin/sales-history', async (req, res) => {
     try {
         const { table_id, title, total_price, items } = req.body;
         const consolidatedItems = consolidateItems(items || []);
-
         const result = await pool.query(
             `INSERT INTO sales_history (table_id, title, total_price, items, print_status) 
              VALUES ($1, $2, $3, $4, 'รอพิมพ์ใบเสร็จ') RETURNING id`,
             [table_id, title, total_price, JSON.stringify(consolidatedItems)]
         );
-
-        res.status(200).json({ success: true, id: result.rows[0].id, message: 'บันทึกประวัติยอดขายสำเร็จ' });
+        res.status(200).json({ success: true, id: result.rows[0].id });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -487,18 +441,10 @@ app.get('/api/admin/sales-history', async (req, res) => {
         let { start_date, end_date } = req.query;
         let query = 'SELECT * FROM sales_history';
         let queryParams = [];
-
         if (start_date && end_date) {
             query += ' WHERE checked_out_at >= $1 AND checked_out_at < ($2::date + INTERVAL \'1 day\')';
             queryParams = [start_date, end_date];
-        } else if (start_date) {
-            query += ' WHERE checked_out_at >= $1';
-            queryParams = [start_date];
-        } else if (end_date) {
-            query += ' WHERE checked_out_at < ($1::date + INTERVAL \'1 day\')';
-            queryParams = [end_date];
         }
-
         query += ' ORDER BY checked_out_at DESC';
         const result = await pool.query(query, queryParams);
         res.status(200).json(result.rows);
@@ -509,9 +455,7 @@ app.get('/api/admin/sales-history', async (req, res) => {
 
 app.get('/api/admin/unprinted-receipts', async (req, res) => {
     try {
-        const result = await pool.query(
-            "SELECT * FROM sales_history WHERE print_status = 'รอพิมพ์ใบเสร็จ' ORDER BY checked_out_at ASC"
-        );
+        const result = await pool.query("SELECT * FROM sales_history WHERE print_status = 'รอพิมพ์ใบเสร็จ' ORDER BY checked_out_at ASC");
         res.json(result.rows);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -521,11 +465,8 @@ app.get('/api/admin/unprinted-receipts', async (req, res) => {
 app.put('/api/admin/receipts/:id/printed', async (req, res) => {
     const receiptId = req.params.id;
     try {
-        await pool.query(
-            "UPDATE sales_history SET print_status = 'พิมพ์แล้ว' WHERE id = $1",
-            [receiptId]
-        );
-        res.json({ success: true, message: 'อัปเดตสถานะใบเสร็จเป็นพิมพ์แล้ว' });
+        await pool.query("UPDATE sales_history SET print_status = 'พิมพ์แล้ว' WHERE id = $1", [receiptId]);
+        res.json({ success: true });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -536,13 +477,8 @@ app.get('/api/admin/kitchen-split-orders', async (req, res) => {
         const ordersResult = await pool.query('SELECT * FROM orders WHERE status != $1 ORDER BY created_at ASC', ['เสร็จสิ้น']);
         const orders = ordersResult.rows;
 
-        let kitchen1Items = []; 
-        let kitchen2Items = []; 
-        let drinkItems = [];    
-
-        let k1OrderIds = [];
-        let k2OrderIds = [];
-        let drinkOrderIds = [];
+        let kitchen1Items = [], kitchen2Items = [], drinkItems = [];
+        let k1OrderIds = [], k2OrderIds = [], drinkOrderIds = [];
 
         for (const ord of orders) {
             let tableStr = String(ord.table_id);
@@ -550,8 +486,7 @@ app.get('/api/admin/kitchen-split-orders', async (req, res) => {
 
             const itemsResult = await pool.query(`
                 SELECT oi.*, COALESCE(mi.kitchen_type, 'kitchen_1') as kitchen_type 
-                FROM order_items oi 
-                LEFT JOIN menu_items mi ON oi.menu_item_id = mi.id 
+                FROM order_items oi LEFT JOIN menu_items mi ON oi.menu_item_id = mi.id 
                 WHERE oi.order_id = $1
             `, [ord.id]);
 
@@ -560,13 +495,8 @@ app.get('/api/admin/kitchen-split-orders', async (req, res) => {
             itemsResult.rows.forEach(item => {
                 const kType = item.kitchen_type;
                 const wrappedItem = {
-                    order_id: ord.id,
-                    table_label: locationLabel,
-                    name: item.name,
-                    quantity: item.quantity,
-                    price: item.price, 
-                    notes: item.notes,
-                    created_at: ord.created_at
+                    order_id: ord.id, table_label: locationLabel, name: item.name,
+                    quantity: item.quantity, price: item.price, notes: item.notes, created_at: ord.created_at
                 };
 
                 if (kType === 'drink') {
@@ -597,7 +527,6 @@ app.get('/api/admin/kitchen-split-orders', async (req, res) => {
 app.put('/api/admin/kitchen-orders/:type/printed', async (req, res) => {
     const kitchenType = req.params.type; 
     const { order_ids } = req.body;
-
     if (!order_ids || order_ids.length === 0) return res.json({ success: true });
 
     let colName = 'printed_kitchen_1';
