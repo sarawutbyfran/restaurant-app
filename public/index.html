@@ -368,13 +368,14 @@
 
     <div class="category-scroll" id="category-tabs">
         <button class="cat-btn active" onclick="filterMenu('ทั้งหมด', this)">ทั้งหมด</button>
-        <button class="cat-btn" onclick="filterMenu('เมนูแนะนำ', this)">⭐ เมนูแนะนำ</button>
+        <button class="cat-btn" onclick="filterMenu('แนะนำ', this)">⭐ แนะนำ</button>
         <button class="cat-btn" onclick="filterMenu('อาหารป่า', this)">🌿 อาหารป่า</button>
-        <button class="cat-btn" onclick="filterMenu('ทอด', this)">🍳 ทอด</button>
         <button class="cat-btn" onclick="filterMenu('ผัด', this)">🔥 ผัด</button>
         <button class="cat-btn" onclick="filterMenu('ต้มยำ', this)">🍲 ต้มยำ</button>
         <button class="cat-btn" onclick="filterMenu('ยำ', this)">🥗 ยำ</button>
-        <button class="cat-btn" onclick="filterMenu('อาหารตามสั่ง', this)">🍛 อาหารตามสั่ง</button>
+        <button class="cat-btn" onclick="filterMenu('ทอด', this)">🍳 ทอด</button>
+        <button class="cat-btn" onclick="filterMenu('อีสาน', this)">🌶️ อีสาน</button>
+        <button class="cat-btn" onclick="filterMenu('ตามสั่ง', this)">🍛 ตามสั่ง</button>
         <button class="cat-btn" onclick="filterMenu('เครื่องดื่ม', this)">🧋 เครื่องดื่ม</button>
     </div>
 
@@ -469,14 +470,15 @@
         let currentCustomQty = 1;
 
         const categoryMap = {
-            1: 'อาหารตามสั่ง', 
+            1: 'แนะนำ',
             2: 'อาหารป่า',
-            3: 'ทอด',
-            4: 'ผัด',
-            5: 'ต้มยำ',
-            6: 'ยำ',
-            7: 'เครื่องดื่ม',
-            8: 'เมนูแนะนำ'
+            3: 'ผัด',
+            4: 'ต้มยำ',
+            5: 'ยำ',
+            6: 'ทอด',
+            7: 'อีสาน',
+            8: 'ตามสั่ง',
+            9: 'เครื่องดื่ม'
         };
 
         async function fetchMenu() {
@@ -505,8 +507,8 @@
         function isRecommendedItem(item) {
             const catName = item.category_name || categoryMap[item.category_id] || '';
             return (
-                catName === 'เมนูแนะนำ' || 
-                item.category_id == 8 || 
+                catName === 'แนะนำ' || 
+                item.category_id == 1 || 
                 item.is_recommended === true || 
                 item.is_recommended === 1 || 
                 item.is_recommended === '1' ||
@@ -529,7 +531,7 @@
             let filtered = currentCategory === 'ทั้งหมด' 
                 ? availableMenus 
                 : availableMenus.filter(m => {
-                    if (currentCategory === 'เมนูแนะนำ') {
+                    if (currentCategory === 'แนะนำ') {
                         return isRecommendedItem(m);
                     }
                     const catName = m.category_name || categoryMap[m.category_id] || '';
@@ -678,7 +680,6 @@
             }
         }
 
-        // ฟังก์ชันลบรายการออกจากตะกร้าโดยตรง
         function removeItem(index) {
             cart.splice(index, 1);
             updateSummary();

@@ -279,6 +279,17 @@ app.put('/api/admin/orders/:id/status', async (req, res) => {
     }
 });
 
+// เพิ่ม API สำหรับรีเซ็ตสถานะพิมพ์ของออเดอร์ เพื่อให้ปุ่มพิมพ์ซ้ำ/พิมพ์ใหม่ ทำงานได้สมบูรณ์
+app.put('/api/admin/orders/:id/reset-print', async (req, res) => {
+    const orderId = req.params.id;
+    try {
+        await pool.query('UPDATE orders SET printed_kitchen_1 = 0, printed_kitchen_2 = 0, printed_drink = 0, status = $1 WHERE id = $2', ['กำลังทำอาหาร', orderId]);
+        res.json({ success: true, message: 'รีเซ็ตสถานะพิมพ์สำเร็จ' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 app.delete('/api/orders/:orderId/item/:itemIndex', async (mainReq, mainRes) => {
     const orderId = mainReq.params.orderId;
     const itemIndex = parseInt(mainReq.params.itemIndex);
@@ -479,7 +490,6 @@ app.put('/api/admin/receipts/:id/printed', async (req, res) => {
     }
 });
 
-// API แยกครัว 3 ใบ พร้อมเช็คสถานะการพิมพ์แต่ละโซน (ปรับปรุงการ JOIN ให้แม่นยำขึ้น)
 app.get('/api/admin/kitchen-split-orders', async (req, res) => {
     try {
         const ordersResult = await pool.query('SELECT * FROM orders WHERE status != $1 ORDER BY created_at ASC', ['เสร็จสิ้น']);
@@ -497,7 +507,6 @@ app.get('/api/admin/kitchen-split-orders', async (req, res) => {
             let tableStr = String(ord.table_id);
             let locationLabel = tableStr.startsWith('Z') ? `ซุ้ม ${tableStr}` : (isNaN(tableStr) ? `คิว ${tableStr}` : `โต๊ะ ${tableStr}`);
 
-            // ใช้ COALESCE เพื่อบังคับให้ถ้าหาไม่เจอ ให้ตกลงไปที่ kitchen_1 และดึงผ่าน menu_item_id โดยตรง
             const itemsResult = await pool.query(`
                 SELECT oi.*, COALESCE(mi.kitchen_type, 'kitchen_1') as kitchen_type 
                 FROM order_items oi 
@@ -545,7 +554,7 @@ app.get('/api/admin/kitchen-split-orders', async (req, res) => {
 });
 
 app.put('/api/admin/kitchen-orders/:type/printed', async (req, res) => {
-    const kitchenType = req.params.type; // k1, k2, drk
+    const kitchenType = req.params.type; 
     const { order_ids } = req.body;
 
     if (!order_ids || order_ids.length === 0) return res.json({ success: true });

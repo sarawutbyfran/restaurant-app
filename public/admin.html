@@ -240,11 +240,6 @@
             box-shadow: 0 1px 3px rgba(0,0,0,0.08);
             font-size: 12px;
         }
-        .kitchen-card.completed {
-            border-left-color: var(--success);
-            background: #f0fdf4;
-            opacity: 0.8;
-        }
         .btn-action {
             background: var(--success);
             color: white;
@@ -333,48 +328,24 @@
             border-radius: 6px;
             font-size: 12px;
         }
-
-        @media (max-width: 1024px) {
-            body {
-                grid-template-columns: 140px 1fr 1fr;
-                grid-template-rows: auto auto;
-                height: auto;
-                overflow: auto;
-            }
-            .sidebar-right {
-                grid-column: span 3;
-                height: auto;
-                border-top: 2px solid #ddd;
-            }
-        }
-        @media (max-width: 768px) {
-            body {
-                grid-template-columns: 1fr;
-                height: auto;
-                overflow: auto;
-            }
-            .sidebar-left, .content-middle, .tables-column, .sidebar-right {
-                border-right: none;
-                border-bottom: 1px solid #ddd;
-            }
-        }
     </style>
 </head>
 <body>
 
     <div class="sidebar-left">
-        <h2>🍲 ประเภท</h2>
+        <h2>🍲 หมวดหมู่</h2>
         <div id="category-list-admin" style="display: flex; flex-direction: column; gap: 5px;">
             <button class="cat-menu-btn active" onclick="selectCategory('ทั้งหมด', this)">ทั้งหมด</button>
-            <button class="cat-menu-btn" onclick="selectCategory('เมนูแนะนำ', this)">⭐ แนะนำ</button>
-            <button class="cat-menu-btn" onclick="selectCategory('อาหารป่า', this)">🌿 อาหารป่า</button>
-            <button class="cat-menu-btn" onclick="selectCategory('ทอด', this)">🍳 ทอด</button>
-            <button class="cat-menu-btn" onclick="selectCategory('ผัด', this)">🔥 ผัด</button>
-            <button class="cat-menu-btn" onclick="selectCategory('ต้มยำ', this)">🍲 ต้มยำ</button>
-            <button class="cat-menu-btn" onclick="selectCategory('ยำ', this)">🥗 ยำ</button>
-            <button class="cat-menu-btn" onclick="selectCategory('อาหารตามสั่ง', this)">🍛 ตามสั่ง</button>
-            <button class="cat-menu-btn" onclick="selectCategory('เครื่องดื่ม', this)">🧋 เครื่องดื่ม</button>
-            <button class="cat-menu-btn" onclick="selectCategory('AdminController', this)">AdminController</button>
+            <button class="cat-menu-btn" onclick="selectCategory('เมนูแนะนำ', this)">1. ⭐ แนะนำ</button>
+            <button class="cat-menu-btn" onclick="selectCategory('อาหารป่า', this)">2. 🌿 อาหารป่า</button>
+            <button class="cat-menu-btn" onclick="selectCategory('ผัด', this)">3. 🔥 ผัด</button>
+            <button class="cat-menu-btn" onclick="selectCategory('ต้มยำ', this)">4. 🍲 ต้มยำ</button>
+            <button class="cat-menu-btn" onclick="selectCategory('ยำ', this)">5. 🥗 ยำ</button>
+            <button class="cat-menu-btn" onclick="selectCategory('ทอด', this)">6. 🍳 ทอด</button>
+            <button class="cat-menu-btn" onclick="selectCategory('อีสาน', this)">7. 🌶️ อีสาน</button>
+            <button class="cat-menu-btn" onclick="selectCategory('อาหารตามสั่ง', this)">8. 🍛 ตามสั่ง</button>
+            <button class="cat-menu-btn" onclick="selectCategory('เครื่องดื่ม', this)">9. 🧋 เครื่องดื่ม</button>
+            <button class="cat-menu-btn" onclick="selectCategory('AdminController', this)">10. AdminController</button>
         </div>
 
         <div style="display: flex; flex-direction: column; gap: 4px; margin-top: auto; padding-top: 10px;">
@@ -426,17 +397,15 @@
         </div>
     </div>
 
-    <!-- Modals ต่างๆ -->
+    <!-- Modals -->
     <div class="modal" id="tableModal">
         <div class="modal-content">
             <h3 id="modalTableTitle" style="margin-top:0;">จัดการโต๊ะ/คิว</h3>
-            
             <div style="background: var(--light-gray); padding: 8px; border-radius: 6px; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
                 <span style="font-size: 11px; font-weight: bold;">🔄 ย้ายไปโต๊ะ/ซุ้ม/คิวอื่น:</span>
                 <input type="text" id="targetMoveInput" placeholder="เช่น 5, Z2, Q123" style="padding: 4px; font-size: 11px; width: 120px; border: 1px solid #ccc; border-radius: 4px;">
                 <button onclick="executeMoveTable()" style="background: var(--warning); border: none; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer;">ยืนยันการย้าย</button>
             </div>
-
             <div class="modal-body-grid">
                 <div>
                     <h4 style="margin:0 0 8px 0; font-size:12px; color:var(--primary);">📋 รายการอาหารในคิวนี้ทั้งหมด</h4>
@@ -476,10 +445,11 @@
                             <select id="newMenuCategory">
                                 <option value="เมนูแนะนำ">⭐ แนะนำ</option>
                                 <option value="อาหารป่า">🌿 อาหารป่า</option>
-                                <option value="ทอด">🍳 ทอด</option>
                                 <option value="ผัด">🔥 ผัด</option>
                                 <option value="ต้มยำ">🍲 ต้มยำ</option>
                                 <option value="ยำ">🥗 ยำ</option>
+                                <option value="ทอด">🍳 ทอด</option>
+                                <option value="อีสาน">🌶️ อีสาน</option>
                                 <option value="อาหารตามสั่ง">🍛 ตามสั่ง</option>
                                 <option value="เครื่องดื่ม">🧋 เครื่องดื่ม</option>
                                 <option value="AdminController">AdminController</option>
@@ -530,7 +500,6 @@
     <div class="modal" id="salesReportModal">
         <div class="modal-content" style="width: 800px; max-height: 90vh;">
             <h3 style="margin-top:0; color:var(--primary); font-size: 16px;">📊 สรุปยอดขายและประวัติใบเสร็จ</h3>
-            
             <div style="background: var(--light-gray); padding: 8px; border-radius: 8px; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; font-size: 11px; flex-wrap: wrap;">
                 <div>
                     <label><b>จากวันที่:</b></label>
@@ -543,12 +512,10 @@
                 <button onclick="loadSalesReport()" style="background: var(--success); color: white; border: none; padding: 5px 10px; border-radius: 4px; font-weight: bold; cursor: pointer; margin-top: 14px;">🔍 กรอง</button>
                 <button onclick="resetSalesFilter()" style="background: #ccc; border: none; padding: 5px 8px; border-radius: 4px; cursor: pointer; margin-top: 14px;">รีเซ็ต</button>
             </div>
-
             <div style="background: #e1f5fe; padding: 8px; border-radius: 8px; margin-bottom: 10px; text-align: center; border: 1px solid #b3e5fc;">
                 <div style="font-size: 11px; color: #0277bd;">ยอดขายรวมในช่วงเวลาที่เลือก</div>
                 <div id="totalSalesAmount" style="font-size: 20px; font-weight: bold; color: var(--success); margin-top: 2px;">0.00 ฿</div>
             </div>
-
             <div style="flex: 1; overflow-y: auto; max-height: 280px; border: 1px solid #ddd; border-radius: 6px; background: white;">
                 <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
                     <thead>
@@ -565,7 +532,6 @@
                     </tbody>
                 </table>
             </div>
-
             <div style="display:flex; justify-content:flex-end; border-top:1px solid #ddd; padding-top:8px; margin-top: 10px;">
                 <button onclick="closeSalesReportModal()" style="background:#ddd; border:none; padding:6px 14px; border-radius:6px; cursor:pointer; font-size:11px;">ปิดหน้าต่าง</button>
             </div>
@@ -591,10 +557,11 @@
                     <select id="editMenuCategory">
                         <option value="เมนูแนะนำ">⭐ แนะนำ</option>
                         <option value="อาหารป่า">🌿 อาหารป่า</option>
-                        <option value="ทอด">🍳 ทอด</option>
                         <option value="ผัด">🔥 ผัด</option>
                         <option value="ต้มยำ">🍲 ต้มยำ</option>
                         <option value="ยำ">🥗 ยำ</option>
+                        <option value="ทอด">🍳 ทอด</option>
+                        <option value="อีสาน">🌶️ อีสาน</option>
                         <option value="อาหารตามสั่ง">🍛 ตามสั่ง</option>
                         <option value="เครื่องดื่ม">🧋 เครื่องดื่ม</option>
                         <option value="AdminController">AdminController</option>
@@ -638,6 +605,7 @@
         let activeTableTitleText = '';
         let currentActiveOrders = [];
         let currentCart = [];
+        let salesHistoryCache = {};
 
         const categoryMap = {
             1: 'อาหารตามสั่ง', 
@@ -648,7 +616,8 @@
             6: 'ยำ',
             7: 'เครื่องดื่ม',
             8: 'เมนูแนะนำ',
-            9: 'AdminController'
+            9: 'AdminController',
+            10: 'อีสาน'
         };
 
         function consolidateItems(items) {
@@ -863,13 +832,11 @@
                         ord.items.forEach(i => {
                             itemsHtml += `<div style="padding: 1px 0;">• ${i.name} <strong>x${i.quantity}</strong></div>`;
                             
-                            // แก้ไขจุดนี้: ค้นหาจาก menu_item_id ก่อน หรือถ้าไม่มีให้ตัดเอาเฉพาะชื่อหลักก่อนเจอเครื่องหมายพิเศษ
                             let matchedMenu = null;
                             if (i.menu_item_id) {
                                 matchedMenu = allMenus.find(m => String(m.id) === String(i.menu_item_id));
                             }
                             if (!matchedMenu) {
-                                // ตัดข้อความส่วนเกินเช่น [โน๊ต: ...] หรือ (+...) ออก เพื่อให้ชื่อเมนูตรงกับฐานข้อมูล
                                 const cleanName = i.name.split(' [')[0].split(' (+')[0].trim();
                                 matchedMenu = allMenus.find(m => m.name.trim() === cleanName);
                             }
@@ -956,22 +923,22 @@
             }
         }
 
+        // ฟังก์ชันสั่งพิมพ์ออเดอร์ใหม่ (เชื่อมต่อ API รีเซ็ตสถานะพิมพ์ครัว)
         async function resetOrderToPrint(orderId) {
-            if(!confirm('ต้องการส่งออเดอร์นี้กลับไปคิวรอพิมพ์ที่เครื่องพิมพ์หลังบ้านใช่หรือไม่?')) return;
+            if(!confirm('ต้องการส่งออเดอร์นี้กลับไปคิวรอพิมพ์ที่เครื่องพิมพ์ครัวใหม่อีกครั้งใช่หรือไม่?')) return;
             try {
-                const res = await fetch(`/api/admin/orders/${orderId}/status`, {
+                const res = await fetch(`/api/admin/orders/${orderId}/reset-print`, {
                     method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ status: 'กำลังทำอาหาร' })
+                    headers: { 'Content-Type': 'application/json' }
                 });
                 if(res.ok) {
                     alert('ส่งคำสั่งรีเซ็ตเพื่อพิมพ์ใหม่สำเร็จ!');
                     fetchKitchenOrders();
                 } else {
-                    alert('ไม่สามารถเปลี่ยนสถานะได้');
+                    alert('ไม่สามารถรีเซ็ตสถานะพิมพ์ได้');
                 }
             } catch(e) {
-                alert('เกิดข้อผิดพลาดในการเชื่อมต่อ');
+                alert('เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์');
             }
         }
 
@@ -1025,10 +992,15 @@
             }
         }
 
-        async function reprintReceiptBackend(recordId, titleText, totalPrice, itemsJson) {
+        async function reprintReceiptBackend(recordId, titleText, totalPrice) {
             if(!confirm(`ต้องการสั่งพิมพ์ใบเสร็จของ ${titleText} ออกเครื่องพิมพ์หลักอีกครั้งใช่หรือไม่?`)) return;
             try {
-                const items = typeof itemsJson === 'string' ? JSON.parse(itemsJson) : itemsJson;
+                const targetRecord = salesHistoryCache[recordId];
+                if (!targetRecord || !targetRecord.items) {
+                    alert('ไม่พบข้อมูลรายการอาหารสำหรับพิมพ์ซ้ำ');
+                    return;
+                }
+
                 const res = await fetch('/api/admin/sales-history', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -1036,7 +1008,7 @@
                         table_id: "reprint",
                         title: `${titleText} (พิมพ์ซ้ำ)`,
                         total_price: totalPrice,
-                        items: items
+                        items: targetRecord.items
                     })
                 });
 
@@ -1348,6 +1320,7 @@
                 let totalSum = 0;
                 const tbody = document.getElementById('salesHistoryTableBody');
                 tbody.innerHTML = '';
+                salesHistoryCache = {};
 
                 if (historyList.length === 0) {
                     tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:20px; color:var(--gray);">ไม่พบประวัติยอดขายในช่วงเวลานี้</td></tr>`;
@@ -1357,6 +1330,7 @@
 
                 historyList.forEach(record => {
                     totalSum += Number(record.total_price || 0);
+                    salesHistoryCache[record.id] = record;
                     
                     let itemsSummary = '';
                     if (record.items && Array.isArray(record.items)) {
@@ -1364,7 +1338,6 @@
                     }
 
                     const formattedDate = new Date(record.checked_out_at).toLocaleString('th-TH');
-                    const itemsStrEscaped = encodeURIComponent(JSON.stringify(record.items || []));
 
                     tbody.innerHTML += `
                         <tr style="border-bottom: 1px solid #f1f2f6;">
@@ -1373,7 +1346,7 @@
                             <td style="padding: 5px 6px; max-width: 180px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${itemsSummary}">${itemsSummary}</td>
                             <td style="padding: 5px 6px; text-align: right; font-weight: bold; color: var(--success);">${Number(record.total_price).toFixed(2)} ฿</td>
                             <td style="padding: 5px 6px; text-align: center;">
-                                <button onclick="reprintReceiptBackend('${record.id}', '${record.title}', ${record.total_price}, decodeURIComponent('${itemsStrEscaped}'))" style="background:#3742fa; color:white; border:none; padding:2px 5px; border-radius:4px; cursor:pointer; font-size:10px;">🖨️ พิมพ์ซ้ำ</button>
+                                <button onclick="reprintReceiptBackend('${record.id}', '${record.title}', ${record.total_price})" style="background:#3742fa; color:white; border:none; padding:2px 5px; border-radius:4px; cursor:pointer; font-size:10px;">🖨️ พิมพ์ซ้ำ</button>
                             </td>
                         </tr>
                     `;
