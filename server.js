@@ -479,7 +479,7 @@ app.put('/api/admin/receipts/:id/printed', async (req, res) => {
     }
 });
 
-// API แยกครัว 3 ใบ พร้อมเช็คสถานะการพิมพ์แต่ละโซน
+// API แยกครัว 3 ใบ พร้อมเช็คสถานะการพิมพ์แต่ละโซน (ปรับปรุงการ JOIN ให้แม่นยำขึ้น)
 app.get('/api/admin/kitchen-split-orders', async (req, res) => {
     try {
         const ordersResult = await pool.query('SELECT * FROM orders WHERE status != $1 ORDER BY created_at ASC', ['เสร็จสิ้น']);
@@ -497,8 +497,9 @@ app.get('/api/admin/kitchen-split-orders', async (req, res) => {
             let tableStr = String(ord.table_id);
             let locationLabel = tableStr.startsWith('Z') ? `ซุ้ม ${tableStr}` : (isNaN(tableStr) ? `คิว ${tableStr}` : `โต๊ะ ${tableStr}`);
 
+            // ใช้ COALESCE เพื่อบังคับให้ถ้าหาไม่เจอ ให้ตกลงไปที่ kitchen_1 และดึงผ่าน menu_item_id โดยตรง
             const itemsResult = await pool.query(`
-                SELECT oi.*, mi.kitchen_type 
+                SELECT oi.*, COALESCE(mi.kitchen_type, 'kitchen_1') as kitchen_type 
                 FROM order_items oi 
                 LEFT JOIN menu_items mi ON oi.menu_item_id = mi.id 
                 WHERE oi.order_id = $1
@@ -507,13 +508,13 @@ app.get('/api/admin/kitchen-split-orders', async (req, res) => {
             let hasK1 = false, hasK2 = false, hasDrk = false;
 
             itemsResult.rows.forEach(item => {
-                const kType = item.kitchen_type || 'kitchen_1';
+                const kType = item.kitchen_type;
                 const wrappedItem = {
                     order_id: ord.id,
                     table_label: locationLabel,
                     name: item.name,
                     quantity: item.quantity,
-                    price: item.price, // <-- เพิ่มบรรทัดนี้เพื่อให้ส่งราคาไปที่ Print Agent ด้วยครับ
+                    price: item.price, 
                     notes: item.notes,
                     created_at: ord.created_at
                 };

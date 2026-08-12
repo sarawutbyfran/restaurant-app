@@ -834,86 +834,62 @@
         // ปรับปรุงฟังก์ชันนี้ให้ตรวจสอบเฉพาะครัวที่มีออเดอร์จริงๆ เท่านั้น เพื่อไม่ให้กระพริบค้าง
         async function fetchKitchenOrders() {
             try {
-                const res = await fetch('/api/admin/orders');
-                const orders = await res.json();
-                currentActiveOrders = orders;
+                // เรียกใช้ API ใหม่ที่ส่ง kitchen_type มาให้เลย
+                const res = await fetch('/api/admin/kitchen-split-orders');
+                const data = await res.json();
                 
-                renderActiveQueues(orders);
-                renderTablesAndZones();
-
                 const container = document.getElementById('kitchen-orders-list');
                 container.innerHTML = '';
 
-                const pendingKitchenOrders = orders.filter(ord => ord.status !== 'เสร็จสิ้น');
-
-                if (pendingKitchenOrders.length === 0) {
+                // รวมรายการจากทุกโซนเพื่อตรวจสอบออเดอร์
+                // เราจะดึงรายการมาจาก target_ids เพื่อดูว่าออเดอร์ไหนยังมีค้างอยู่
+                const allOrdersRes = await fetch('/api/admin/orders');
+                const allOrders = await allOrdersRes.json();
+                
+                const pendingOrders = allOrders.filter(o => o.status !== 'เสร็จสิ้น');
+                
+                if (pendingOrders.length === 0) {
                     container.innerHTML = '<p style="color:var(--gray); font-size:11px;">ไม่มีออเดอร์ค้างในครัว</p>';
                     return;
                 }
 
-                pendingKitchenOrders.forEach(ord => {
-                    let tableStr = String(ord.table_id);
-                    let locationLabel = tableStr.startsWith('Z') ? `ซุ้ม ${tableStr}` : (isNaN(tableStr) ? `คิว ${tableStr}` : `โต๊ะ ${tableStr}`);
-
-                    let itemsHtml = '';
-                    let hasK1 = false;
-                    let hasK2 = false;
-                    let hasDrk = false;
-
-                    if (ord.items) {
-                        ord.items.forEach(i => {
-                            itemsHtml += `<div style="padding: 1px 0;">• ${i.name} <strong>x${i.quantity}</strong></div>`;
-                            // เช็คว่าเมนูนี้อยู่ในครัวประเภทไหนจากข้อมูลทั้งหมด (สามารถดึงจาก allMenus ได้)
-                            const matchedMenu = allMenus.find(m => m.name === i.name || m.id === i.menu_item_id);
-                            const kType = matchedMenu ? (matchedMenu.kitchen_type || 'kitchen_1') : 'kitchen_1';
-                            
-                            if (kType === 'drink') hasDrk = true;
-                            else if (kType === 'kitchen_2') hasK2 = true;
-                            else hasK1 = true;
-                        });
-                    }
-                    
+                pendingOrders.forEach(ord => {
+                    // ตรวจสอบสถานะการพิมพ์จากตัวออเดอร์โดยตรง
                     let p1 = ord.printed_kitchen_1 === 1;
                     let p2 = ord.printed_kitchen_2 === 1;
                     let p3 = ord.printed_drink === 1;
 
-                    // เช็คเงื่อนไขการพิมพ์ครบเฉพาะโซนที่มีรายการอาหารอยู่จริงเท่านั้น
-                    let k1Done = !hasK1 || p1;
-                    let k2Done = !hasK2 || p2;
-                    let drkDone = !hasDrk || p3;
+                    // ค้นหารายการอาหารในออเดอร์นี้ เพื่อดูว่ามีเมนูของครัวไหนบ้าง
+                    const orderItems = ord.items || [];
+                    const typesInOrder = new Set(orderItems.map(i => {
+                        const menu = allMenus.find(m => m.name === i.name || m.id === i.menu_item_id);
+                        return menu ? menu.kitchen_type : 'kitchen_1';
+                    }));
 
-                    let allPrinted = k1Done && k2Done && drkDone;
-                    let isBlinking = !allPrinted; // ถ้ายังพิมพ์ไม่ครบตามโซนที่มีอาหาร ให้กระพริบ
+                    // เงื่อนไข: ถ้าออเดอร์มีรายการครัวไหน แล้วครัวนั้นยังไม่พิมพ์ -> กระพริบ
+                    let k1Needed = typesInOrder.has('kitchen_1');
+                    let k2Needed = typesInOrder.has('kitchen_2');
+                    let drkNeeded = typesInOrder.has('drink');
 
-                    let statusBadge = `
-                        <div style="font-size:10px; margin-top:2px; display:flex; gap:6px; flex-wrap:wrap;">
-                            ${hasK1 ? `<span style="color:${p1 ? '#2ed573' : '#ffa502'}">ครัว 1: ${p1 ? '🖨️ พิมพ์แล้ว' : '⏳ รอพิมพ์'}</span>` : ''}
-                            ${hasK2 ? `<span style="color:${p2 ? '#2ed573' : '#ffa502'}">ครัว 2: ${p2 ? '🖨️ พิมพ์แล้ว' : '⏳ รอพิมพ์'}</span>` : ''}
-                            ${hasDrk ? `<span style="color:${p3 ? '#2ed573' : '#ffa502'}">เครื่องดื่ม: ${p3 ? '🖨️ พิมพ์แล้ว' : '⏳ รอพิมพ์'}</span>` : ''}
-                        </div>
-                    `;
-
-                    let cardStyle = allPrinted ? 'border-left-color: #3742fa; background: #f0f4ff;' : '';
+                    let isBlinking = (k1Needed && !p1) || (k2Needed && !p2) || (drkNeeded && !p3);
 
                     container.innerHTML += `
-                        <div class="kitchen-card ${isBlinking ? 'unprinted-blink' : ''}" style="${cardStyle}">
-                            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 1px dashed #eee; padding-bottom: 3px; margin-bottom: 3px;">
-                                <span style="font-weight:bold; color:var(--primary); font-size: 12px;">📍 ${locationLabel}</span>
-                                <span style="font-size:10px; color:var(--gray);">
-                                    ${allPrinted ? '✅ พิมพ์ครบแล้ว' : '⏳ กำลังพิมพ์'}
-                                </span>
+                        <div class="kitchen-card ${isBlinking ? 'unprinted-blink' : ''}" style="${!isBlinking ? 'border-left-color: #3742fa; background: #f0f4ff;' : ''}">
+                            <div style="font-weight:bold; color:var(--primary);">📍 ${ord.table_id}</div>
+                            <div style="font-size:11px;">
+                                ${k1Needed ? `<span style="color:${p1?'#2ed573':'#ffa502'}">ครัว1:${p1?'✅':'⏳'}</span> ` : ''}
+                                ${k2Needed ? `<span style="color:${p2?'#2ed573':'#ffa502'}">ครัว2:${p2?'✅':'⏳'}</span> ` : ''}
+                                ${drkNeeded ? `<span style="color:${p3?'#2ed573':'#ffa502'}">น้ำ:${p3?'✅':'⏳'}</span>` : ''}
                             </div>
-                            <div style="color:var(--text); margin:4px 0; line-height: 1.4;">${itemsHtml}</div>
-                            ${statusBadge}
-                            <div style="display:flex; justify-content:flex-end; gap:4px; margin-top:6px; border-top: 1px solid #eee; padding-top: 4px;">
+                            <div style="display:flex; gap:4px; margin-top:6px;">
                                 <button class="btn-action" onclick="completeSingleOrder('${ord.id}')">✔️ เสร็จ</button>
                                 <button class="btn-print" onclick="resetOrderToPrint('${ord.id}')">🔄 พิมพ์ใหม่</button>
                             </div>
                         </div>
                     `;
                 });
-            } catch (err) {
-                console.error(err);
+            } catch (e) {
+                console.error("Error fetching kitchen:", e);
             }
         }
 
