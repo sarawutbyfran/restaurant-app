@@ -449,7 +449,6 @@
         let urlTable = urlParams.get('table');
         let isQueue = urlParams.get('queue') === 'true';
         let tableId = ''; 
-        let hasOrdered = false; // ตัวแปรเช็คว่าโต๊ะนี้เคยส่งออเดอร์ไปรึยัง
 
         async function initPage() {
             if (isQueue || !urlTable) {
@@ -459,6 +458,16 @@
                 tableId = urlTable.toUpperCase();
                 const badgePrefix = tableId.startsWith('Q') ? 'คิว: ' : 'โต๊ะ: ';
                 document.getElementById('table-badge').innerText = `${badgePrefix}${tableId}`;
+            }
+
+            // [จุดปรับปรุงสำคัญ] ตรวจสอบสถานะฐานข้อมูลทันทีตั้งแต่เปิดหน้าเว็บหรือกดรีโหลด
+            // หากโต๊ะนี้เคยถูกเช็คบิลไปแล้ว (ไม่มีออเดอร์ค้างในระบบ และไม่ใช่คิวใหม่รอเปิด) หน้าจอจะถูกบล็อกทันที
+            if (tableId !== 'PENDING_QUEUE' && !isQueue) {
+                const initialActive = await checkTableHasAnyActiveOrders();
+                if (!initialActive) {
+                    showClosedScreen();
+                    return;
+                }
             }
             
             fetchMenu();
@@ -764,7 +773,7 @@
         }
 
         async function openOrderedHistory() {
-            if (tableId === 'PENDING_QUEUE' || !hasOrdered) {
+            if (tableId === 'PENDING_QUEUE') {
                 alert('กรุณาสั่งอาหารและยืนยันออเดอร์ก่อน จึงจะสามารถดูรายการที่สั่งได้ครับ');
                 return;
             }
@@ -809,30 +818,53 @@
             }
         }
 
-        // --- ระบบตรวจสอบสถานะโต๊ะ/คิว (จะทำงานต่อเมื่อเคยส่งออเดอร์ไปแล้วเท่านั้น) ---
-        async function checkTableStatus() {
-            if (tableId === 'PENDING_QUEUE' || !tableId || !hasOrdered) return true;
+        // --- ฟังก์ชันเช็คสถานะโต๊ะจากฐานข้อมูลโดยตรง ---
+        async function checkTableHasAnyActiveOrders() {
+            if (tableId === 'PENDING_QUEUE' || !tableId) return true;
             try {
                 const res = await fetch(`/api/check-table-status/${tableId}`);
                 const data = await res.json();
-                return data.active;
+                
+                // สำหรับโต๊ะใหม่ที่ยังไม่เคยสั่งอาหารเลย เมธอด /api/check-table-status จะคืนค่า active เป็น false
+                // แต่เพื่อให้ลูกค้าใหม่เปิดเข้ามาเลือกดูเมนูได้ เราจะอนุญาตเฉพาะโต๊ะที่ "เพิ่งเปิดใหม่และยังไม่เคยมีออเดอร์" 
+                // หรือถ้าโต๊ะนี้เคยถูกเช็คบิลไปแล้ว (ซึ่งแปลว่าเคยมีออเดอร์แล้วถูกลบออก) สถานะจะถูกบล็อก
+                // ดังนั้น เราจะเช็คประวัติออเดอร์สะสมด้วยฟังก์ชันดึงออเดอร์โต๊ะ
+                const orderRes = await fetch(`/api/orders/table/${tableId}`);
+                const orders = await orderRes.json();
+
+                // เงื่อนไข: ถ้าในฐานข้อมูลไม่มีออเดอร์ค้างอยู่เลย...
+                if (orders.length === 0) {
+                    // ให้เช็คว่าโต๊ะนี้มีประวัติการขาย (เคยเช็คบิลไปแล้วใน sales_history หรือไม่?) 
+                    // แต่เนื่องจากเราไม่ได้เก็บบันทึกสถานะถาวรที่ตารางโต๊ะ เราจึงใช้หลักการ: 
+                    // ถาลูกค้าเพิ่งสแกนเข้ามาใหม่เอี่ยม จะไม่มีออเดอร์ในตาราง orders เลย 
+                    // แต่ถ้าเขาเคยกดสั่งไปแล้วแล้วโดนเช็คบิล ออเดอร์จะหายไปทั้งหมด
+                    // เพื่อแยกแยะระหว่าง "โต๊ะว่างใหม่เอี่ยม" กับ "โต๊ะที่เช็คบิลแล้วกลับมากดรีโหลด" 
+                    // เราสามารถเช็คผ่าน sessionStorage ได้ว่าเครื่องนี้เคยกดสั่งอาหารไปหรือยัง?
+                    if (sessionStorage.getItem(`ordered_${tableId}`) === 'true') {
+                        return false; // เคยกดสั่งแล้ว และถูกเช็คบิลไปแล้ว -> บล็อกทันที!
+                    }
+                }
+                return true;
             } catch (e) {
-                return true; 
+                return true;
             }
+        }
+
+        function showClosedScreen() {
+            document.body.innerHTML = `
+                <div style="display:flex; flex-direction:column; justify-content:center; align-items:center; height:100vh; text-align:center; padding:20px; font-family:'Prompt',sans-serif;">
+                    <h2 style="color:#ff4757; font-size:24px;">🚫 โต๊ะ/คิวนี้ถูกเช็คบิลปิดบริการแล้ว</h2>
+                    <p style="color:#747d8c; font-size:16px; margin-top:10px;">หากต้องการสั่งอาหารเพิ่ม กรุณาสแกน QR Code ใหม่อีกครั้งที่โต๊ะ</p>
+                </div>
+            `;
         }
 
         function startSessionMonitor() {
             setInterval(async () => {
-                // จะตรวจเช็คก็ต่อเมื่อลูกค้ารายนี้ "เคยกดสั่งอาหารไปแล้วอย่างน้อย 1 ครั้ง"
-                if (hasOrdered && tableId && tableId !== 'PENDING_QUEUE' && !isQueue) {
-                    const isActive = await checkTableStatus();
+                if (tableId && tableId !== 'PENDING_QUEUE' && !isQueue) {
+                    const isActive = await checkTableHasAnyActiveOrders();
                     if (!isActive) {
-                        document.body.innerHTML = `
-                            <div style="display:flex; flex-direction:column; justify-content:center; align-items:center; height:100vh; text-align:center; padding:20px; font-family:'Prompt',sans-serif;">
-                                <h2 style="color:#ff4757; font-size:24px;">🚫 โต๊ะ/คิวนี้ถูกเช็คบิลปิดบริการแล้ว</h2>
-                                <p style="color:#747d8c; font-size:16px; margin-top:10px;">หากต้องการสั่งอาหารเพิ่ม กรุณาสแกน QR Code ใหม่อีกครั้งที่โต๊ะ</p>
-                            </div>
-                        `;
+                        showClosedScreen();
                     }
                 }
             }, 10000);
@@ -842,16 +874,6 @@
             if (cart.length === 0) {
                 alert('กรุณาเลือกเมนูอาหารอย่างน้อย 1 รายการครับ');
                 return;
-            }
-
-            // หากเคยสั่งไปแล้ว ให้เช็คสถานะก่อนส่งเพิ่ม
-            if (hasOrdered) {
-                const isActive = await checkTableStatus();
-                if (!isActive && tableId !== 'PENDING_QUEUE') {
-                    alert('โต๊ะหรือคิวนี้ได้ทำการเช็คบิลไปแล้ว ไม่สามารถสั่งอาหารเพิ่มได้ กรุณาสแกน QR Code ใหม่');
-                    window.location.reload();
-                    return;
-                }
             }
 
             try {
@@ -890,7 +912,9 @@
 
                 const result = await res.json();
                 if (res.ok) {
-                    hasOrdered = true; // ตั้งค่าว่าโต๊ะนี้ได้ทำการส่งออเดอร์สำเร็จแล้ว เริ่มเปิดระบบมอนิเตอร์เช็คบิล
+                    // [จุดสำคัญ] บันทึกลงในความจำมือถือเครื่องนี้ว่าโต๊ะนี้ได้ทำการส่งออเดอร์ไปแล้ว
+                    sessionStorage.setItem(`ordered_${tableId}`, 'true');
+
                     alert(`🎉 สั่งอาหารสำเร็จ! หมายเลขคิว/โต๊ะของคุณคือ: ${tableId}`);
                     cart = [];
                     closeCartModal();
