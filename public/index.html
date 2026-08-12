@@ -459,11 +459,13 @@
                 document.getElementById('table-badge').innerText = `${badgePrefix}${tableId}`;
             }
 
-            // ตรวจสอบสถานะจาก Server ทันทีตั้งแต่เปิดหน้าเว็บหรือกดรีโหลด
-            const active = await checkTableActiveStatus();
-            if (!active) {
-                showClosedScreen();
-                return;
+            // ถ้ารอรับคิวอยู่ยังไม่ต้องเช็คสถานะฐานข้อมูล ให้ผ่านไปโหลดเมนูได้เลย
+            if (tableId !== 'PENDING_QUEUE') {
+                const active = await checkTableActiveStatus();
+                if (!active) {
+                    showClosedScreen();
+                    return;
+                }
             }
             
             fetchMenu();

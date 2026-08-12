@@ -213,38 +213,22 @@ app.post('/api/orders', async (req, res) => {
     if (!table_id || !items || items.length === 0) {
         return res.status(400).json({ error: 'ข้อมูลออเดอร์ไม่ครบถ้วน' });
     }
-
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
         const upperTableId = String(table_id).toUpperCase();
-
-        // [จุดที่เพิ่ม] อัปเดตสถานะโต๊ะให้เป็น active
-        await client.query(`
-            INSERT INTO tables (table_id, status) VALUES ($1, 'active')
-            ON CONFLICT (table_id) DO UPDATE SET status = 'active', updated_at = CURRENT_TIMESTAMP
-        `, [upperTableId]);
-
-        const orderResult = await client.query(
-            'INSERT INTO orders (table_id) VALUES ($1) RETURNING id',
-            [upperTableId]
-        );
+        
+        // --- ส่วนที่เพิ่มเพื่อล็อคสถานะโต๊ะ ---
+        await client.query(`INSERT INTO tables (table_id, status) VALUES ($1, 'active') ON CONFLICT (table_id) DO UPDATE SET status = 'active', updated_at = CURRENT_TIMESTAMP`, [upperTableId]);
+        
+        const orderResult = await client.query('INSERT INTO orders (table_id) VALUES ($1) RETURNING id', [upperTableId]);
         const orderId = orderResult.rows[0].id;
-
         for (const item of items) {
-            await client.query(
-                'INSERT INTO order_items (order_id, menu_item_id, quantity, price, notes, options, name) VALUES ($1, $2, $3, $4, $5, $6, $7)',
-                [orderId, item.menu_item_id, item.quantity, item.price, item.notes || null, item.options ? JSON.stringify(item.options) : (item.options_str || null), item.name || null]
-            );
+            await client.query('INSERT INTO order_items (order_id, menu_item_id, quantity, price, notes, options, name) VALUES ($1, $2, $3, $4, $5, $6, $7)', [orderId, item.menu_item_id, item.quantity, item.price, item.notes || null, item.options ? JSON.stringify(item.options) : (item.options_str || null), item.name || null]);
         }
         await client.query('COMMIT');
         res.json({ message: 'สั่งอาหารสำเร็จ', order_id: orderId });
-    } catch (err) {
-        await client.query('ROLLBACK');
-        res.status(500).json({ error: err.message });
-    } finally {
-        client.release();
-    }
+    } catch (err) { await client.query('ROLLBACK'); res.status(500).json({ error: err.message }); } finally { client.release(); }
 });
 
 app.get('/api/orders/table/:tableId', async (req, res) => {
@@ -356,46 +340,51 @@ app.put('/api/orders/table/:tableId/move', async (req, res) => {
     }
 
     const targetNewId = String(new_table_id).toUpperCase();
+    const client = await pool.connect();
 
     try {
-        const updateResult = await pool.query(
+        await client.query('BEGIN');
+        const updateResult = await client.query(
             'UPDATE orders SET table_id = $1 WHERE UPPER(table_id) = $2',
             [targetNewId, oldTableId]
         );
 
         if (updateResult.rowCount === 0) {
+            await client.query('ROLLBACK');
             return res.status(404).json({ error: 'ไม่พบออเดอร์ของโต๊ะต้นทางที่ต้องการย้าย' });
         }
 
+        // ปิดโต๊ะเก่าและเปิดโต๊ะใหม่ในตาราง tables
+        await client.query("UPDATE tables SET status = 'closed' WHERE table_id = $1", [oldTableId]);
+        await client.query("INSERT INTO tables (table_id, status) VALUES ($1, 'active') ON CONFLICT (table_id) DO UPDATE SET status = 'active', updated_at = CURRENT_TIMESTAMP", [targetNewId]);
+
+        await client.query('COMMIT');
         res.json({ success: true, message: `ย้ายออเดอร์จาก ${oldTableId} ไปยัง ${targetNewId} สำเร็จ` });
     } catch (err) {
+        await client.query('ROLLBACK');
         res.status(500).json({ error: err.message });
+    } finally {
+        client.release();
     }
 });
 
 app.delete('/api/orders/table/:tableId', async (req, res) => {
     const tableId = String(req.params.tableId).toUpperCase();
     try {
+        // --- ส่วนที่เพิ่มเพื่อปิดโต๊ะ ---
+        await pool.query("UPDATE tables SET status = 'closed' WHERE table_id = $1", [tableId]);
+        
         const ordersResult = await pool.query('SELECT id FROM orders WHERE UPPER(table_id) = $1', [tableId]);
         const orders = ordersResult.rows;
-
         if (orders.length > 0) {
             const orderIds = orders.map(o => o.id);
             await pool.query('DELETE FROM order_items WHERE order_id = ANY($1::int[])', [orderIds]);
             await pool.query('DELETE FROM orders WHERE UPPER(table_id) = $1', [tableId]);
         }
-
-        // [จุดที่เพิ่ม] ปิดสถานะโต๊ะ
-        await pool.query(`
-            INSERT INTO tables (table_id, status) VALUES ($1, 'closed')
-            ON CONFLICT (table_id) DO UPDATE SET status = 'closed', updated_at = CURRENT_TIMESTAMP
-        `, [tableId]);
-
-        res.json({ success: true, message: `Cleared orders and closed table ${tableId} successfully` });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: err.message }); }
 });
+
 app.post('/api/menu', upload.single('image'), async (req, res) => {
     const { name, price, category_name, category_id, is_recommended, is_admin_menu, allow_egg, kitchen_type } = req.body;
     const image_url = req.file ? `/uploads/${req.file.filename}` : (req.body.image_url || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c');
