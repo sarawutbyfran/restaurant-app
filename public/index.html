@@ -447,11 +447,10 @@
         const urlParams = new URLSearchParams(window.location.search);
         let urlTable = urlParams.get('table');
         let isQueue = urlParams.get('queue') === 'true';
-        let tableId = ''; // จะถูกกำหนดค่าเมื่อมีการโหลดหรือกดส่งออเดอร์
+        let tableId = ''; 
 
         async function initPage() {
             if (isQueue || !urlTable) {
-                // ถ้าเป็นลูกค้าสั่งหน้าร้าน ตอนเปิดหน้าเว็บยังไม่ขอคิวทันที ป้องกันคิวซ้อนกันตอนเปิดพร้อมกัน
                 tableId = 'PENDING_QUEUE';
                 document.getElementById('table-badge').innerText = 'คิว: กำลังรอรับคิว...';
             } else {
@@ -679,6 +678,13 @@
             }
         }
 
+        // ฟังก์ชันลบรายการออกจากตะกร้าโดยตรง
+        function removeItem(index) {
+            cart.splice(index, 1);
+            updateSummary();
+            openCartModal();
+        }
+
         function updateSummary() {
             let total = 0;
             let totalCount = 0;
@@ -718,7 +724,7 @@
                                 <span>${item.quantity}</span>
                                 <button onclick="changeCartQty(${index}, 1)" style="padding:2px 8px; cursor:pointer;">+</button>
                             </div>
-                            <button class="btn-remove-item" onclick="changeCartQty(${index}, -item.quantity)">ลบ</button>
+                            <button class="btn-remove-item" onclick="removeItem(${index})">ลบ</button>
                         </div>
                     </div>
                 `;
@@ -788,7 +794,6 @@
             }
 
             try {
-                // หากเป็นคิวหน้าร้าน และยังไม่ได้รับเลขคิว ให้ขอเลขคิวสดๆ ทันทีในจังหวะกดสั่ง
                 if (isQueue && (tableId === 'PENDING_QUEUE' || !tableId)) {
                     const qRes = await fetch('/api/walk-in-queue', { method: 'POST' });
                     const qData = await qRes.json();
@@ -836,7 +841,6 @@
             }
         }
 
-        // เริ่มต้นการทำงานหน้าเว็บ
         initPage();
     </script>
 </body>
