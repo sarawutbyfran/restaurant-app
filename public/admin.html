@@ -831,6 +831,7 @@
             }
         }
 
+        // ปรับปรุงฟังก์ชันนี้ให้ตรวจสอบเฉพาะครัวที่มีออเดอร์จริงๆ เท่านั้น เพื่อไม่ให้กระพริบค้าง
         async function fetchKitchenOrders() {
             try {
                 const res = await fetch('/api/admin/orders');
@@ -855,35 +856,51 @@
                     let locationLabel = tableStr.startsWith('Z') ? `ซุ้ม ${tableStr}` : (isNaN(tableStr) ? `คิว ${tableStr}` : `โต๊ะ ${tableStr}`);
 
                     let itemsHtml = '';
+                    let hasK1 = false;
+                    let hasK2 = false;
+                    let hasDrk = false;
+
                     if (ord.items) {
                         ord.items.forEach(i => {
                             itemsHtml += `<div style="padding: 1px 0;">• ${i.name} <strong>x${i.quantity}</strong></div>`;
+                            // เช็คว่าเมนูนี้อยู่ในครัวประเภทไหนจากข้อมูลทั้งหมด (สามารถดึงจาก allMenus ได้)
+                            const matchedMenu = allMenus.find(m => m.name === i.name || m.id === i.menu_item_id);
+                            const kType = matchedMenu ? (matchedMenu.kitchen_type || 'kitchen_1') : 'kitchen_1';
+                            
+                            if (kType === 'drink') hasDrk = true;
+                            else if (kType === 'kitchen_2') hasK2 = true;
+                            else hasK1 = true;
                         });
                     }
                     
-                    // แสดงสถานะการพิมพ์แยกตามโซน (Kitchen 1, Kitchen 2, Drinks)
                     let p1 = ord.printed_kitchen_1 === 1;
                     let p2 = ord.printed_kitchen_2 === 1;
                     let p3 = ord.printed_drink === 1;
 
+                    // เช็คเงื่อนไขการพิมพ์ครบเฉพาะโซนที่มีรายการอาหารอยู่จริงเท่านั้น
+                    let k1Done = !hasK1 || p1;
+                    let k2Done = !hasK2 || p2;
+                    let drkDone = !hasDrk || p3;
+
+                    let allPrinted = k1Done && k2Done && drkDone;
+                    let isBlinking = !allPrinted; // ถ้ายังพิมพ์ไม่ครบตามโซนที่มีอาหาร ให้กระพริบ
+
                     let statusBadge = `
-                        <div style="font-size:10px; margin-top:2px; display:flex; gap:6px;">
-                            <span style="color:${p1 ? '#2ed573' : '#ffa502'}">ครัว 1: ${p1 ? '🖨️ พิมพ์แล้ว' : '⏳ รอพิมพ์'}</span>
-                            <span style="color:${p2 ? '#2ed573' : '#ffa502'}">ครัว 2: ${p2 ? '🖨️ พิมพ์แล้ว' : '⏳ รอพิมพ์'}</span>
-                            <span style="color:${p3 ? '#2ed573' : '#ffa502'}">เครื่องดื่ม: ${p3 ? '🖨️ พิมพ์แล้ว' : '⏳ รอพิมพ์'}</span>
+                        <div style="font-size:10px; margin-top:2px; display:flex; gap:6px; flex-wrap:wrap;">
+                            ${hasK1 ? `<span style="color:${p1 ? '#2ed573' : '#ffa502'}">ครัว 1: ${p1 ? '🖨️ พิมพ์แล้ว' : '⏳ รอพิมพ์'}</span>` : ''}
+                            ${hasK2 ? `<span style="color:${p2 ? '#2ed573' : '#ffa502'}">ครัว 2: ${p2 ? '🖨️ พิมพ์แล้ว' : '⏳ รอพิมพ์'}</span>` : ''}
+                            ${hasDrk ? `<span style="color:${p3 ? '#2ed573' : '#ffa502'}">เครื่องดื่ม: ${p3 ? '🖨️ พิมพ์แล้ว' : '⏳ รอพิมพ์'}</span>` : ''}
                         </div>
                     `;
 
-                    let allPrinted = p1 && p2 && p3;
-                    let cardClass = allPrinted ? 'kitchen-card' : 'kitchen-card unprinted-blink';
                     let cardStyle = allPrinted ? 'border-left-color: #3742fa; background: #f0f4ff;' : '';
 
                     container.innerHTML += `
-                        <div class="${cardClass}" style="${cardStyle}">
+                        <div class="kitchen-card ${isBlinking ? 'unprinted-blink' : ''}" style="${cardStyle}">
                             <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 1px dashed #eee; padding-bottom: 3px; margin-bottom: 3px;">
                                 <span style="font-weight:bold; color:var(--primary); font-size: 12px;">📍 ${locationLabel}</span>
                                 <span style="font-size:10px; color:var(--gray);">
-                                    ${allPrinted ? '✅ ครบทุกโซน' : '⏳ กำลังพิมพ์'}
+                                    ${allPrinted ? '✅ พิมพ์ครบแล้ว' : '⏳ กำลังพิมพ์'}
                                 </span>
                             </div>
                             <div style="color:var(--text); margin:4px 0; line-height: 1.4;">${itemsHtml}</div>
@@ -895,7 +912,9 @@
                         </div>
                     `;
                 });
-            } catch (err) {}
+            } catch (err) {
+                console.error(err);
+            }
         }
 
         function renderActiveQueues(orders) {
@@ -932,6 +951,7 @@
         async function resetOrderToPrint(orderId) {
             if(!confirm('ต้องการส่งออเดอร์นี้กลับไปคิวรอพิมพ์ที่เครื่องพิมพ์หลังบ้านใช่หรือไม่?')) return;
             try {
+                // ทำการรีเซ็ตค่าสถานะการพิมพ์ทั้งหมดกลับเป็น 0 เพื่อให้ Print Agent ดึงไปพิมพ์ซ้ำได้
                 const res = await fetch(`/api/admin/orders/${orderId}/status`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
