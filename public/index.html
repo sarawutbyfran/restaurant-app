@@ -460,8 +460,7 @@
                 document.getElementById('table-badge').innerText = `${badgePrefix}${tableId}`;
             }
 
-            // [จุดปรับปรุงสำคัญ] ตรวจสอบสถานะฐานข้อมูลทันทีตั้งแต่เปิดหน้าเว็บหรือกดรีโหลด
-            // หากโต๊ะนี้เคยถูกเช็คบิลไปแล้ว (ไม่มีออเดอร์ค้างในระบบ และไม่ใช่คิวใหม่รอเปิด) หน้าจอจะถูกบล็อกทันที
+            // ตรวจสอบสถานะฐานข้อมูลทันทีตั้งแต่เปิดหน้าเว็บหรือกดรีโหลด
             if (tableId !== 'PENDING_QUEUE' && !isQueue) {
                 const initialActive = await checkTableHasAnyActiveOrders();
                 if (!initialActive) {
@@ -540,7 +539,6 @@
 
             const keyword = document.getElementById('searchInput').value.trim().toLowerCase();
 
-            // ซ่อนเฉพาะเมนูที่ category_name เป็น AdminController เท่านั้น
             let availableMenus = allMenus.filter(m => {
                 const catName = m.category_name || categoryMap[m.category_id] || '';
                 return catName !== 'AdminController';
@@ -563,7 +561,6 @@
                 });
             }
 
-            // จัดเรียงลำดับเมนูเมื่ออยู่หน้า "ทั้งหมด" ให้เรียงตามหมวดหมู่ 1 ถึง 10 เป๊ะๆ ไม่ให้สลับมั่ว
             if (keyword === '') {
                 filtered.sort((a, b) => {
                     const catA = a.category_name || categoryMap[a.category_id] || '';
@@ -822,26 +819,16 @@
         async function checkTableHasAnyActiveOrders() {
             if (tableId === 'PENDING_QUEUE' || !tableId) return true;
             try {
-                const res = await fetch(`/api/check-table-status/${tableId}`);
-                const data = await res.json();
-                
-                // สำหรับโต๊ะใหม่ที่ยังไม่เคยสั่งอาหารเลย เมธอด /api/check-table-status จะคืนค่า active เป็น false
-                // แต่เพื่อให้ลูกค้าใหม่เปิดเข้ามาเลือกดูเมนูได้ เราจะอนุญาตเฉพาะโต๊ะที่ "เพิ่งเปิดใหม่และยังไม่เคยมีออเดอร์" 
-                // หรือถ้าโต๊ะนี้เคยถูกเช็คบิลไปแล้ว (ซึ่งแปลว่าเคยมีออเดอร์แล้วถูกลบออก) สถานะจะถูกบล็อก
-                // ดังนั้น เราจะเช็คประวัติออเดอร์สะสมด้วยฟังก์ชันดึงออเดอร์โต๊ะ
                 const orderRes = await fetch(`/api/orders/table/${tableId}`);
                 const orders = await orderRes.json();
 
-                // เงื่อนไข: ถ้าในฐานข้อมูลไม่มีออเดอร์ค้างอยู่เลย...
+                // ถ้าในฐานข้อมูลไม่มีออเดอร์ค้างอยู่เลย
                 if (orders.length === 0) {
-                    // ให้เช็คว่าโต๊ะนี้มีประวัติการขาย (เคยเช็คบิลไปแล้วใน sales_history หรือไม่?) 
-                    // แต่เนื่องจากเราไม่ได้เก็บบันทึกสถานะถาวรที่ตารางโต๊ะ เราจึงใช้หลักการ: 
-                    // ถาลูกค้าเพิ่งสแกนเข้ามาใหม่เอี่ยม จะไม่มีออเดอร์ในตาราง orders เลย 
-                    // แต่ถ้าเขาเคยกดสั่งไปแล้วแล้วโดนเช็คบิล ออเดอร์จะหายไปทั้งหมด
-                    // เพื่อแยกแยะระหว่าง "โต๊ะว่างใหม่เอี่ยม" กับ "โต๊ะที่เช็คบิลแล้วกลับมากดรีโหลด" 
-                    // เราสามารถเช็คผ่าน sessionStorage ได้ว่าเครื่องนี้เคยกดสั่งอาหารไปหรือยัง?
+                    // ตรวจสอบว่ามือถือเครื่องนี้เคยบันทึกประวัติการสั่งของโต๊ะนี้ไว้หรือไม่
                     if (sessionStorage.getItem(`ordered_${tableId}`) === 'true') {
-                        return false; // เคยกดสั่งแล้ว และถูกเช็คบิลไปแล้ว -> บล็อกทันที!
+                        // [จุดแก้ไขสำคัญ]: ล้างค่าที่จำไว้ออกทันที เพื่อไม่ให้วนลูปหรือพยายามรันคิวซ้ำซ้อน
+                        sessionStorage.removeItem(`ordered_${tableId}`);
+                        return false; // โต๊ะนี้ถูกเช็คบิลปิดบริการไปแล้ว -> สั่งเพิ่มไม่ได้
                     }
                 }
                 return true;
@@ -912,7 +899,7 @@
 
                 const result = await res.json();
                 if (res.ok) {
-                    // [จุดสำคัญ] บันทึกลงในความจำมือถือเครื่องนี้ว่าโต๊ะนี้ได้ทำการส่งออเดอร์ไปแล้ว
+                    // บันทึกลงในความจำมือถือเครื่องนี้ว่าโต๊ะนี้ได้ทำการส่งออเดอร์ไปแล้ว
                     sessionStorage.setItem(`ordered_${tableId}`, 'true');
 
                     alert(`🎉 สั่งอาหารสำเร็จ! หมายเลขคิว/โต๊ะของคุณคือ: ${tableId}`);
