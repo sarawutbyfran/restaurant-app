@@ -862,7 +862,18 @@
                     if (ord.items) {
                         ord.items.forEach(i => {
                             itemsHtml += `<div style="padding: 1px 0;">• ${i.name} <strong>x${i.quantity}</strong></div>`;
-                            const matchedMenu = allMenus.find(m => m.name === i.name || m.id === i.menu_item_id);
+                            
+                            // แก้ไขจุดนี้: ค้นหาจาก menu_item_id ก่อน หรือถ้าไม่มีให้ตัดเอาเฉพาะชื่อหลักก่อนเจอเครื่องหมายพิเศษ
+                            let matchedMenu = null;
+                            if (i.menu_item_id) {
+                                matchedMenu = allMenus.find(m => String(m.id) === String(i.menu_item_id));
+                            }
+                            if (!matchedMenu) {
+                                // ตัดข้อความส่วนเกินเช่น [โน๊ต: ...] หรือ (+...) ออก เพื่อให้ชื่อเมนูตรงกับฐานข้อมูล
+                                const cleanName = i.name.split(' [')[0].split(' (+')[0].trim();
+                                matchedMenu = allMenus.find(m => m.name.trim() === cleanName);
+                            }
+
                             const kType = matchedMenu ? (matchedMenu.kitchen_type || 'kitchen_1') : 'kitchen_1';
                             
                             if (kType === 'drink') hasDrk = true;
