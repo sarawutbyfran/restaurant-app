@@ -530,10 +530,10 @@
 
             const keyword = document.getElementById('searchInput').value.trim().toLowerCase();
 
-            // ตัดเมนูที่เป็น AdminController ออกไม่ให้ลูกค้าเห็น
+            // ซ่อนเฉพาะเมนูที่ category_name เป็น AdminController เท่านั้น (เมนูอื่นที่ติ๊ก is_admin_menu แต่ category_name ปกติ จะยังคงแสดงให้ลูกค้าสั่งได้)
             let availableMenus = allMenus.filter(m => {
                 const catName = m.category_name || categoryMap[m.category_id] || '';
-                return catName !== 'AdminController' && Number(m.is_admin_menu) !== 1;
+                return catName !== 'AdminController';
             });
 
             let filtered = currentCategory === 'ทั้งหมด' 
@@ -816,7 +816,7 @@
                 const data = await res.json();
                 return data.active;
             } catch (e) {
-                return true; // หากเชื่อมต่อไม่ได้ให้ผ่านไปก่อนเพื่อไม่ให้ติดขัด
+                return true; 
             }
         }
 
@@ -833,7 +833,7 @@
                         `;
                     }
                 }
-            }, 10000); // เช็คทุก 10 วินาที
+            }, 10000);
         }
 
         async function submitOrder() {
