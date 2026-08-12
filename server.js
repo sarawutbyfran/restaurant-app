@@ -74,7 +74,6 @@ async function initDatabase() {
             );
         `);
 
-        // ตรวจสอบและเพิ่มคอลัมน์ kitchen_type หากยังไม่มีในตารางเดิม
         await pool.query(`
             ALTER TABLE menu_items ADD COLUMN IF NOT EXISTS is_recommended INT2 DEFAULT 0;
             ALTER TABLE menu_items ADD COLUMN IF NOT EXISTS is_admin_menu INT2 DEFAULT 0;
@@ -87,8 +86,17 @@ async function initDatabase() {
                 id SERIAL PRIMARY KEY,
                 table_id VARCHAR(50) NOT NULL,
                 status VARCHAR(50) DEFAULT 'กำลังทำอาหาร',
+                printed_kitchen_1 INT2 DEFAULT 0,
+                printed_kitchen_2 INT2 DEFAULT 0,
+                printed_drink INT2 DEFAULT 0,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
+        `);
+
+        await pool.query(`
+            ALTER TABLE orders ADD COLUMN IF NOT EXISTS printed_kitchen_1 INT2 DEFAULT 0;
+            ALTER TABLE orders ADD COLUMN IF NOT EXISTS printed_kitchen_2 INT2 DEFAULT 0;
+            ALTER TABLE orders ADD COLUMN IF NOT EXISTS printed_drink INT2 DEFAULT 0;
         `);
 
         await pool.query(`
@@ -286,7 +294,6 @@ app.delete('/api/orders/:orderId/item/:itemIndex', async (mainReq, mainRes) => {
         }
 
         const targetItemId = itemsResult.rows[itemIndex].id;
-
         await pool.query('DELETE FROM order_items WHERE id = $1', [targetItemId]);
 
         const checkRemaining = await pool.query('SELECT COUNT(*) FROM order_items WHERE order_id = $1', [orderId]);
@@ -337,7 +344,6 @@ app.delete('/api/orders/table/:tableId', async (req, res) => {
         }
 
         const orderIds = orders.map(o => o.id);
-        
         await pool.query('DELETE FROM order_items WHERE order_id = ANY($1::int[])', [orderIds]);
         await pool.query('DELETE FROM orders WHERE UPPER(table_id) = $1', [tableId]);
 
@@ -347,7 +353,6 @@ app.delete('/api/orders/table/:tableId', async (req, res) => {
     }
 });
 
-// จัดการเพิ่มเมนู (รับค่า kitchen_type)
 app.post('/api/menu', upload.single('image'), async (req, res) => {
     const { name, price, category_name, category_id, is_recommended, is_admin_menu, allow_egg, kitchen_type } = req.body;
     const image_url = req.file ? `/uploads/${req.file.filename}` : (req.body.image_url || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c');
@@ -357,14 +362,9 @@ app.post('/api/menu', upload.single('image'), async (req, res) => {
             `INSERT INTO menu_items (name, price, category_name, image_url, category_id, is_recommended, is_admin_menu, allow_egg, kitchen_type) 
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id`,
             [
-                name, 
-                price, 
-                category_name, 
-                image_url, 
-                category_id || 1, 
-                is_recommended || 0, 
-                is_admin_menu || 0,
-                allow_egg || 0,
+                name, price, category_name, image_url, 
+                category_id || 1, is_recommended || 0, 
+                is_admin_menu || 0, allow_egg || 0, 
                 kitchen_type || 'kitchen_1'
             ]
         );
@@ -374,7 +374,6 @@ app.post('/api/menu', upload.single('image'), async (req, res) => {
     }
 });
 
-// จัดการแก้ไขเมนู (รับค่า kitchen_type)
 app.put('/api/menu/:id', upload.single('image'), async (req, res) => {
     const menuId = req.params.id;
     const { name, price, category_name, is_recommended, is_admin_menu, allow_egg, kitchen_type } = req.body;
@@ -427,7 +426,6 @@ app.post('/api/admin/sales-history', async (req, res) => {
 
         res.status(200).json({ success: true, id: result.rows[0].id, message: 'บันทึกประวัติยอดขายสำเร็จ' });
     } catch (err) {
-        console.error('Server Error:', err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -450,11 +448,9 @@ app.get('/api/admin/sales-history', async (req, res) => {
         }
 
         query += ' ORDER BY checked_out_at DESC';
-
         const result = await pool.query(query, queryParams);
         res.status(200).json(result.rows);
     } catch (err) {
-        console.error('Server Error:', err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -483,15 +479,19 @@ app.put('/api/admin/receipts/:id/printed', async (req, res) => {
     }
 });
 
-// [อัปเดตใหม่] แยกครัว 3 ใบโดยอิงจากค่า kitchen_type ที่เซ็ตไว้ในตัวเมนูโดยตรง
+// API แยกครัว 3 ใบ พร้อมเช็คสถานะการพิมพ์แต่ละโซน
 app.get('/api/admin/kitchen-split-orders', async (req, res) => {
     try {
-        const ordersResult = await pool.query('SELECT * FROM orders WHERE status != $1 ORDER BY created_at DESC', ['เสร็จสิ้น']);
+        const ordersResult = await pool.query('SELECT * FROM orders WHERE status != $1 ORDER BY created_at ASC', ['เสร็จสิ้น']);
         const orders = ordersResult.rows;
 
         let kitchen1Items = []; 
         let kitchen2Items = []; 
         let drinkItems = [];    
+
+        let k1OrderIds = [];
+        let k2OrderIds = [];
+        let drinkOrderIds = [];
 
         for (const ord of orders) {
             let tableStr = String(ord.table_id);
@@ -504,9 +504,10 @@ app.get('/api/admin/kitchen-split-orders', async (req, res) => {
                 WHERE oi.order_id = $1
             `, [ord.id]);
 
+            let hasK1 = false, hasK2 = false, hasDrk = false;
+
             itemsResult.rows.forEach(item => {
                 const kType = item.kitchen_type || 'kitchen_1';
-
                 const wrappedItem = {
                     order_id: ord.id,
                     table_label: locationLabel,
@@ -517,20 +518,43 @@ app.get('/api/admin/kitchen-split-orders', async (req, res) => {
                 };
 
                 if (kType === 'drink') {
-                    drinkItems.push(wrappedItem);
+                    if (ord.printed_drink === 0) { drinkItems.push(wrappedItem); hasDrk = true; }
                 } else if (kType === 'kitchen_2') {
-                    kitchen2Items.push(wrappedItem);
+                    if (ord.printed_kitchen_2 === 0) { kitchen2Items.push(wrappedItem); hasK2 = true; }
                 } else {
-                    kitchen1Items.push(wrappedItem); // kitchen_1
+                    if (ord.printed_kitchen_1 === 0) { kitchen1Items.push(wrappedItem); hasK1 = true; }
                 }
             });
+
+            if (hasK1 && ord.printed_kitchen_1 === 0) k1OrderIds.push(ord.id);
+            if (hasK2 && ord.printed_kitchen_2 === 0) k2OrderIds.push(ord.id);
+            if (hasDrk && ord.printed_drink === 0) drinkOrderIds.push(ord.id);
         }
 
         res.json({
             kitchen_main: consolidateItems(kitchen1Items),
             kitchen_forest: consolidateItems(kitchen2Items),
-            drinks: consolidateItems(drinkItems)
+            drinks: consolidateItems(drinkItems),
+            target_ids: { k1: k1OrderIds, k2: k2OrderIds, drk: drinkOrderIds }
         });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.put('/api/admin/kitchen-orders/:type/printed', async (req, res) => {
+    const kitchenType = req.params.type; // k1, k2, drk
+    const { order_ids } = req.body;
+
+    if (!order_ids || order_ids.length === 0) return res.json({ success: true });
+
+    let colName = 'printed_kitchen_1';
+    if (kitchenType === 'k2') colName = 'printed_kitchen_2';
+    if (kitchenType === 'drk') colName = 'printed_drink';
+
+    try {
+        await pool.query(`UPDATE orders SET ${colName} = 1 WHERE id = ANY($1::int[])`, [order_ids]);
+        res.json({ success: true });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
