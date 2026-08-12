@@ -179,17 +179,30 @@ app.post('/api/open-table', async (req, res) => {
     if (!table_id) return res.status(400).json({ error: 'Missing table_id' });
     
     const tableId = String(table_id).toUpperCase();
-    const newToken = Math.random().toString(36).substring(7); // สร้างรหัสลับ
     
     try {
-        await pool.query(`
-            INSERT INTO tables (table_id, status, session_token, updated_at) 
-            VALUES ($1, 'active', $2, CURRENT_TIMESTAMP) 
-            ON CONFLICT (table_id) 
-            DO UPDATE SET status = 'active', session_token = $2, updated_at = CURRENT_TIMESTAMP
-        `, [tableId, newToken]);
-        
-        res.json({ success: true, token: newToken });
+        // 1. ตรวจสอบว่าโต๊ะนี้มี Token อยู่แล้วหรือไม่ และสถานะยัง active หรือไม่
+        const check = await pool.query(
+            "SELECT session_token FROM tables WHERE table_id = $1 AND status = 'active'", 
+            [tableId]
+        );
+
+        if (check.rows.length > 0 && check.rows[0].session_token) {
+            // ถ้าโต๊ะ Active อยู่แล้ว ให้คืน Token เดิมที่มีอยู่กลับไป (เพื่อให้เครื่องอื่นที่สั่งทีหลังใช้รหัสเดียวกัน)
+            return res.json({ success: true, token: check.rows[0].session_token });
+        } else {
+            // ถ้ายังไม่มี หรือโต๊ะถูกปิดไปแล้ว (closed) ให้สร้างใหม่
+            const newToken = Math.random().toString(36).substring(7);
+            
+            await pool.query(`
+                INSERT INTO tables (table_id, status, session_token, updated_at) 
+                VALUES ($1, 'active', $2, CURRENT_TIMESTAMP) 
+                ON CONFLICT (table_id) 
+                DO UPDATE SET status = 'active', session_token = $2, updated_at = CURRENT_TIMESTAMP
+            `, [tableId, newToken]);
+            
+            return res.json({ success: true, token: newToken });
+        }
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
