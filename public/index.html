@@ -449,6 +449,7 @@
         let urlTable = urlParams.get('table');
         let isQueue = urlParams.get('queue') === 'true';
         let tableId = ''; 
+        let hasOrdered = false; // ตัวแปรเช็คว่าโต๊ะนี้เคยส่งออเดอร์ไปรึยัง
 
         async function initPage() {
             if (isQueue || !urlTable) {
@@ -530,7 +531,7 @@
 
             const keyword = document.getElementById('searchInput').value.trim().toLowerCase();
 
-            // ซ่อนเฉพาะเมนูที่ category_name เป็น AdminController เท่านั้น (เมนูอื่นที่ติ๊ก is_admin_menu แต่ category_name ปกติ จะยังคงแสดงให้ลูกค้าสั่งได้)
+            // ซ่อนเฉพาะเมนูที่ category_name เป็น AdminController เท่านั้น
             let availableMenus = allMenus.filter(m => {
                 const catName = m.category_name || categoryMap[m.category_id] || '';
                 return catName !== 'AdminController';
@@ -763,7 +764,7 @@
         }
 
         async function openOrderedHistory() {
-            if (tableId === 'PENDING_QUEUE') {
+            if (tableId === 'PENDING_QUEUE' || !hasOrdered) {
                 alert('กรุณาสั่งอาหารและยืนยันออเดอร์ก่อน จึงจะสามารถดูรายการที่สั่งได้ครับ');
                 return;
             }
@@ -808,9 +809,9 @@
             }
         }
 
-        // --- ระบบตรวจสอบสถานะโต๊ะ/คิว (ป้องกันสั่งซ้ำหลังเช็คบิล) ---
+        // --- ระบบตรวจสอบสถานะโต๊ะ/คิว (จะทำงานต่อเมื่อเคยส่งออเดอร์ไปแล้วเท่านั้น) ---
         async function checkTableStatus() {
-            if (tableId === 'PENDING_QUEUE' || !tableId) return true;
+            if (tableId === 'PENDING_QUEUE' || !tableId || !hasOrdered) return true;
             try {
                 const res = await fetch(`/api/check-table-status/${tableId}`);
                 const data = await res.json();
@@ -822,7 +823,8 @@
 
         function startSessionMonitor() {
             setInterval(async () => {
-                if (tableId && tableId !== 'PENDING_QUEUE' && !isQueue) {
+                // จะตรวจเช็คก็ต่อเมื่อลูกค้ารายนี้ "เคยกดสั่งอาหารไปแล้วอย่างน้อย 1 ครั้ง"
+                if (hasOrdered && tableId && tableId !== 'PENDING_QUEUE' && !isQueue) {
                     const isActive = await checkTableStatus();
                     if (!isActive) {
                         document.body.innerHTML = `
@@ -842,12 +844,14 @@
                 return;
             }
 
-            // เช็คสถานะก่อนส่งออเดอร์
-            const isActive = await checkTableStatus();
-            if (!isActive && tableId !== 'PENDING_QUEUE') {
-                alert('โต๊ะหรือคิวนี้ได้ทำการเช็คบิลไปแล้ว ไม่สามารถสั่งอาหารเพิ่มได้ กรุณาสแกน QR Code ใหม่');
-                window.location.reload();
-                return;
+            // หากเคยสั่งไปแล้ว ให้เช็คสถานะก่อนส่งเพิ่ม
+            if (hasOrdered) {
+                const isActive = await checkTableStatus();
+                if (!isActive && tableId !== 'PENDING_QUEUE') {
+                    alert('โต๊ะหรือคิวนี้ได้ทำการเช็คบิลไปแล้ว ไม่สามารถสั่งอาหารเพิ่มได้ กรุณาสแกน QR Code ใหม่');
+                    window.location.reload();
+                    return;
+                }
             }
 
             try {
@@ -886,6 +890,7 @@
 
                 const result = await res.json();
                 if (res.ok) {
+                    hasOrdered = true; // ตั้งค่าว่าโต๊ะนี้ได้ทำการส่งออเดอร์สำเร็จแล้ว เริ่มเปิดระบบมอนิเตอร์เช็คบิล
                     alert(`🎉 สั่งอาหารสำเร็จ! หมายเลขคิว/โต๊ะของคุณคือ: ${tableId}`);
                     cart = [];
                     closeCartModal();
