@@ -726,10 +726,10 @@
             } catch (e) { return true; }
         }
 
-        function showClosedScreen() {
+        function showClosedScreen(msg = '🚫 โต๊ะ/คิวนี้ถูกเช็คบิลปิดบริการแล้ว') {
             document.body.innerHTML = `
                 <div style="display:flex; flex-direction:column; justify-content:center; align-items:center; height:100vh; text-align:center; padding:20px; font-family:'Prompt',sans-serif;">
-                    <h2 style="color:#ff4757; font-size:24px;">🚫 โต๊ะ/คิวนี้ถูกเช็คบิลปิดบริการแล้ว</h2>
+                    <h2 style="color:#ff4757; font-size:24px;">${msg}</h2>
                     <p style="color:#747d8c; font-size:16px; margin-top:10px;">หากต้องการสั่งอาหารเพิ่ม กรุณาสแกน QR Code ใหม่อีกครั้ง หรือติดต่อพนักงานหน้าร้าน</p>
                 </div>
             `;
@@ -767,7 +767,7 @@
                 });
 
                 if (res.status === 403) {
-                    showClosedScreen('โต๊ะนี้เช็คบิลแล้ว ขอบคุณที่ใช้บริการ');
+                    showClosedScreen('🚫 โต๊ะนี้เช็คบิลแล้ว ขอบคุณที่ใช้บริการ');
                     return;
                 }
 
@@ -782,15 +782,6 @@
             } catch (err) {
                 alert('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์');
             }
-        }
-
-        function showClosedScreen(msg = '🚫 โต๊ะนี้ถูกปิดแล้ว') {
-            document.body.innerHTML = `
-                <div style="text-align:center; padding:50px; font-family:Prompt;">
-                    <h2>${msg}</h2>
-                    <p>กรุณาติดต่อพนักงาน หรือสแกนใหม่หากเป็นลูกค้าท่านใหม่</p>
-                </div>
-            `;
         }
 
         initPage();

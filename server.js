@@ -55,9 +55,17 @@ async function initDatabase() {
             CREATE TABLE IF NOT EXISTS tables (
                 table_id VARCHAR(50) PRIMARY KEY,
                 status VARCHAR(20) DEFAULT 'active',
+                session_token VARCHAR(100),
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
         `);
+
+        // พยายามเพิ่ม session_token เผื่อกรณีที่ตารางมีอยู่แล้วแต่ยังไม่มีคอลัมน์นี้
+        try {
+            await pool.query(`ALTER TABLE tables ADD COLUMN session_token VARCHAR(100);`);
+        } catch (e) {
+            // ข้ามไปหากมีคอลัมน์นี้อยู่แล้ว
+        }
 
         await pool.query(`
             CREATE TABLE IF NOT EXISTS categories (
@@ -187,13 +195,20 @@ app.post('/api/open-table', async (req, res) => {
     }
 });
 
-// สร้างเลขคิวใหม่สำหรับ Walk-in
+// สร้างเลขคิวใหม่สำหรับ Walk-in (แก้ไขเรื่องเลขคิวซ้ำซ้อน)
 app.post('/api/walk-in-queue', async (req, res) => {
+    const client = await pool.connect();
     try {
-        const activeOrders = await pool.query("SELECT DISTINCT table_id FROM orders WHERE table_id LIKE 'Q%'");
+        await client.query('BEGIN');
+        
+        // ล็อคตารางเพื่อป้องกันการแจกเลขคิวซ้ำเมื่อมีคนสแกนพร้อมกัน
+        await client.query('LOCK TABLE tables IN EXCLUSIVE MODE');
+
+        // เปลี่ยนมาเช็คคิวจาก tables ที่จองไว้แทน orders
+        const activeQueues = await client.query("SELECT table_id FROM tables WHERE table_id LIKE 'Q%'");
         let nextQNum = 1;
-        if (activeOrders.rows.length > 0) {
-            const nums = activeOrders.rows.map(row => {
+        if (activeQueues.rows.length > 0) {
+            const nums = activeQueues.rows.map(row => {
                 const parsed = parseInt(row.table_id.replace('Q', ''));
                 return isNaN(parsed) ? 0 : parsed;
             });
@@ -202,16 +217,20 @@ app.post('/api/walk-in-queue', async (req, res) => {
         const newQueueId = `Q${String(nextQNum).padStart(3, '0')}`;
         
         // เปิดสถานะคิวใหม่ในตาราง tables ทันที
-        await pool.query(`
+        await client.query(`
             INSERT INTO tables (table_id, status, updated_at) 
             VALUES ($1, 'active', CURRENT_TIMESTAMP) 
             ON CONFLICT (table_id) 
             DO UPDATE SET status = 'active', updated_at = CURRENT_TIMESTAMP
         `, [newQueueId]);
 
+        await client.query('COMMIT');
         res.json({ success: true, queue_id: newQueueId });
     } catch (err) {
+        await client.query('ROLLBACK');
         res.status(500).json({ error: err.message });
+    } finally {
+        client.release();
     }
 });
 

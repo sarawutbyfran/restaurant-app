@@ -684,7 +684,7 @@
                 return catName === currentSelectedCategory;
             });
 
-            // จัดเรียงรายการตามลำดับหมวดหมู่ 1 ถึง 10 เสมอ (ไม่ให้สลับมั่ว)
+            // จัดเรียงรายการตามลำดับหมวดหมู่ 1 ถึง 10 เสมอ
             filtered.sort((a, b) => {
                 const catA = a.category_name || categoryMap[a.category_id] || '';
                 const catB = b.category_name || categoryMap[b.category_id] || '';
@@ -793,15 +793,34 @@
             renderSummaryBox();
         }
 
+        // ==========================================
+        //  ส่วนที่แก้ไขบั๊กให้ส่ง Token ด้วยทุกครั้ง
+        // ==========================================
         async function confirmAndSubmitOrder() {
             if (!activeTableId || currentCart.length === 0) return;
 
             try {
+                // 1. ขอ Token สดใหม่จากหลังบ้าน เพื่อให้สั่งอาหารผ่าน
+                const initRes = await fetch('/api/open-table', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ table_id: activeTableId })
+                });
+                
+                const initData = await initRes.json();
+                
+                if (!initData.success) {
+                    alert('ไม่สามารถเริ่มเซสชันการสั่งอาหารได้ กรุณาลองใหม่');
+                    return;
+                }
+
+                // 2. นำ Token ที่ได้มาแนบกับออเดอร์
                 const res = await fetch('/api/orders', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         table_id: activeTableId,
+                        token: initData.token, // ใส่ Token ที่เพิ่งได้มา
                         items: currentCart.map(i => ({ 
                             menu_item_id: i.menu_item_id, 
                             name: i.name,
@@ -818,13 +837,17 @@
                     renderSummaryBox();
                     fetchKitchenOrders();
                     alert('ส่งออเดอร์เข้าครัวสำเร็จ!');
+                } else if (res.status === 403) {
+                    alert('โต๊ะนี้ถูกเช็คบิลไปแล้ว กรุณาเปิดโต๊ะใหม่');
                 } else {
-                    alert('ส่งออเดอร์ไม่สำเร็จ');
+                    const errData = await res.json();
+                    alert('ส่งออเดอร์ไม่สำเร็จ: ' + (errData.error || 'Unknown Error'));
                 }
             } catch(err) {
                 alert('เกิดข้อผิดพลาดในการเชื่อมต่อ');
             }
         }
+        // ==========================================
 
         async function fetchKitchenOrders() {
             try {
