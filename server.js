@@ -151,7 +151,7 @@ function consolidateItems(items) {
 
 app.get('/api/menu', async (req, res) => {
     try {
-        const result = await pool.query('SELECT * FROM menu_items ORDER BY id ASC');
+        const result = await pool.query('SELECT * FROM menu_items ORDER BY category_id ASC, id ASC');
         res.json(result.rows);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -279,7 +279,6 @@ app.put('/api/admin/orders/:id/status', async (req, res) => {
     }
 });
 
-// เพิ่ม API สำหรับรีเซ็ตสถานะพิมพ์ของออเดอร์ เพื่อให้ปุ่มพิมพ์ซ้ำ/พิมพ์ใหม่ ทำงานได้สมบูรณ์
 app.put('/api/admin/orders/:id/reset-print', async (req, res) => {
     const orderId = req.params.id;
     try {

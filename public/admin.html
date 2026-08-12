@@ -657,6 +657,19 @@
             const grid = document.getElementById('admin-menu-grid');
             grid.innerHTML = '';
             
+            const categoryOrder = {
+                'เมนูแนะนำ': 1,
+                'อาหารป่า': 2,
+                'ผัด': 3,
+                'ต้มยำ': 4,
+                'ยำ': 5,
+                'ทอด': 6,
+                'อีสาน': 7,
+                'อาหารตามสั่ง': 8,
+                'เครื่องดื่ม': 9,
+                'AdminController': 10
+            };
+
             const filtered = allMenus.filter(m => {
                 const catName = m.category_name || categoryMap[m.category_id] || '';
                 
@@ -669,6 +682,19 @@
                 
                 if (currentSelectedCategory === 'ทั้งหมด') return true;
                 return catName === currentSelectedCategory;
+            });
+
+            // จัดเรียงรายการตามลำดับหมวดหมู่ 1 ถึง 10 เสมอ (ไม่ให้สลับมั่ว)
+            filtered.sort((a, b) => {
+                const catA = a.category_name || categoryMap[a.category_id] || '';
+                const catB = b.category_name || categoryMap[b.category_id] || '';
+                const orderA = categoryOrder[catA] || 99;
+                const orderB = categoryOrder[catB] || 99;
+                
+                if (orderA !== orderB) {
+                    return orderA - orderB;
+                }
+                return a.id - b.id;
             });
 
             if (filtered.length === 0) {
@@ -923,7 +949,6 @@
             }
         }
 
-        // ฟังก์ชันสั่งพิมพ์ออเดอร์ใหม่ (เชื่อมต่อ API รีเซ็ตสถานะพิมพ์ครัว)
         async function resetOrderToPrint(orderId) {
             if(!confirm('ต้องการส่งออเดอร์นี้กลับไปคิวรอพิมพ์ที่เครื่องพิมพ์ครัวใหม่อีกครั้งใช่หรือไม่?')) return;
             try {

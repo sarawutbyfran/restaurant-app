@@ -368,14 +368,14 @@
 
     <div class="category-scroll" id="category-tabs">
         <button class="cat-btn active" onclick="filterMenu('ทั้งหมด', this)">ทั้งหมด</button>
-        <button class="cat-btn" onclick="filterMenu('แนะนำ', this)">⭐ แนะนำ</button>
+        <button class="cat-btn" onclick="filterMenu('เมนูแนะนำ', this)">⭐ แนะนำ</button>
         <button class="cat-btn" onclick="filterMenu('อาหารป่า', this)">🌿 อาหารป่า</button>
         <button class="cat-btn" onclick="filterMenu('ผัด', this)">🔥 ผัด</button>
         <button class="cat-btn" onclick="filterMenu('ต้มยำ', this)">🍲 ต้มยำ</button>
         <button class="cat-btn" onclick="filterMenu('ยำ', this)">🥗 ยำ</button>
         <button class="cat-btn" onclick="filterMenu('ทอด', this)">🍳 ทอด</button>
         <button class="cat-btn" onclick="filterMenu('อีสาน', this)">🌶️ อีสาน</button>
-        <button class="cat-btn" onclick="filterMenu('ตามสั่ง', this)">🍛 ตามสั่ง</button>
+        <button class="cat-btn" onclick="filterMenu('อาหารตามสั่ง', this)">🍛 ตามสั่ง</button>
         <button class="cat-btn" onclick="filterMenu('เครื่องดื่ม', this)">🧋 เครื่องดื่ม</button>
     </div>
 
@@ -469,16 +469,31 @@
         let selectedItemForCustom = null;
         let currentCustomQty = 1;
 
+        // กำหนดลำดับหมวดหมู่ให้ตรงกับหลังบ้าน (1 ถึง 10)
+        const categoryOrder = {
+            'เมนูแนะนำ': 1,
+            'อาหารป่า': 2,
+            'ผัด': 3,
+            'ต้มยำ': 4,
+            'ยำ': 5,
+            'ทอด': 6,
+            'อีสาน': 7,
+            'อาหารตามสั่ง': 8,
+            'เครื่องดื่ม': 9,
+            'AdminController': 10
+        };
+
         const categoryMap = {
-            1: 'แนะนำ',
+            1: 'อาหารตามสั่ง', 
             2: 'อาหารป่า',
-            3: 'ผัด',
-            4: 'ต้มยำ',
-            5: 'ยำ',
-            6: 'ทอด',
-            7: 'อีสาน',
-            8: 'ตามสั่ง',
-            9: 'เครื่องดื่ม'
+            3: 'ทอด',
+            4: 'ผัด',
+            5: 'ต้มยำ',
+            6: 'ยำ',
+            7: 'เครื่องดื่ม',
+            8: 'เมนูแนะนำ',
+            9: 'AdminController',
+            10: 'อีสาน'
         };
 
         async function fetchMenu() {
@@ -505,16 +520,7 @@
         }
 
         function isRecommendedItem(item) {
-            const catName = item.category_name || categoryMap[item.category_id] || '';
-            return (
-                catName === 'แนะนำ' || 
-                item.category_id == 1 || 
-                item.is_recommended === true || 
-                item.is_recommended === 1 || 
-                item.is_recommended === '1' ||
-                item.is_recommend === true ||
-                item.is_recommend === 1
-            );
+            return Number(item.is_recommended) === 1;
         }
 
         function renderMenus() {
@@ -523,15 +529,16 @@
 
             const keyword = document.getElementById('searchInput').value.trim().toLowerCase();
 
+            // ตัดเมนูที่เป็น AdminController ออกไม่ให้ลูกค้าเห็น
             let availableMenus = allMenus.filter(m => {
                 const catName = m.category_name || categoryMap[m.category_id] || '';
-                return catName !== 'AdminController';
+                return catName !== 'AdminController' && Number(m.is_admin_menu) !== 1;
             });
 
             let filtered = currentCategory === 'ทั้งหมด' 
                 ? availableMenus 
                 : availableMenus.filter(m => {
-                    if (currentCategory === 'แนะนำ') {
+                    if (currentCategory === 'เมนูแนะนำ') {
                         return isRecommendedItem(m);
                     }
                     const catName = m.category_name || categoryMap[m.category_id] || '';
@@ -542,6 +549,21 @@
                 filtered = filtered.filter(m => {
                     const itemName = (m.name || '').toLowerCase();
                     return itemName.includes(keyword);
+                });
+            }
+
+            // จัดเรียงลำดับเมนูเมื่ออยู่หน้า "ทั้งหมด" ให้เรียงตามหมวดหมู่ 1 ถึง 10 เป๊ะๆ ไม่ให้สลับมั่ว
+            if (keyword === '') {
+                filtered.sort((a, b) => {
+                    const catA = a.category_name || categoryMap[a.category_id] || '';
+                    const catB = b.category_name || categoryMap[b.category_id] || '';
+                    const orderA = categoryOrder[catA] || 99;
+                    const orderB = categoryOrder[catB] || 99;
+                    
+                    if (orderA !== orderB) {
+                        return orderA - orderB;
+                    }
+                    return a.id - b.id;
                 });
             }
 
@@ -585,20 +607,17 @@
             const extraContainer = document.getElementById('customizeExtraOptions');
             extraContainer.innerHTML = '';
 
-            const allowEgg = (
-                selectedItemForCustom.allow_egg === true || 
-                selectedItemForCustom.allow_egg === 1 || 
-                selectedItemForCustom.allow_egg === '1'
-            );
+            const catName = selectedItemForCustom.category_name || categoryMap[selectedItemForCustom.category_id] || '';
+            const allowEgg = Number(selectedItemForCustom.allow_egg) === 1 || catName === 'อาหารตามสั่ง';
 
             if (allowEgg) {
                 extraContainer.innerHTML = `
                     <div class="form-group" style="display: flex; gap: 10px;">
                         <label class="checkbox-label">
-                            <input type="checkbox" id="addEggCheckbox" value="ไข่ดาว" data-price="7"> ไข่ดาว (+7฿)
+                            <input type="checkbox" id="addEggCheckbox" value="ไข่ดาว"> ไข่ดาว (+10฿)
                         </label>
                         <label class="checkbox-label">
-                            <input type="checkbox" id="addOmeletCheckbox" value="ไข่เจียว" data-price="10"> ไข่เจียว (+10฿)
+                            <input type="checkbox" id="addOmeletCheckbox" value="ไข่เจียว"> ไข่เจียว (+10฿)
                         </label>
                     </div>
                 `;
@@ -633,16 +652,16 @@
             let optionsTextArr = [];
 
             if (hasEgg) {
-                finalPrice += 7;
-                optionsTextArr.push('เพิ่มไข่ดาว');
+                finalPrice += 10;
+                optionsTextArr.push('ไข่ดาว');
             }
             if (hasOmelet) {
                 finalPrice += 10;
-                optionsTextArr.push('เพิ่มไข่เจียว');
+                optionsTextArr.push('ไข่เจียว');
             }
 
             if (optionsTextArr.length > 0) {
-                itemCustomName += ` (${optionsTextArr.join(', ')})`;
+                itemCustomName += ` (+${optionsTextArr.join(', ')})`;
             }
 
             const existingIndex = cart.findIndex(c => 
