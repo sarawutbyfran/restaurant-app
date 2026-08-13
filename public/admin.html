@@ -1324,24 +1324,23 @@
         }
 
         async function openWalkInOrder() {
-    try {
-        const res = await fetch('/api/walk-in-queue', { 
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' }
-        });
-        const data = await res.json();
-        
-        if (data.success) {
-            // ระบบหลังบ้านจะส่ง queue_id เช่น Q001, Q002 กลับมา
-            selectTableInline(`คิว ${data.queue_id}`, data.queue_id);
-        } else {
-            alert('เกิดข้อผิดพลาดในการสร้างคิว: ' + (data.error || 'Unknown Error'));
-        }
-    } catch (err) {
-        console.error(err);
-        alert('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์เพื่อสร้างคิวได้');
-    }
-}
+            try {
+                const res = await fetch('/api/walk-in-queue', { 
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const data = await res.json();
+                
+                if (data.success) {
+                    // ระบบหลังบ้านจะส่ง queue_id เช่น Q001, Q002 กลับมา
+                    selectTableInline(`คิว ${data.queue_id}`, data.queue_id);
+                } else {
+                    alert('เกิดข้อผิดพลาดในการสร้างคิว: ' + (data.error || 'Unknown Error'));
+                }
+            } catch (err) {
+                console.error(err);
+                alert('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์เพื่อสร้างคิวได้');
+            }
         }
 
         function openMenuManagerModal() {
