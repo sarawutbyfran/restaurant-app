@@ -118,7 +118,7 @@
             font-size: 16px;
         }
 
-        /* ปุ่มสลับมุมมอง (ย้ายมาไว้ด้านซ้าย) */
+        /* ปุ่มสลับมุมมอง */
         .view-mode-toggle {
             display: flex;
             background: #eee;
@@ -126,12 +126,11 @@
             border-radius: 14px;
             gap: 4px;
             box-shadow: 0 2px 6px rgba(0,0,0,0.02);
-            flex-shrink: 0;
         }
         .view-btn {
             background: transparent;
             border: none;
-            padding: 8px 10px;
+            padding: 8px 12px;
             border-radius: 10px;
             font-size: 14px;
             cursor: pointer;
@@ -182,7 +181,7 @@
             padding: 0 15px;
         }
 
-        /* 1. แบบการ์ดรูปภาพ (Grid 2 คอลัมน์) */
+        /* 1. แบบการ์ดรูปภาพ (Grid 2 คอลัมน์ เดิม) */
         .menu-container.grid-view {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -225,7 +224,7 @@
             text-align: center;
         }
 
-        /* 2. แบบรายการ (List View) */
+        /* 2. แบบรายการ (List View - ไม่มีรูป หรือ รูปเล็กแนวนอน) */
         .menu-container.list-view {
             display: flex;
             flex-direction: column;
@@ -446,17 +445,16 @@
     </div>
 
     <div class="search-container">
-        <!-- ปุ่มสลับรูปแบบการดูเมนู (ย้ายมาไว้ด้านซ้าย) -->
-        <div class="view-mode-toggle">
-            <button class="view-btn active" id="btnGrid" onclick="setViewMode('grid')" title="มุมมองแบบการ์ดรูปภาพ">🖼️</button>
-            <button class="view-btn" id="btnList" onclick="setViewMode('list')" title="มุมมองแบบรายการ">📄</button>
-            <button class="view-btn" id="btnTable" onclick="setViewMode('table')" title="มุมมองแบบตาราง">📊</button>
-        </div>
-        
         <div class="search-box-wrapper">
             <span class="search-icon">🔍</span>
             <input type="text" id="searchInput" class="search-input" placeholder="ค้นหาชื่อเมนูอาหาร..." oninput="filterMenus()">
             <span id="clearSearchBtn" onclick="clearSearch()" style="display: none; position: absolute; right: 12px; color: var(--primary); font-size: 14px; font-weight: bold; cursor: pointer; background: #ffeaa7; padding: 2px 8px; border-radius: 50%; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">✕</span>
+        </div>
+        <!-- ปุ่มสลับรูปแบบการดูเมนู -->
+        <div class="view-mode-toggle">
+            <button class="view-btn active" id="btnGrid" onclick="setViewMode('grid')" title="มุมมองแบบการ์ดรูปภาพ">🖼️</button>
+            <button class="view-btn" id="btnList" onclick="setViewMode('list')" title="มุมมองแบบรายการ">📄</button>
+            <button class="view-btn" id="btnTable" onclick="setViewMode('table')" title="มุมมองแบบตาราง">📊</button>
         </div>
     </div>
 
@@ -539,6 +537,7 @@
         let isQueue = urlParams.get('queue') === 'true';
         let tableId = urlTable ? urlTable.toUpperCase() : 'PENDING_QUEUE';
 
+        // โหมดการแสดงผลเมนู (ค่าเริ่มต้นอ่านจาก localStorage หรือใช้ 'grid')
         let currentViewMode = localStorage.getItem('menu_view_mode') || 'grid';
 
         async function initPage() {
@@ -563,6 +562,7 @@
             const badgePrefix = tableId.startsWith('Q') ? 'คิว: ' : 'โต๊ะ: ';
             document.getElementById('table-badge').innerText = `${badgePrefix}${tableId}`;
             
+            // ตั้งค่าปุ่มโหมดตามที่บันทึกไว้
             applyViewModeUI(currentViewMode);
 
             fetchMenu();
@@ -585,6 +585,7 @@
             6: 'ยำ', 7: 'เครื่องดื่ม', 8: 'เมนูแนะนำ', 9: 'AdminController', 10: 'อีสาน'
         };
 
+        // ฟังก์ชันสลับมุมมอง
         function setViewMode(mode) {
             currentViewMode = mode;
             localStorage.setItem('menu_view_mode', mode);
@@ -637,6 +638,8 @@
         function renderMenus() {
             const container = document.getElementById('menu-list');
             container.innerHTML = '';
+            
+            // เซ็ตคลาสตามโหมดที่เลือก
             container.className = `menu-container ${currentViewMode}-view`;
 
             const keyword = document.getElementById('searchInput').value.trim().toLowerCase();
@@ -670,6 +673,7 @@
                 return;
             }
 
+            // เรนเดอร์ตามโหมด
             if (currentViewMode === 'grid') {
                 filtered.forEach(item => {
                     const imgSrc = item.image_url || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c';
