@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard - ระบบจัดการร้านอาหาร (Optimized Layout)</title>
+    <title>Admin Dashboard - ระบบจัดการร้านอาหาร (3-Kitchen Split View)</title>
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -40,8 +40,6 @@
             flex-direction: column;
             gap: 6px;
             overflow-y: auto;
-            height: 100vh;
-            box-sizing: border-box;
         }
         .sidebar-left h2 { font-size: 13px; color: var(--primary); margin-bottom: 8px; text-align: center; }
         
@@ -88,11 +86,10 @@
             flex-direction: column;
             border-right: 1px solid #ddd;
             background: #fff;
-            height: 100vh;
-            box-sizing: border-box;
-            overflow: hidden;
+            position: relative;
         }
         
+        /* แถบค้นหาแบบ Sticky */
         .sticky-search-header {
             position: sticky;
             top: 0;
@@ -101,7 +98,6 @@
             padding: 12px;
             border-bottom: 1px solid #eee;
             box-shadow: 0 2px 4px rgba(0,0,0,0.02);
-            flex-shrink: 0;
         }
         .search-admin-input {
             width: 100%;
@@ -122,15 +118,15 @@
             padding: 12px;
             overflow-y: auto;
             flex: 1;
-            box-sizing: border-box;
         }
 
         .menu-grid-admin {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(165px, 1fr)); /* ปรับให้แคบลงเล็กน้อยเพื่อให้จัดเรียงสวยงาม */
-            gap: 10px;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); /* ขยายขนาดการ์ด */
+            gap: 12px;
         }
         
+        /* ดีไซน์การ์ดเมนูใหม่ */
         .admin-menu-card {
             background: white;
             border-radius: 8px;
@@ -147,17 +143,17 @@
         }
         .admin-menu-card-top {
             display: flex;
-            height: 75px; /* ลดความสูงรูปภาพให้เล็กลงพอดีกับชื่อและราคา */
+            height: 90px;
             cursor: pointer;
         }
         .admin-menu-img {
-            width: 38%; /* ปรับลดสัดส่วนรูป */
+            width: 50%;
             height: 100%;
             object-fit: cover;
         }
         .admin-menu-info {
-            width: 62%; /* ขยายพื้นที่ฝั่งชื่อเมนูและราคาให้กว้างขึ้น */
-            padding: 6px;
+            width: 50%;
+            padding: 8px;
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -166,11 +162,11 @@
             text-align: center;
         }
         .admin-menu-title {
-            font-size: 14px; /* ขนาดชื่อเมนูใหญ่และชัดเจน */
+            font-size: 14px;
             font-weight: bold;
             color: var(--text);
             line-height: 1.2;
-            margin-bottom: 4px;
+            margin-bottom: 6px;
         }
         .admin-menu-price {
             font-size: 15px;
@@ -178,34 +174,32 @@
             color: var(--primary);
         }
         .admin-menu-options {
-            padding: 6px;
+            padding: 8px;
             background: white;
         }
         .egg-options-container {
-            font-size: 12px;
+            font-size: 13px; /* ขยายฟอนต์ */
             font-weight: 500;
             color: #d35400;
         }
         .egg-options-container label {
-            display: block;
-            margin-bottom: 4px;
+            display: block; /* แยกบรรทัด */
+            margin-bottom: 6px;
             cursor: pointer;
         }
         .egg-options-container input {
-            transform: scale(1.1);
-            margin-right: 4px;
+            transform: scale(1.2); /* ขยายขนาด Checkbox */
+            margin-right: 6px;
         }
 
         .tables-column {
             padding: 12px;
-            height: 100vh;
-            box-sizing: border-box;
+            overflow-y: auto;
             background: #fdfdfd;
             border-right: 1px solid #ddd;
             display: flex;
             flex-direction: column;
-            gap: 8px;
-            overflow: hidden;
+            gap: 10px;
         }
         .table-summary-box {
             background: white;
@@ -217,8 +211,7 @@
             flex-direction: column;
             gap: 6px;
             flex: 1;
-            min-height: 140px; 
-            overflow: hidden;
+            min-height: 180px; 
         }
         
         .selection-group {
@@ -227,12 +220,6 @@
             border-radius: 8px;
             padding: 8px;
             box-shadow: 0 1px 2px rgba(0,0,0,0.02);
-            flex-shrink: 0;
-        }
-        .selection-group.main-table-group {
-            flex: 1.3; /* ขยายความสูงหน้าต่างโซนโต๊ะหลักขึ้นอีกนิดเพื่อให้พอดีจอโดยไม่มีแถบเลื่อน */
-            display: flex;
-            flex-direction: column;
         }
         .group-title {
             font-size: 11px;
@@ -251,25 +238,15 @@
             grid-template-columns: repeat(3, 1fr);
             gap: 5px;
         }
-        .main-table-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 5px;
-            flex: 1;
-            align-content: stretch;
-        }
         .table-box {
             background: var(--light-gray);
             border: 1px solid #ced6e0;
-            padding: 8px 4px; /* ขนาดปุ่มกดเท่าเดิมไม่เปลี่ยนแปลง */
+            padding: 8px 4px;
             border-radius: 6px;
             text-align: center;
             cursor: pointer;
             font-size: 11px;
             font-weight: bold;
-            display: flex;
-            align-items: center;
-            justify-content: center;
             transition: 0.1s;
         }
         .table-box:hover {
@@ -311,7 +288,6 @@
             display: flex;
             flex-direction: column;
             height: 100vh;
-            box-sizing: border-box;
             overflow: hidden;
         }
         .kitchen-section {
@@ -319,7 +295,6 @@
             padding: 12px;
             overflow-y: auto;
             background: #fafbfc;
-            box-sizing: border-box;
         }
         
         @keyframes blink-animation {
@@ -368,7 +343,6 @@
             display: flex;
             flex-direction: column;
             gap: 6px;
-            flex-shrink: 0;
         }
         .btn-walkin {
             background: var(--success);
@@ -466,16 +440,16 @@
     </div>
 
     <div class="tables-column">
-        <div style="display: flex; flex-direction: column; flex: 1; overflow: hidden;">
+        <div style="display: flex; flex-direction: column; flex: 1;">
             <h3 style="margin:2px 0 6px 0; font-size:12px; color:var(--primary);">📋 ตะกร้าและรายการอาหารของโต๊ะ</h3>
             <div class="table-summary-box" id="tableSummaryBox">
                 <div style="font-size:11px; color:var(--gray); text-align:center; padding:30px 0;">ยังไม่ได้เลือกโต๊ะหรือคิว<br>(กรุณาคลิกเลือกจากด้านล่าง)</div>
             </div>
         </div>
 
-        <div class="selection-group main-table-group">
+        <div class="selection-group">
             <div class="group-title">🪑 โซนโต๊ะหลัก (1 - 12)</div>
-            <div class="main-table-grid" id="tables-grid-container"></div>
+            <div class="table-grid" id="tables-grid-container"></div>
         </div>
 
         <div class="selection-group">
@@ -495,13 +469,14 @@
         <div class="right-action-panel">
             <div id="queue-group-container" style="display:none; flex-direction:column; gap:4px;">
                 <div style="font-size:11px; font-weight:bold; color:var(--primary);">🛍️ คิวหน้าร้าน (Active Queues)</div>
-                <div class="table-grid" id="queues-grid-container" style="grid-template-columns: repeat(3, 1fr); max-height:80px; overflow-y:auto;"></div>
+                <div class="table-grid" id="queues-grid-container" style="grid-template-columns: repeat(3, 1fr);"></div>
             </div>
             <button class="btn-walkin" onclick="openWalkInOrder()">➕ สั่งอาหารหน้าร้าน (สร้างคิวใหม่)</button>
         </div>
     </div>
 
-    <!-- Modals -->
+    <!-- Modals (ซ่อนไว้) -->
+    <!-- Modal: จัดการโต๊ะ -->
     <div class="modal" id="tableModal">
         <div class="modal-content">
             <h3 id="modalTableTitle" style="margin-top:0;">จัดการโต๊ะ/คิว</h3>
@@ -529,6 +504,7 @@
         </div>
     </div>
 
+    <!-- Modal: จัดการเมนูอาหาร -->
     <div class="modal" id="menuManagerModal">
         <div class="modal-content" style="width: 700px;">
             <h3 style="margin-top:0; color:var(--primary); font-size: 16px;">⚙️ ระบบจัดการเมนูอาหาร</h3>
@@ -536,26 +512,52 @@
                 <div style="background:var(--light-gray); padding:10px; border-radius:8px;">
                     <h4 style="margin:0 0 8px 0; font-size:12px;">➕ เพิ่มเมนูอาหารใหม่</h4>
                     <form id="addMenuForm" onsubmit="addNewMenu(event)">
-                        <div class="form-group"><label>ชื่อเมนูอาหาร</label><input type="text" id="newMenuName" required placeholder="เช่น ผัดเผ็ดหมูป่า"></div>
-                        <div class="form-group"><label>ราคา (บาท)</label><input type="number" step="0.01" id="newMenuPrice" required placeholder="80"></div>
+                        <div class="form-group">
+                            <label>ชื่อเมนูอาหาร</label>
+                            <input type="text" id="newMenuName" required placeholder="เช่น ผัดเผ็ดหมูป่า">
+                        </div>
+                        <div class="form-group">
+                            <label>ราคา (บาท)</label>
+                            <input type="number" step="0.01" id="newMenuPrice" required placeholder="80">
+                        </div>
                         <div class="form-group">
                             <label>หมวดหมู่</label>
                             <select id="newMenuCategory">
-                                <option value="เมนูแนะนำ">⭐ แนะนำ</option><option value="อาหารป่า">🌿 อาหารป่า</option><option value="ผัด">🔥 ผัด</option><option value="ต้มยำ">🍲 ต้มยำ</option><option value="ยำ">🥗 ยำ</option><option value="ทอด">🍳 ทอด</option><option value="อีสาน">🌶️ อีสาน</option><option value="อาหารตามสั่ง">🍛 ตามสั่ง</option><option value="เครื่องดื่ม">🧋 เครื่องดื่ม</option><option value="AdminController">AdminController</option>
+                                <option value="เมนูแนะนำ">⭐ แนะนำ</option>
+                                <option value="อาหารป่า">🌿 อาหารป่า</option>
+                                <option value="ผัด">🔥 ผัด</option>
+                                <option value="ต้มยำ">🍲 ต้มยำ</option>
+                                <option value="ยำ">🥗 ยำ</option>
+                                <option value="ทอด">🍳 ทอด</option>
+                                <option value="อีสาน">🌶️ อีสาน</option>
+                                <option value="อาหารตามสั่ง">🍛 ตามสั่ง</option>
+                                <option value="เครื่องดื่ม">🧋 เครื่องดื่ม</option>
+                                <option value="AdminController">AdminController</option>
                             </select>
                         </div>
                         <div class="form-group">
                             <label>🎯 จุดส่งออเดอร์ (ครัว/เครื่องดื่ม)</label>
                             <select id="newMenuKitchenType" class="form-control">
-                                <option value="kitchen_1">🍳 ครัวที่ 1 (ครัวหลัก)</option><option value="kitchen_2">🌿 ครัวที่ 2 (เช่น อาหารป่า)</option><option value="drink">🧋 โซนเครื่องดื่ม</option>
+                                <option value="kitchen_1">🍳 ครัวที่ 1 (ครัวหลัก)</option>
+                                <option value="kitchen_2">🌿 ครัวที่ 2 (เช่น อาหารป่า)</option>
+                                <option value="drink">🧋 โซนเครื่องดื่ม</option>
                             </select>
                         </div>
                         <div class="form-group" style="display: flex; flex-direction: column; gap: 4px; margin: 6px 0;">
-                            <label style="display: flex; align-items: center; gap: 5px; cursor: pointer; font-size: 11px;"><input type="checkbox" id="newMenuIsRec"> ⭐ เมนูแนะนำ</label>
-                            <label style="display: flex; align-items: center; gap: 5px; cursor: pointer; font-size: 11px;"><input type="checkbox" id="newMenuIsAdmin"> AdminController (ซ่อนหมายเหตุ)</label>
-                            <label style="display: flex; align-items: center; gap: 5px; cursor: pointer; font-size: 11px; color: #d35400; font-weight: bold;"><input type="checkbox" id="newMenuAllowEgg"> 🍳 เปิดใช้ตัวเลือกไข่ดาว/ไข่เจียว (allow_egg)</label>
+                            <label style="display: flex; align-items: center; gap: 5px; cursor: pointer; font-size: 11px;">
+                                <input type="checkbox" id="newMenuIsRec"> ⭐ เมนูแนะนำ
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 5px; cursor: pointer; font-size: 11px;">
+                                <input type="checkbox" id="newMenuIsAdmin"> AdminController
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 5px; cursor: pointer; font-size: 11px; color: #d35400; font-weight: bold;">
+                                <input type="checkbox" id="newMenuAllowEgg"> 🍳 เปิดใช้ตัวเลือกไข่ดาว/ไข่เจียว (allow_egg)
+                            </label>
                         </div>
-                        <div class="form-group"><label>รูปภาพอาหาร (อัปโหลดไฟล์)</label><input type="file" id="newMenuImageFile" accept="image/*" style="background: white; padding: 4px;"></div>
+                        <div class="form-group">
+                            <label>รูปภาพอาหาร (อัปโหลดไฟล์)</label>
+                            <input type="file" id="newMenuImageFile" accept="image/*" style="background: white; padding: 4px;">
+                        </div>
                         <button type="submit" style="background:var(--success); color:white; border:none; padding:8px; width:100%; border-radius:6px; font-weight:bold; cursor:pointer; font-size:11px; margin-top:4px;">บันทึกเมนูใหม่</button>
                     </form>
                 </div>
@@ -575,12 +577,19 @@
         </div>
     </div>
 
+    <!-- Modal: สรุปยอดขาย -->
     <div class="modal" id="salesReportModal">
         <div class="modal-content" style="width: 800px; max-height: 90vh;">
             <h3 style="margin-top:0; color:var(--primary); font-size: 16px;">📊 สรุปยอดขายและประวัติใบเสร็จ</h3>
             <div style="background: var(--light-gray); padding: 8px; border-radius: 8px; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; font-size: 11px; flex-wrap: wrap;">
-                <div><label><b>จากวันที่:</b></label><input type="date" id="startDate" style="padding: 3px; border: 1px solid #ccc; border-radius: 4px;"></div>
-                <div><label><b>ถึงวันที่:</b></label><input type="date" id="endDate" style="padding: 3px; border: 1px solid #ccc; border-radius: 4px;"></div>
+                <div>
+                    <label><b>จากวันที่:</b></label>
+                    <input type="date" id="startDate" style="padding: 3px; border: 1px solid #ccc; border-radius: 4px;">
+                </div>
+                <div>
+                    <label><b>ถึงวันที่:</b></label>
+                    <input type="date" id="endDate" style="padding: 3px; border: 1px solid #ccc; border-radius: 4px;">
+                </div>
                 <button onclick="loadSalesReport()" style="background: var(--success); color: white; border: none; padding: 5px 10px; border-radius: 4px; font-weight: bold; cursor: pointer; margin-top: 14px;">🔍 กรอง</button>
                 <button onclick="resetSalesFilter()" style="background: #ccc; border: none; padding: 5px 8px; border-radius: 4px; cursor: pointer; margin-top: 14px;">รีเซ็ต</button>
             </div>
@@ -592,10 +601,16 @@
                 <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
                     <thead>
                         <tr style="background: var(--light-gray); text-align: left; border-bottom: 1px solid #ddd; position: sticky; top: 0;">
-                            <th style="padding: 6px;">เวลาเช็คบิล</th><th style="padding: 6px;">โต๊ะ/คิว</th><th style="padding: 6px;">รายการอาหาร</th><th style="padding: 6px; text-align: right;">ยอดเงิน</th><th style="padding: 6px; text-align: center;">จัดการ</th>
+                            <th style="padding: 6px;">เวลาเช็คบิล</th>
+                            <th style="padding: 6px;">โต๊ะ/คิว</th>
+                            <th style="padding: 6px;">รายการอาหาร</th>
+                            <th style="padding: 6px; text-align: right;">ยอดเงิน</th>
+                            <th style="padding: 6px; text-align: center;">จัดการ</th>
                         </tr>
                     </thead>
-                    <tbody id="salesHistoryTableBody"><tr><td colspan="5" style="text-align:center; padding:20px; color:var(--gray);">กำลังโหลดข้อมูล...</td></tr></tbody>
+                    <tbody id="salesHistoryTableBody">
+                        <tr><td colspan="5" style="text-align:center; padding:20px; color:var(--gray);">กำลังโหลดข้อมูล...</td></tr>
+                    </tbody>
                 </table>
             </div>
             <div style="display:flex; justify-content:flex-end; border-top:1px solid #ddd; padding-top:8px; margin-top: 10px;">
@@ -604,31 +619,58 @@
         </div>
     </div>
 
+    <!-- Modal: แก้ไขเมนู -->
     <div class="modal" id="editMenuModal">
         <div class="modal-content" style="width: 400px;">
             <h3 style="margin-top:0; color:var(--primary); font-size: 15px;">✏️ แก้ไขข้อมูลเมนูอาหาร</h3>
             <form id="editMenuForm" onsubmit="updateMenuSubmit(event)">
                 <input type="hidden" id="editMenuId">
-                <div class="form-group"><label>ชื่อเมนูอาหาร</label><input type="text" id="editMenuName" required></div>
-                <div class="form-group"><label>ราคา (บาท)</label><input type="number" step="0.01" id="editMenuPrice" required></div>
+                <div class="form-group">
+                    <label>ชื่อเมนูอาหาร</label>
+                    <input type="text" id="editMenuName" required>
+                </div>
+                <div class="form-group">
+                    <label>ราคา (บาท)</label>
+                    <input type="number" step="0.01" id="editMenuPrice" required>
+                </div>
                 <div class="form-group">
                     <label>หมวดหมู่</label>
                     <select id="editMenuCategory">
-                        <option value="เมนูแนะนำ">⭐ แนะนำ</option><option value="อาหารป่า">🌿 อาหารป่า</option><option value="ผัด">🔥 ผัด</option><option value="ต้มยำ">🍲 ต้มยำ</option><option value="ยำ">🥗 ยำ</option><option value="ทอด">🍳 ทอด</option><option value="อีสาน">🌶️ อีสาน</option><option value="อาหารตามสั่ง">🍛 ตามสั่ง</option><option value="เครื่องดื่ม">🧋 เครื่องดื่ม</option><option value="AdminController">AdminController</option>
+                        <option value="เมนูแนะนำ">⭐ แนะนำ</option>
+                        <option value="อาหารป่า">🌿 อาหารป่า</option>
+                        <option value="ผัด">🔥 ผัด</option>
+                        <option value="ต้มยำ">🍲 ต้มยำ</option>
+                        <option value="ยำ">🥗 ยำ</option>
+                        <option value="ทอด">🍳 ทอด</option>
+                        <option value="อีสาน">🌶️ อีสาน</option>
+                        <option value="อาหารตามสั่ง">🍛 ตามสั่ง</option>
+                        <option value="เครื่องดื่ม">🧋 เครื่องดื่ม</option>
+                        <option value="AdminController">AdminController</option>
                     </select>
                 </div>
                 <div class="form-group">
                     <label>🎯 กำหนดจุดส่งออเดอร์ (ครัว/เครื่องดื่ม)</label>
                     <select id="editMenuKitchenType" class="form-control">
-                        <option value="kitchen_1">🍳 ครัวที่ 1 (ครัวหลัก)</option><option value="kitchen_2">🌿 ครัวที่ 2 (เช่น อาหารป่า)</option><option value="drink">🧋 โซนเครื่องดื่ม</option>
+                        <option value="kitchen_1">🍳 ครัวที่ 1 (ครัวหลัก)</option>
+                        <option value="kitchen_2">🌿 ครัวที่ 2 (เช่น อาหารป่า)</option>
+                        <option value="drink">🧋 โซนเครื่องดื่ม</option>
                     </select>
                 </div>
                 <div class="form-group" style="display: flex; flex-direction: column; gap: 4px; margin: 8px 0;">
-                    <label style="display: flex; align-items: center; gap: 5px; cursor: pointer; font-size: 11px;"><input type="checkbox" id="editMenuIsRec"> ⭐ เมนูแนะนำ</label>
-                    <label style="display: flex; align-items: center; gap: 5px; cursor: pointer; font-size: 11px;"><input type="checkbox" id="editMenuIsAdmin"> AdminController (ซ่อนหมายเหตุ)</label>
-                    <label style="display: flex; align-items: center; gap: 5px; cursor: pointer; font-size: 11px; color: #d35400; font-weight: bold;"><input type="checkbox" id="editMenuAllowEgg"> 🍳 เปิดใช้ตัวเลือกไข่ดาว/ไข่เจียว (allow_egg)</label>
+                    <label style="display: flex; align-items: center; gap: 5px; cursor: pointer; font-size: 11px;">
+                        <input type="checkbox" id="editMenuIsRec"> ⭐ เมนูแนะนำ
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 5px; cursor: pointer; font-size: 11px;">
+                        <input type="checkbox" id="editMenuIsAdmin"> AdminController
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 5px; cursor: pointer; font-size: 11px; color: #d35400; font-weight: bold;">
+                        <input type="checkbox" id="editMenuAllowEgg"> 🍳 เปิดใช้ตัวเลือกไข่ดาว/ไข่เจียว (allow_egg)
+                    </label>
                 </div>
-                <div class="form-group"><label>เปลี่ยนรูปภาพอาหาร (อัปโหลดไฟล์ใหม่)</label><input type="file" id="editMenuImageFile" accept="image/*" style="background: white; padding: 4px;"></div>
+                <div class="form-group">
+                    <label>เปลี่ยนรูปภาพอาหาร (อัปโหลดไฟล์ใหม่)</label>
+                    <input type="file" id="editMenuImageFile" accept="image/*" style="background: white; padding: 4px;">
+                </div>
                 <div style="display:flex; justify-content:flex-end; gap:6px; margin-top:12px;">
                     <button type="button" onclick="closeEditMenuModal()" style="background:#ddd; border:none; padding:6px 10px; border-radius:6px; cursor:pointer; font-size:11px;">ยกเลิก</button>
                     <button type="submit" style="background:var(--success); color:white; border:none; padding:6px 12px; border-radius:6px; font-weight:bold; cursor:pointer; font-size:11px;">บันทึก</button>
@@ -651,7 +693,7 @@
             6: 'ยำ', 7: 'เครื่องดื่ม', 8: 'เมนูแนะนำ', 9: 'AdminController', 10: 'อีสาน'
         };
 
-        const fallbackImg = '/uploads/menu.jpg';
+        const fallbackImg = '/uploads/menu.jpg'; // รูปภาพเริ่มต้น
 
         function consolidateItems(items) {
             const map = {};
@@ -683,7 +725,7 @@
             document.querySelectorAll('.cat-menu-btn').forEach(btn => btn.classList.remove('active'));
             if(element) element.classList.add('active');
             document.getElementById('current-cat-title').innerText = `รายการ: ${catName}`;
-            document.getElementById('adminSearchInput').value = '';
+            document.getElementById('adminSearchInput').value = ''; // เคลียร์ช่องค้นหา
             renderAdminMenus();
         }
 
@@ -711,12 +753,16 @@
 
             const filtered = allMenus.filter(m => {
                 const catName = m.category_name || categoryMap[m.category_id] || '';
+                
+                // หากมีการค้นหา ให้ค้นหาจากทุกหมวดหมู่
                 if (searchKeyword) {
                     return (m.name || '').toLowerCase().includes(searchKeyword);
                 }
+
                 if (currentSelectedCategory === 'AdminController') return Number(m.is_admin_menu) === 1;
                 if (currentSelectedCategory === 'เมนูแนะนำ') return Number(m.is_recommended) === 1;
                 if (currentSelectedCategory === 'ทั้งหมด') return true;
+                
                 return catName === currentSelectedCategory;
             });
 
@@ -725,6 +771,7 @@
                 const catB = b.category_name || categoryMap[b.category_id] || '';
                 const orderA = categoryOrder[catA] || 99;
                 const orderB = categoryOrder[catB] || 99;
+                
                 if (orderA !== orderB) return orderA - orderB;
                 return a.id - b.id;
             });
@@ -735,8 +782,8 @@
             }
 
             filtered.forEach(item => {
+                // ตรรกะแสดงตัวเลือกไข่ (อิง allow_egg อย่างเดียว)
                 const isAllowEgg = Number(item.allow_egg) === 1;
-                const isAdminMenu = Number(item.is_admin_menu) === 1;
                 let optionsHtml = '';
                 
                 if (isAllowEgg) {
@@ -750,21 +797,11 @@
                     `;
                 }
 
-                // ถ้าเป็น is_admin_menu จะซ่อนช่องหมายเหตุ
-                let noteInputHtml = '';
-                if (!isAdminMenu) {
-                    noteInputHtml = `
-                        <div style="padding: 0 6px 6px 6px;">
-                            <input type="text" id="note-${item.id}" placeholder="เพิ่มหมายเหตุ (กด Enter เพิ่ม)..." style="width: 100%; padding: 5px; font-size: 11px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;" onkeydown="handleNoteKeydown(event, ${item.id}, '${item.name.replace(/'/g, "\\'")}', ${item.price}, ${isAllowEgg})">
-                        </div>
-                    `;
-                }
-
                 const imgSrc = item.image_url || fallbackImg;
 
                 grid.innerHTML += `
                     <div class="admin-menu-card">
-                        <div class="admin-menu-card-top" onclick="addMenuToCartPrompt(${item.id}, '${item.name.replace(/'/g, "\\'")}', ${item.price}, ${isAllowEgg})">
+                        <div class="admin-menu-card-top" onclick="addMenuToCartPrompt(${item.id}, '${item.name}', ${item.price}, ${isAllowEgg})">
                             <img src="${imgSrc}" onerror="this.src='${fallbackImg}'" class="admin-menu-img">
                             <div class="admin-menu-info">
                                 <div class="admin-menu-title">${item.name}</div>
@@ -772,17 +809,12 @@
                             </div>
                         </div>
                         ${optionsHtml}
-                        ${noteInputHtml}
+                        <div style="padding: 0 8px 8px 8px;">
+                            <input type="text" id="note-${item.id}" placeholder="เพิ่มหมายเหตุ..." style="width: 100%; padding: 6px; font-size: 11px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;">
+                        </div>
                     </div>
                 `;
             });
-        }
-
-        function handleNoteKeydown(event, menuItemId, menuName, basePrice, isAllowEgg) {
-            if (event.key === 'Enter') {
-                event.preventDefault();
-                addMenuToCartPrompt(menuItemId, menuName, basePrice, isAllowEgg);
-            }
         }
 
         function addMenuToCartPrompt(menuItemId, menuName, basePrice, isAllowEgg) {
@@ -893,12 +925,13 @@
                 const pendingKitchenOrders = orders.filter(ord => ord.status !== 'เสร็จสิ้น');
 
                 if (pendingKitchenOrders.length === 0) {
-                    container.innerHTML = '<p style="color:var(--gray); font-size:12px;">ไม่มีออเดอร์ค้างในครัว</p>';
+                    container.innerHTML = '<p style="color:var(--gray); font-size:11px;">ไม่มีออเดอร์ค้างในครัว</p>';
                     return;
                 }
 
                 pendingKitchenOrders.forEach(ord => {
                     let tableStr = String(ord.table_id);
+                    // เพิ่มระบบดึงชื่อลูกค้ามาต่อท้าย QXXX
                     let locationLabel = tableStr.startsWith('Z') ? `ซุ้ม ${tableStr}` : 
                                         (isNaN(tableStr) ? `คิว ${tableStr}${ord.customer_name ? ` (${ord.customer_name})` : ''}` : `โต๊ะ ${tableStr}`);
 
@@ -1052,7 +1085,7 @@
                 alert('เช็คบิลสำเร็จ! ระบบหลังบ้านกำลังพิมพ์ใบเสร็จให้อัตโนมัติ');
                 activeTableId = null;
                 currentCart = [];
-                document.getElementById('tableSummaryBox').innerHTML = `<div style="font-size:11px; color:var(--gray); text-align:center; padding:30px 0;">ยังไม่ได้เลือกโต๊ะหรือคิว<br>(กรุณาคลิกเลือกจากด้านล่าง)</div>`;
+                document.getElementById('tableSummaryBox').innerHTML = `<div style="font-size:11px; color:var(--gray); text-align:center; padding:30px 0;">ยังไม่ได้เลือกโต๊ะหรือคิว<br>(กรุณาคลิกเลือกจากด้านบน)</div>`;
                 fetchKitchenOrders();
             } catch(e) {
                 alert('เกิดข้อผิดพลาดในการเช็คบิล');
@@ -1116,7 +1149,7 @@
         async function renderSummaryBox() {
             const summaryBox = document.getElementById('tableSummaryBox');
             if(!activeTableId) {
-                summaryBox.innerHTML = `<div style="font-size:13px; color:var(--gray); text-align:center; padding:30px 0;">ยังไม่ได้เลือกโต๊ะหรือคิว<br>(กรุณาคลิกเลือกจากด้านล่าง)</div>`;
+                summaryBox.innerHTML = `<div style="font-size:13px; color:var(--gray); text-align:center; padding:40px 0;">ยังไม่ได้เลือกโต๊ะหรือคิว<br>(กรุณาคลิกเลือกจากด้านล่าง)</div>`;
                 return;
             }
 
@@ -1131,9 +1164,9 @@
                 let submittedItemsHtml = '';
                 uniqueSubmittedItems.forEach((i) => {
                     submittedItemsHtml += `
-                        <div style="display:flex; justify-content:space-between; align-items:center; padding:5px 2px; border-bottom:1px solid #f8f9fa; font-size:12px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 2px; border-bottom:1px solid #f8f9fa; font-size:12px;">
                             <span>${i.name} x <strong style="font-size:13px;">${i.quantity}</strong> <span style="color:var(--primary);">(${ (i.price * i.quantity).toFixed(2) }฿)</span></span>
-                            <button onclick="deleteAggregatedOrderItem('${activeTableId}', '${i.name}')" style="background:#ff4757; color:white; border:none; padding:3px 6px; border-radius:4px; cursor:pointer; font-size:11px; font-weight:bold;">❌ ลบ</button>
+                            <button onclick="deleteAggregatedOrderItem('${activeTableId}', '${i.name}')" style="background:#ff4757; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:11px; font-weight:bold;">❌ ลบ</button>
                         </div>
                     `;
                 });
@@ -1143,12 +1176,12 @@
                 currentCart.forEach((item, idx) => {
                     cartTotal += item.price * item.quantity;
                     cartItemsHtml += `
-                        <div style="display:flex; justify-content:space-between; align-items:center; background:#fff3cd; padding:5px 8px; margin-bottom:4px; border-radius:6px; font-size:12px; font-weight:500;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; background:#fff3cd; padding:6px 8px; margin-bottom:4px; border-radius:6px; font-size:12px; font-weight:500;">
                             <span>${item.name}</span>
                             <div style="display:flex; align-items:center; gap:6px;">
-                                <button onclick="updateCartQuantity(${idx}, -1)" style="padding:2px 7px; font-size:13px; font-weight:bold; cursor:pointer; border-radius:4px; border:1px solid #ccc; background:white;">-</button>
-                                <span style="font-size:13px; font-weight:bold; min-width:16px; text-align:center;">${item.quantity}</span>
-                                <button onclick="updateCartQuantity(${idx}, 1)" style="padding:2px 7px; font-size:13px; font-weight:bold; cursor:pointer; border-radius:4px; border:1px solid #ccc; background:white;">+</button>
+                                <button onclick="updateCartQuantity(${idx}, -1)" style="padding:2px 8px; font-size:14px; font-weight:bold; cursor:pointer; border-radius:4px; border:1px solid #ccc; background:white;">-</button>
+                                <span style="font-size:14px; font-weight:bold; min-width:18px; text-align:center;">${item.quantity}</span>
+                                <button onclick="updateCartQuantity(${idx}, 1)" style="padding:2px 8px; font-size:14px; font-weight:bold; cursor:pointer; border-radius:4px; border:1px solid #ccc; background:white;">+</button>
                                 <span style="color:var(--primary); margin-left:4px; font-weight:bold;">${(item.price * item.quantity).toFixed(2)}฿</span>
                             </div>
                         </div>
@@ -1156,30 +1189,28 @@
                 });
 
                 summaryBox.innerHTML = `
-                    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #eee; padding-bottom:5px; flex-shrink:0;">
-                        <strong style="font-size:12px; color:var(--primary);">โต๊ะ/คิว: ${activeTableTitleText}</strong>
-                        <button onclick="openTableModalFromSummary()" style="background:var(--light-gray); border:1px solid #ddd; padding:2px 6px; border-radius:4px; font-size:10px; cursor:pointer; font-weight:bold;">🔍 ขยาย</button>
+                    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #eee; padding-bottom:6px;">
+                        <strong style="font-size:13px; color:var(--primary);">โต๊ะ/คิว: ${activeTableTitleText}</strong>
+                        <button onclick="openTableModalFromSummary()" style="background:var(--light-gray); border:1px solid #ddd; padding:4px 8px; border-radius:4px; font-size:11px; cursor:pointer; font-weight:bold;">🔍 ขยาย</button>
                     </div>
                     
-                    <div style="flex:1; overflow-y: auto; font-size:12px; margin:4px 0; padding-right: 2px;">
-                        <div style="font-weight:bold; color:var(--success); font-size:11px; margin-bottom:4px;">🛒 ตะกร้า (รอส่งครัว):</div>
-                        ${cartItemsHtml || '<div style="color:var(--gray); font-size:11px; margin-bottom:4px;">(ยังไม่มีรายการในตะกร้า)</div>'}
+                    <div style="flex:1; overflow-y: auto; font-size:12px; margin:8px 0; padding-right: 4px; min-height:120px;">
+                        <div style="font-weight:bold; color:var(--success); font-size:12px; margin-bottom:6px;">🛒 ตะกร้า (รอส่งครัว):</div>
+                        ${cartItemsHtml || '<div style="color:var(--gray); font-size:12px; margin-bottom:8px;">(ยังไม่มีรายการในตะกร้า)</div>'}
                         
-                        <div style="font-weight:bold; color:var(--gray); font-size:11px; margin: 6px 0 4px 0; border-top: 1px dashed #ddd; padding-top: 4px;">📦 ส่งเข้าครัวไปแล้ว:</div>
-                        ${submittedItemsHtml || '<div style="color:var(--gray); font-size:11px;">(ยังไม่มีรายการที่สั่ง)</div>'}
+                        <div style="font-weight:bold; color:var(--gray); font-size:12px; margin: 12px 0 6px 0; border-top: 1px dashed #ddd; padding-top: 8px;">📦 ส่งเข้าครัวไปแล้ว:</div>
+                        ${submittedItemsHtml || '<div style="color:var(--gray); font-size:12px;">(ยังไม่มีรายการที่สั่ง)</div>'}
                     </div>
                     
-                    <div style="flex-shrink:0;">
-                        ${currentCart.length > 0 ? `<button onclick="confirmAndSubmitOrder()" style="background:var(--success); color:white; border:none; padding:8px; border-radius:6px; font-size:12px; cursor:pointer; font-weight:bold; width:100%; margin-bottom:4px;">🚀 ยืนยันสั่งอาหาร (${cartTotal.toFixed(2)} ฿)</button>` : ''}
-                        
-                        <div style="display:flex; gap:4px;">
-                            <button onclick="cancelActiveTableOrder()" style="flex:1; background:#ffeaa7; color:#d63031; border:none; padding:6px; border-radius:6px; font-size:11px; cursor:pointer; font-weight:bold;">❌ ยกเลิกโต๊ะ</button>
-                            <button onclick="checkoutInlineTable()" style="flex:1; background:var(--primary); color:white; border:none; padding:6px; border-radius:6px; font-size:11px; cursor:pointer; font-weight:bold;">💰 เช็คบิล</button>
-                        </div>
+                    ${currentCart.length > 0 ? `<button onclick="confirmAndSubmitOrder()" style="background:var(--success); color:white; border:none; padding:10px; border-radius:6px; font-size:13px; cursor:pointer; font-weight:bold; width:100%; margin-bottom:6px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">🚀 ยืนยันสั่งอาหาร (${cartTotal.toFixed(2)} ฿)</button>` : ''}
+                    
+                    <div style="display:flex; gap:6px; margin-top:4px;">
+                        <button onclick="cancelActiveTableOrder()" style="flex:1; background:#ffeaa7; color:#d63031; border:none; padding:8px; border-radius:6px; font-size:12px; cursor:pointer; font-weight:bold;">❌ ยกเลิกโต๊ะ</button>
+                        <button onclick="checkoutInlineTable()" style="flex:1; background:var(--primary); color:white; border:none; padding:8px; border-radius:6px; font-size:12px; cursor:pointer; font-weight:bold;">💰 เช็คบิล</button>
                     </div>
                 `;
             } catch (e) {
-                summaryBox.innerHTML = '<p style="color:var(--primary); font-size:12px; text-align:center;">โหลดข้อมูลไม่สำเร็จ</p>';
+                summaryBox.innerHTML = '<p style="color:var(--primary); font-size:13px; text-align:center;">โหลดข้อมูลไม่สำเร็จ</p>';
             }
         }
 
@@ -1267,7 +1298,7 @@
             if(confirm(`ต้องการยกเลิกออเดอร์ทั้งหมดของ ${activeTableTitleText} ใช่หรือไม่?`)) {
                 try { await fetch(`/api/orders/table/${activeTableId}`, { method: 'DELETE' }); } catch(e) {}
                 activeTableId = null; currentCart = [];
-                document.getElementById('tableSummaryBox').innerHTML = `<div style="font-size:11px; color:var(--gray); text-align:center; padding:30px 0;">ยังไม่ได้เลือกโต๊ะหรือคิว<br>(กรุณาคลิกเลือกจากด้านล่าง)</div>`;
+                document.getElementById('tableSummaryBox').innerHTML = `<div style="font-size:11px; color:var(--gray); text-align:center; padding:30px 0;">ยังไม่ได้เลือกโต๊ะหรือคิว<br>(กรุณาคลิกเลือกจากด้านบน)</div>`;
                 fetchKitchenOrders();
             }
         }
