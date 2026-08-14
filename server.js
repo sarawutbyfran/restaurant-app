@@ -217,15 +217,8 @@ app.post('/api/walk-in-queue', async (req, res) => {
         // ล็อคตารางเพื่อป้องกันการแจกเลขคิวซ้ำเมื่อมีคนสแกนพร้อมกัน
         await client.query('LOCK TABLE tables IN EXCLUSIVE MODE');
 
-        // เช็คคิวจาก tables ที่ถูกเปิดใน "วันนี้" เท่านั้น (ยึด Timezone ประเทศไทย)
-        // เพื่อให้เลขคิวกลับไปนับ Q001 ใหม่ในวันถัดไป
-        const activeQueues = await client.query(`
-            SELECT table_id 
-            FROM tables 
-            WHERE table_id LIKE 'Q%' 
-            AND DATE(updated_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Bangkok') = DATE(CURRENT_TIMESTAMP AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Bangkok')
-        `);
-
+        // เปลี่ยนมาเช็คคิวจาก tables ที่จองไว้แทน orders
+        const activeQueues = await client.query("SELECT table_id FROM tables WHERE table_id LIKE 'Q%'");
         let nextQNum = 1;
         if (activeQueues.rows.length > 0) {
             const nums = activeQueues.rows.map(row => {
@@ -234,24 +227,18 @@ app.post('/api/walk-in-queue', async (req, res) => {
             });
             nextQNum = Math.max(...nums) + 1;
         }
-        
         const newQueueId = `Q${String(nextQNum).padStart(3, '0')}`;
         
-        // สร้าง Token ใหม่สำหรับคิวนี้ เพื่อให้เอาไปใช้สั่งอาหารได้
-        const newToken = Math.random().toString(36).substring(7);
-        
-        // เปิดสถานะคิวใหม่และบันทึก Token
+        // เปิดสถานะคิวใหม่ในตาราง tables ทันที
         await client.query(`
-            INSERT INTO tables (table_id, status, session_token, updated_at) 
-            VALUES ($1, 'active', $2, CURRENT_TIMESTAMP) 
+            INSERT INTO tables (table_id, status, updated_at) 
+            VALUES ($1, 'active', CURRENT_TIMESTAMP) 
             ON CONFLICT (table_id) 
-            DO UPDATE SET status = 'active', session_token = $2, updated_at = CURRENT_TIMESTAMP
-        `, [newQueueId, newToken]);
+            DO UPDATE SET status = 'active', updated_at = CURRENT_TIMESTAMP
+        `, [newQueueId]);
 
         await client.query('COMMIT');
-        
-        // ส่ง token กลับไปให้ Frontend เก็บไว้
-        res.json({ success: true, queue_id: newQueueId, token: newToken });
+        res.json({ success: true, queue_id: newQueueId });
     } catch (err) {
         await client.query('ROLLBACK');
         res.status(500).json({ error: err.message });
@@ -390,44 +377,17 @@ app.put('/api/orders/table/:tableId/move', async (req, res) => {
 
     const targetNewId = String(new_table_id).toUpperCase();
     const client = await pool.connect();
-    
     try {
         await client.query('BEGIN');
-        
-        // 1. ดึง session_token ของโต๊ะเก่ามาก่อน
-        const oldTableCheck = await client.query(
-            "SELECT session_token FROM tables WHERE UPPER(table_id) = $1", 
-            [oldTableId]
-        );
-        const oldToken = oldTableCheck.rows.length > 0 ? oldTableCheck.rows[0].session_token : null;
-
-        // 2. ย้ายออเดอร์ในตาราง orders
-        const updateResult = await client.query(
-            'UPDATE orders SET table_id = $1 WHERE UPPER(table_id) = $2', 
-            [targetNewId, oldTableId]
-        );
-        
+        const updateResult = await client.query('UPDATE orders SET table_id = $1 WHERE UPPER(table_id) = $2', [targetNewId, oldTableId]);
         if (updateResult.rowCount === 0) {
             await client.query('ROLLBACK');
             return res.status(404).json({ error: 'ไม่พบออเดอร์ของโต๊ะต้นทางที่ต้องการย้าย' });
         }
-        
-        // 3. ปิดโต๊ะเก่า และล้างค่า session_token ทิ้งเพื่อความปลอดภัย
-        await client.query(
-            "UPDATE tables SET status = 'closed', session_token = NULL WHERE UPPER(table_id) = $1", 
-            [oldTableId]
-        );
-        
-        // 4. เปิดโต๊ะใหม่ พร้อมกับโอน session_token จากโต๊ะเก่าไปให้
-        await client.query(`
-            INSERT INTO tables (table_id, status, session_token, updated_at) 
-            VALUES ($1, 'active', $2, CURRENT_TIMESTAMP) 
-            ON CONFLICT (table_id) 
-            DO UPDATE SET status = 'active', session_token = $2, updated_at = CURRENT_TIMESTAMP
-        `, [targetNewId, oldToken]);
-        
+        await client.query("UPDATE tables SET status = 'closed' WHERE table_id = $1", [oldTableId]);
+        await client.query("INSERT INTO tables (table_id, status) VALUES ($1, 'active') ON CONFLICT (table_id) DO UPDATE SET status = 'active', updated_at = CURRENT_TIMESTAMP", [targetNewId]);
         await client.query('COMMIT');
-        res.json({ success: true, message: `ย้ายโต๊ะจาก ${oldTableId} ไปยัง ${targetNewId} สำเร็จ` });
+        res.json({ success: true, message: `ย้ายออเดอร์สำเร็จ` });
     } catch (err) {
         await client.query('ROLLBACK');
         res.status(500).json({ error: err.message });
