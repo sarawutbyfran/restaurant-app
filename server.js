@@ -56,16 +56,16 @@ async function initDatabase() {
                 table_id VARCHAR(50) PRIMARY KEY,
                 status VARCHAR(20) DEFAULT 'active',
                 session_token VARCHAR(100),
+                customer_name VARCHAR(100),   -- เพิ่มคอลัมน์เก็บชื่อลูกค้า
+                customer_phone VARCHAR(20),   -- เพิ่มคอลัมน์เก็บเบอร์โทร
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
         `);
 
-        // พยายามเพิ่ม session_token เผื่อกรณีที่ตารางมีอยู่แล้วแต่ยังไม่มีคอลัมน์นี้
-        try {
-            await pool.query(`ALTER TABLE tables ADD COLUMN session_token VARCHAR(100);`);
-        } catch (e) {
-            // ข้ามไปหากมีคอลัมน์นี้อยู่แล้ว
-        }
+        // พยายามเพิ่ม session_token, customer_name, customer_phone เผื่อกรณีที่ตารางมีอยู่แล้ว
+        try { await pool.query(`ALTER TABLE tables ADD COLUMN session_token VARCHAR(100);`); } catch (e) {}
+        try { await pool.query(`ALTER TABLE tables ADD COLUMN customer_name VARCHAR(100);`); } catch (e) {}
+        try { await pool.query(`ALTER TABLE tables ADD COLUMN customer_phone VARCHAR(20);`); } catch (e) {}
 
         await pool.query(`
             CREATE TABLE IF NOT EXISTS categories (
@@ -181,17 +181,14 @@ app.post('/api/open-table', async (req, res) => {
     const tableId = String(table_id).toUpperCase();
     
     try {
-        // 1. ตรวจสอบว่าโต๊ะนี้มี Token อยู่แล้วหรือไม่ และสถานะยัง active หรือไม่
         const check = await pool.query(
             "SELECT session_token FROM tables WHERE table_id = $1 AND status = 'active'", 
             [tableId]
         );
 
         if (check.rows.length > 0 && check.rows[0].session_token) {
-            // ถ้าโต๊ะ Active อยู่แล้ว ให้คืน Token เดิมที่มีอยู่กลับไป (เพื่อให้เครื่องอื่นที่สั่งทีหลังใช้รหัสเดียวกัน)
             return res.json({ success: true, token: check.rows[0].session_token });
         } else {
-            // ถ้ายังไม่มี หรือโต๊ะถูกปิดไปแล้ว (closed) ให้สร้างใหม่
             const newToken = Math.random().toString(36).substring(7);
             
             await pool.query(`
@@ -208,17 +205,14 @@ app.post('/api/open-table', async (req, res) => {
     }
 });
 
-// สร้างเลขคิวใหม่สำหรับ Walk-in (แก้ไขเรื่องเลขคิวซ้ำซ้อน)
+// สร้างเลขคิวใหม่สำหรับ Walk-in พร้อมรับชื่อ/เบอร์โทร
 app.post('/api/walk-in-queue', async (req, res) => {
+    const { customer_name, customer_phone } = req.body; // รับค่าชื่อและเบอร์โทรที่ส่งมา
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
-        
-        // ล็อคตารางเพื่อป้องกันการแจกเลขคิวซ้ำเมื่อมีคนสแกนพร้อมกัน
         await client.query('LOCK TABLE tables IN EXCLUSIVE MODE');
 
-        // เช็คคิวจาก tables ที่ถูกเปิดใน "วันนี้" เท่านั้น (ยึด Timezone ประเทศไทย)
-        // เพื่อให้เลขคิวกลับไปนับ Q001 ใหม่ในวันถัดไป
         const activeQueues = await client.query(`
             SELECT table_id 
             FROM tables 
@@ -236,21 +230,18 @@ app.post('/api/walk-in-queue', async (req, res) => {
         }
         
         const newQueueId = `Q${String(nextQNum).padStart(3, '0')}`;
-        
-        // สร้าง Token ใหม่สำหรับคิวนี้ เพื่อให้เอาไปใช้สั่งอาหารได้
         const newToken = Math.random().toString(36).substring(7);
         
-        // เปิดสถานะคิวใหม่และบันทึก Token
+        // บันทึกชื่อและเบอร์โทรลงฐานข้อมูลด้วย (ถ้าไม่ได้ส่งมาจะเป็น null)
         await client.query(`
-            INSERT INTO tables (table_id, status, session_token, updated_at) 
-            VALUES ($1, 'active', $2, CURRENT_TIMESTAMP) 
+            INSERT INTO tables (table_id, status, session_token, customer_name, customer_phone, updated_at) 
+            VALUES ($1, 'active', $2, $3, $4, CURRENT_TIMESTAMP) 
             ON CONFLICT (table_id) 
-            DO UPDATE SET status = 'active', session_token = $2, updated_at = CURRENT_TIMESTAMP
-        `, [newQueueId, newToken]);
+            DO UPDATE SET status = 'active', session_token = $2, customer_name = $3, customer_phone = $4, updated_at = CURRENT_TIMESTAMP
+        `, [newQueueId, newToken, customer_name || null, customer_phone || null]);
 
         await client.query('COMMIT');
         
-        // ส่ง token กลับไปให้ Frontend เก็บไว้
         res.json({ success: true, queue_id: newQueueId, token: newToken });
     } catch (err) {
         await client.query('ROLLBACK');
@@ -271,7 +262,6 @@ app.post('/api/orders', async (req, res) => {
         await client.query('BEGIN');
         const upperTableId = String(table_id).toUpperCase();
         
-        // ตรวจสอบว่าโต๊ะนี้ active และ token ยังถูกต้องอยู่ไหม
         const check = await client.query(
             "SELECT status FROM tables WHERE table_id = $1 AND session_token = $2", 
             [upperTableId, token]
@@ -394,14 +384,15 @@ app.put('/api/orders/table/:tableId/move', async (req, res) => {
     try {
         await client.query('BEGIN');
         
-        // 1. ดึง session_token ของโต๊ะเก่ามาก่อน
         const oldTableCheck = await client.query(
-            "SELECT session_token FROM tables WHERE UPPER(table_id) = $1", 
+            "SELECT session_token, customer_name, customer_phone FROM tables WHERE UPPER(table_id) = $1", 
             [oldTableId]
         );
+        
         const oldToken = oldTableCheck.rows.length > 0 ? oldTableCheck.rows[0].session_token : null;
+        const oldCusName = oldTableCheck.rows.length > 0 ? oldTableCheck.rows[0].customer_name : null;
+        const oldCusPhone = oldTableCheck.rows.length > 0 ? oldTableCheck.rows[0].customer_phone : null;
 
-        // 2. ย้ายออเดอร์ในตาราง orders
         const updateResult = await client.query(
             'UPDATE orders SET table_id = $1 WHERE UPPER(table_id) = $2', 
             [targetNewId, oldTableId]
@@ -412,19 +403,17 @@ app.put('/api/orders/table/:tableId/move', async (req, res) => {
             return res.status(404).json({ error: 'ไม่พบออเดอร์ของโต๊ะต้นทางที่ต้องการย้าย' });
         }
         
-        // 3. ปิดโต๊ะเก่า และล้างค่า session_token ทิ้งเพื่อความปลอดภัย
         await client.query(
             "UPDATE tables SET status = 'closed', session_token = NULL WHERE UPPER(table_id) = $1", 
             [oldTableId]
         );
         
-        // 4. เปิดโต๊ะใหม่ พร้อมกับโอน session_token จากโต๊ะเก่าไปให้
         await client.query(`
-            INSERT INTO tables (table_id, status, session_token, updated_at) 
-            VALUES ($1, 'active', $2, CURRENT_TIMESTAMP) 
+            INSERT INTO tables (table_id, status, session_token, customer_name, customer_phone, updated_at) 
+            VALUES ($1, 'active', $2, $3, $4, CURRENT_TIMESTAMP) 
             ON CONFLICT (table_id) 
-            DO UPDATE SET status = 'active', session_token = $2, updated_at = CURRENT_TIMESTAMP
-        `, [targetNewId, oldToken]);
+            DO UPDATE SET status = 'active', session_token = $2, customer_name = $3, customer_phone = $4, updated_at = CURRENT_TIMESTAMP
+        `, [targetNewId, oldToken, oldCusName, oldCusPhone]);
         
         await client.query('COMMIT');
         res.json({ success: true, message: `ย้ายโต๊ะจาก ${oldTableId} ไปยัง ${targetNewId} สำเร็จ` });
@@ -436,7 +425,6 @@ app.put('/api/orders/table/:tableId/move', async (req, res) => {
     }
 });
 
-// เช็คบิลโต๊ะ/คิว
 app.delete('/api/orders/table/:tableId', async (req, res) => {
     const tableId = String(req.params.tableId).toUpperCase();
     try {
