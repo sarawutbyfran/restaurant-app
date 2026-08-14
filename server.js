@@ -32,17 +32,7 @@ const storage = multer.diskStorage({
         cb(null, uniqueSuffix + path.extname(file.originalname));
     }
 });
-const upload = multer({ 
-    storage: storage,
-    limits: { fileSize: 5 * 1024 * 1024 }, // จำกัดขนาดไฟล์ไม่เกิน 5MB
-    fileFilter: (req, file, cb) => {
-        if (file.mimetype.startsWith('image/')) {
-            cb(null, true);
-        } else {
-            cb(new Error('อนุญาตให้อัปโหลดเฉพาะไฟล์รูปภาพเท่านั้น!'), false);
-        }
-    }
-});
+const upload = multer({ storage: storage });
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -66,16 +56,16 @@ async function initDatabase() {
                 table_id VARCHAR(50) PRIMARY KEY,
                 status VARCHAR(20) DEFAULT 'active',
                 session_token VARCHAR(100),
-                customer_name VARCHAR(100),
-                customer_phone VARCHAR(20),
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
         `);
 
-        // เผื่อกรณีมีตารางอยู่แล้ว ให้เพิ่มคอลัมน์ที่ขาดอัตโนมัติ
-        try { await pool.query(`ALTER TABLE tables ADD COLUMN session_token VARCHAR(100);`); } catch (e) {}
-        try { await pool.query(`ALTER TABLE tables ADD COLUMN customer_name VARCHAR(100);`); } catch (e) {}
-        try { await pool.query(`ALTER TABLE tables ADD COLUMN customer_phone VARCHAR(20);`); } catch (e) {}
+        // พยายามเพิ่ม session_token เผื่อกรณีที่ตารางมีอยู่แล้วแต่ยังไม่มีคอลัมน์นี้
+        try {
+            await pool.query(`ALTER TABLE tables ADD COLUMN session_token VARCHAR(100);`);
+        } catch (e) {
+            // ข้ามไปหากมีคอลัมน์นี้อยู่แล้ว
+        }
 
         await pool.query(`
             CREATE TABLE IF NOT EXISTS categories (
@@ -163,7 +153,7 @@ app.get('/api/menu', async (req, res) => {
         const result = await pool.query('SELECT * FROM menu_items ORDER BY category_id ASC, id ASC');
         res.json(result.rows);
     } catch (err) {
-        res.status(500).json({ error: 'เกิดข้อผิดพลาดภายในระบบ' });
+        res.status(500).json({ error: err.message });
     }
 });
 
@@ -179,11 +169,11 @@ app.get('/api/check-table-status/:tableId', async (req, res) => {
         }
         res.json({ active: true });
     } catch (err) {
-        res.status(500).json({ error: 'เกิดข้อผิดพลาดภายในระบบ' });
+        res.status(500).json({ error: err.message });
     }
 });
 
-// เปิดโต๊ะ (สแกนเบอร์โต๊ะ ไม่ต้องใช้ชื่อ/เบอร์)
+// เปิดโต๊ะเฉพาะตอนสแกน QR Code จริงๆ
 app.post('/api/open-table', async (req, res) => {
     const { table_id } = req.body;
     if (!table_id) return res.status(400).json({ error: 'Missing table_id' });
@@ -191,15 +181,18 @@ app.post('/api/open-table', async (req, res) => {
     const tableId = String(table_id).toUpperCase();
     
     try {
+        // 1. ตรวจสอบว่าโต๊ะนี้มี Token อยู่แล้วหรือไม่ และสถานะยัง active หรือไม่
         const check = await pool.query(
             "SELECT session_token FROM tables WHERE table_id = $1 AND status = 'active'", 
             [tableId]
         );
 
         if (check.rows.length > 0 && check.rows[0].session_token) {
+            // ถ้าโต๊ะ Active อยู่แล้ว ให้คืน Token เดิมที่มีอยู่กลับไป (เพื่อให้เครื่องอื่นที่สั่งทีหลังใช้รหัสเดียวกัน)
             return res.json({ success: true, token: check.rows[0].session_token });
         } else {
-            const newToken = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+            // ถ้ายังไม่มี หรือโต๊ะถูกปิดไปแล้ว (closed) ให้สร้างใหม่
+            const newToken = Math.random().toString(36).substring(7);
             
             await pool.query(`
                 INSERT INTO tables (table_id, status, session_token, updated_at) 
@@ -211,21 +204,21 @@ app.post('/api/open-table', async (req, res) => {
             return res.json({ success: true, token: newToken });
         }
     } catch (err) {
-        res.status(500).json({ error: 'เกิดข้อผิดพลาดภายในระบบ' });
+        res.status(500).json({ error: err.message });
     }
 });
 
-// รันคิวอัตโนมัติ Walk-in (รองรับชื่อ/เบอร์โทรศัพท์แบบไม่บังคับ และแก้ปัญหาคิวชนกัน)
+// สร้างเลขคิวใหม่สำหรับ Walk-in (แก้ไขเรื่องเลขคิวซ้ำซ้อน)
 app.post('/api/walk-in-queue', async (req, res) => {
-    const { name, phone } = req.body;
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
         
-        // ล็อคตาราง tables เพื่อป้องกันการแจกเลขคิวซ้ำซ้อนในจังหวะที่มีคนสแกนพร้อมกัน
+        // ล็อคตารางเพื่อป้องกันการแจกเลขคิวซ้ำเมื่อมีคนสแกนพร้อมกัน
         await client.query('LOCK TABLE tables IN EXCLUSIVE MODE');
 
-        // หาเลขคิวถัดไปของวันปัจจุบัน (อิงตาม Timezone ไทย)
+        // เช็คคิวจาก tables ที่ถูกเปิดใน "วันนี้" เท่านั้น (ยึด Timezone ประเทศไทย)
+        // เพื่อให้เลขคิวกลับไปนับ Q001 ใหม่ในวันถัดไป
         const activeQueues = await client.query(`
             SELECT table_id 
             FROM tables 
@@ -243,22 +236,25 @@ app.post('/api/walk-in-queue', async (req, res) => {
         }
         
         const newQueueId = `Q${String(nextQNum).padStart(3, '0')}`;
-        const newToken = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
         
-        // บันทึกข้อมูลคิวพร้อมชื่อและเบอร์โทร (ถ้ามี)
+        // สร้าง Token ใหม่สำหรับคิวนี้ เพื่อให้เอาไปใช้สั่งอาหารได้
+        const newToken = Math.random().toString(36).substring(7);
+        
+        // เปิดสถานะคิวใหม่และบันทึก Token
         await client.query(`
-            INSERT INTO tables (table_id, status, session_token, customer_name, customer_phone, updated_at) 
-            VALUES ($1, 'active', $2, $3, $4, CURRENT_TIMESTAMP) 
+            INSERT INTO tables (table_id, status, session_token, updated_at) 
+            VALUES ($1, 'active', $2, CURRENT_TIMESTAMP) 
             ON CONFLICT (table_id) 
-            DO UPDATE SET status = 'active', session_token = $2, customer_name = $3, customer_phone = $4, updated_at = CURRENT_TIMESTAMP
-        `, [newQueueId, newToken, name || null, phone || null]);
+            DO UPDATE SET status = 'active', session_token = $2, updated_at = CURRENT_TIMESTAMP
+        `, [newQueueId, newToken]);
 
         await client.query('COMMIT');
         
+        // ส่ง token กลับไปให้ Frontend เก็บไว้
         res.json({ success: true, queue_id: newQueueId, token: newToken });
     } catch (err) {
         await client.query('ROLLBACK');
-        res.status(500).json({ error: 'เกิดข้อผิดพลาดในการรันคิว กรุณาลองใหม่อีกครั้ง' });
+        res.status(500).json({ error: err.message });
     } finally {
         client.release();
     }
@@ -275,6 +271,7 @@ app.post('/api/orders', async (req, res) => {
         await client.query('BEGIN');
         const upperTableId = String(table_id).toUpperCase();
         
+        // ตรวจสอบว่าโต๊ะนี้ active และ token ยังถูกต้องอยู่ไหม
         const check = await client.query(
             "SELECT status FROM tables WHERE table_id = $1 AND session_token = $2", 
             [upperTableId, token]
@@ -297,7 +294,7 @@ app.post('/api/orders', async (req, res) => {
         res.json({ message: 'สั่งอาหารสำเร็จ', order_id: orderId });
     } catch (err) { 
         await client.query('ROLLBACK'); 
-        res.status(500).json({ error: 'เกิดข้อผิดพลาดภายในระบบ' }); 
+        res.status(500).json({ error: err.message }); 
     } finally { 
         client.release(); 
     }
@@ -320,7 +317,7 @@ app.get('/api/orders/table/:tableId', async (req, res) => {
         }
         res.json(orders);
     } catch (err) {
-        res.status(500).json({ error: 'เกิดข้อผิดพลาดภายในระบบ' });
+        res.status(500).json({ error: err.message });
     }
 });
 
@@ -340,7 +337,7 @@ app.get('/api/admin/orders', async (req, res) => {
         }
         res.json(orders);
     } catch (err) {
-        res.status(500).json({ error: 'เกิดข้อผิดพลาดภายในระบบ' });
+        res.status(500).json({ error: err.message });
     }
 });
 
@@ -351,7 +348,7 @@ app.put('/api/admin/orders/:id/status', async (req, res) => {
         await pool.query('UPDATE orders SET status = $1 WHERE id = $2', [status, orderId]);
         res.json({ message: 'อัปเดตสถานะสำเร็จ' });
     } catch (err) {
-        res.status(500).json({ error: 'เกิดข้อผิดพลาดภายในระบบ' });
+        res.status(500).json({ error: err.message });
     }
 });
 
@@ -361,7 +358,7 @@ app.put('/api/admin/orders/:id/reset-print', async (req, res) => {
         await pool.query('UPDATE orders SET printed_kitchen_1 = 0, printed_kitchen_2 = 0, printed_drink = 0, status = $1 WHERE id = $2', ['กำลังทำอาหาร', orderId]);
         res.json({ success: true, message: 'รีเซ็ตสถานะพิมพ์สำเร็จ' });
     } catch (err) {
-        res.status(500).json({ error: 'เกิดข้อผิดพลาดภายในระบบ' });
+        res.status(500).json({ error: err.message });
     }
 });
 
@@ -382,7 +379,7 @@ app.delete('/api/orders/:orderId/item/:itemIndex', async (mainReq, mainRes) => {
         }
         mainRes.json({ success: true, message: 'ลบรายการอาหารสำเร็จ' });
     } catch (err) {
-        mainRes.status(500).json({ error: 'เกิดข้อผิดพลาดภายในระบบ' });
+        mainRes.status(500).json({ error: err.message });
     }
 });
 
@@ -397,14 +394,14 @@ app.put('/api/orders/table/:tableId/move', async (req, res) => {
     try {
         await client.query('BEGIN');
         
+        // 1. ดึง session_token ของโต๊ะเก่ามาก่อน
         const oldTableCheck = await client.query(
-            "SELECT session_token, customer_name, customer_phone FROM tables WHERE UPPER(table_id) = $1", 
+            "SELECT session_token FROM tables WHERE UPPER(table_id) = $1", 
             [oldTableId]
         );
         const oldToken = oldTableCheck.rows.length > 0 ? oldTableCheck.rows[0].session_token : null;
-        const cName = oldTableCheck.rows.length > 0 ? oldTableCheck.rows[0].customer_name : null;
-        const cPhone = oldTableCheck.rows.length > 0 ? oldTableCheck.rows[0].customer_phone : null;
 
+        // 2. ย้ายออเดอร์ในตาราง orders
         const updateResult = await client.query(
             'UPDATE orders SET table_id = $1 WHERE UPPER(table_id) = $2', 
             [targetNewId, oldTableId]
@@ -415,28 +412,31 @@ app.put('/api/orders/table/:tableId/move', async (req, res) => {
             return res.status(404).json({ error: 'ไม่พบออเดอร์ของโต๊ะต้นทางที่ต้องการย้าย' });
         }
         
+        // 3. ปิดโต๊ะเก่า และล้างค่า session_token ทิ้งเพื่อความปลอดภัย
         await client.query(
             "UPDATE tables SET status = 'closed', session_token = NULL WHERE UPPER(table_id) = $1", 
             [oldTableId]
         );
         
+        // 4. เปิดโต๊ะใหม่ พร้อมกับโอน session_token จากโต๊ะเก่าไปให้
         await client.query(`
-            INSERT INTO tables (table_id, status, session_token, customer_name, customer_phone, updated_at) 
-            VALUES ($1, 'active', $2, $3, $4, CURRENT_TIMESTAMP) 
+            INSERT INTO tables (table_id, status, session_token, updated_at) 
+            VALUES ($1, 'active', $2, CURRENT_TIMESTAMP) 
             ON CONFLICT (table_id) 
-            DO UPDATE SET status = 'active', session_token = $2, customer_name = $3, customer_phone = $4, updated_at = CURRENT_TIMESTAMP
-        `, [targetNewId, oldToken, cName, cPhone]);
+            DO UPDATE SET status = 'active', session_token = $2, updated_at = CURRENT_TIMESTAMP
+        `, [targetNewId, oldToken]);
         
         await client.query('COMMIT');
         res.json({ success: true, message: `ย้ายโต๊ะจาก ${oldTableId} ไปยัง ${targetNewId} สำเร็จ` });
     } catch (err) {
         await client.query('ROLLBACK');
-        res.status(500).json({ error: 'เกิดข้อผิดพลาดภายในระบบ' });
+        res.status(500).json({ error: err.message });
     } finally {
         client.release();
     }
 });
 
+// เช็คบิลโต๊ะ/คิว
 app.delete('/api/orders/table/:tableId', async (req, res) => {
     const tableId = String(req.params.tableId).toUpperCase();
     try {
@@ -450,7 +450,7 @@ app.delete('/api/orders/table/:tableId', async (req, res) => {
         }
         res.json({ success: true });
     } catch (err) { 
-        res.status(500).json({ error: 'เกิดข้อผิดพลาดภายในระบบ' }); 
+        res.status(500).json({ error: err.message }); 
     }
 });
 
@@ -465,7 +465,7 @@ app.post('/api/menu', upload.single('image'), async (req, res) => {
         );
         res.json({ success: true, id: result.rows[0].id });
     } catch (err) {
-        res.status(500).json({ error: 'เกิดข้อผิดพลาดภายในระบบ' });
+        res.status(500).json({ error: err.message });
     }
 });
 
@@ -492,7 +492,7 @@ app.put('/api/menu/:id', upload.single('image'), async (req, res) => {
         await pool.query(query, params);
         res.json({ success: true, message: 'อัปเดตเมนูสำเร็จ' });
     } catch (err) {
-        res.status(500).json({ error: 'เกิดข้อผิดพลาดภายในระบบ' });
+        res.status(500).json({ error: err.message });
     }
 });
 
@@ -502,7 +502,7 @@ app.delete('/api/menu/:id', async (req, res) => {
         await pool.query('DELETE FROM menu_items WHERE id = $1', [menuId]);
         res.json({ success: true, message: 'Deleted menu successfully' });
     } catch (err) {
-        res.status(500).json({ error: 'เกิดข้อผิดพลาดภายในระบบ' });
+        res.status(500).json({ error: err.message });
     }
 });
 
@@ -517,7 +517,7 @@ app.post('/api/admin/sales-history', async (req, res) => {
         );
         res.status(200).json({ success: true, id: result.rows[0].id });
     } catch (err) {
-        res.status(500).json({ error: 'เกิดข้อผิดพลาดภายในระบบ' });
+        res.status(500).json({ error: err.message });
     }
 });
 
@@ -534,7 +534,7 @@ app.get('/api/admin/sales-history', async (req, res) => {
         const result = await pool.query(query, queryParams);
         res.status(200).json(result.rows);
     } catch (err) {
-        res.status(500).json({ error: 'เกิดข้อผิดพลาดภายในระบบ' });
+        res.status(500).json({ error: err.message });
     }
 });
 
@@ -543,7 +543,7 @@ app.get('/api/admin/unprinted-receipts', async (req, res) => {
         const result = await pool.query("SELECT * FROM sales_history WHERE print_status = 'รอพิมพ์ใบเสร็จ' ORDER BY checked_out_at ASC");
         res.json(result.rows);
     } catch (err) {
-        res.status(500).json({ error: 'เกิดข้อผิดพลาดภายในระบบ' });
+        res.status(500).json({ error: err.message });
     }
 });
 
@@ -553,7 +553,7 @@ app.put('/api/admin/receipts/:id/printed', async (req, res) => {
         await pool.query("UPDATE sales_history SET print_status = 'พิมพ์แล้ว' WHERE id = $1", [receiptId]);
         res.json({ success: true });
     } catch (err) {
-        res.status(500).json({ error: 'เกิดข้อผิดพลาดภายในระบบ' });
+        res.status(500).json({ error: err.message });
     }
 });
 
@@ -605,7 +605,7 @@ app.get('/api/admin/kitchen-split-orders', async (req, res) => {
             target_ids: { k1: k1OrderIds, k2: k2OrderIds, drk: drinkOrderIds }
         });
     } catch (err) {
-        res.status(500).json({ error: 'เกิดข้อผิดพลาดภายในระบบ' });
+        res.status(500).json({ error: err.message });
     }
 });
 
@@ -622,7 +622,7 @@ app.put('/api/admin/kitchen-orders/:type/printed', async (req, res) => {
         await pool.query(`UPDATE orders SET ${colName} = 1 WHERE id = ANY($1::int[])`, [order_ids]);
         res.json({ success: true });
     } catch (err) {
-        res.status(500).json({ error: 'เกิดข้อผิดพลาดภายในระบบ' });
+        res.status(500).json({ error: err.message });
     }
 });
 
