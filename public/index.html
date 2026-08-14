@@ -88,11 +88,15 @@
             margin: 15px auto 0 auto;
             padding: 0 15px;
             box-sizing: border-box;
+            display: flex;
+            gap: 10px;
+            align-items: center;
         }
         .search-box-wrapper {
             position: relative;
             display: flex;
             align-items: center;
+            flex: 1;
         }
         .search-input {
             width: 100%;
@@ -112,6 +116,32 @@
             left: 14px;
             color: var(--gray);
             font-size: 16px;
+        }
+
+        /* ปุ่มสลับมุมมอง */
+        .view-mode-toggle {
+            display: flex;
+            background: #eee;
+            padding: 4px;
+            border-radius: 14px;
+            gap: 4px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+        }
+        .view-btn {
+            background: transparent;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 10px;
+            font-size: 14px;
+            cursor: pointer;
+            color: var(--gray);
+            transition: all 0.2s;
+        }
+        .view-btn.active {
+            background: white;
+            color: var(--primary);
+            font-weight: bold;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
 
         .category-scroll {
@@ -144,16 +174,20 @@
             box-shadow: 0 2px 6px rgba(255,71,87,0.3);
         }
 
+        /* ---------------- มุมมองต่างๆ (Layouts) ---------------- */
         .menu-container {
             max-width: 800px;
             margin: 15px auto;
             padding: 0 15px;
+        }
+
+        /* 1. แบบการ์ดรูปภาพ (Grid 2 คอลัมน์ เดิม) */
+        .menu-container.grid-view {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
             gap: 12px;
         }
-
-        .menu-card {
+        .grid-view .menu-card {
             background: white;
             border-radius: 16px;
             padding: 10px;
@@ -162,27 +196,10 @@
             justify-content: space-between;
             box-shadow: 0 4px 12px rgba(0,0,0,0.06);
             cursor: pointer;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
             position: relative;
             overflow: hidden;
         }
-        .menu-card:active { transform: scale(0.97); }
-
-        .recommend-badge {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            background: #ff4757;
-            color: white;
-            font-size: 11px;
-            font-weight: bold;
-            padding: 3px 8px;
-            border-radius: 6px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-            z-index: 2;
-        }
-
-        .menu-img-wrapper {
+        .grid-view .menu-img-wrapper {
             position: relative;
             width: 100%;
             height: 130px;
@@ -190,28 +207,116 @@
             border-radius: 12px;
             overflow: hidden;
         }
-
-        .menu-img {
+        .grid-view .menu-img {
             width: 100%;
             height: 100%;
             object-fit: cover;
             background: #eee;
-            transition: transform 0.3s ease;
         }
-
-        .menu-card:hover .menu-img { transform: scale(1.05); }
-
-        .menu-info h3 { margin: 0 0 4px 0; font-size: 15px; color: var(--text); }
-        .menu-info .price { margin: 0 0 8px 0; color: var(--primary); font-weight: bold; font-size: 14px; }
-        
-        .add-cart-hint {
+        .grid-view .menu-info h3 { margin: 0 0 4px 0; font-size: 15px; color: var(--text); }
+        .grid-view .menu-info .price { margin: 0 0 8px 0; color: var(--primary); font-weight: bold; font-size: 14px; }
+        .grid-view .add-hint {
             font-size: 12px;
             color: var(--gray);
             background: var(--light-gray);
             padding: 6px 8px;
             border-radius: 8px;
             text-align: center;
-            margin-top: 5px;
+        }
+
+        /* 2. แบบรายการ (List View - ไม่มีรูป หรือ รูปเล็กแนวนอน) */
+        .menu-container.list-view {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .list-view .menu-card {
+            background: white;
+            border-radius: 12px;
+            padding: 12px 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            cursor: pointer;
+            gap: 12px;
+        }
+        .list-view .menu-info {
+            flex: 1;
+        }
+        .list-view .menu-info h3 { margin: 0 0 4px 0; font-size: 15px; color: var(--text); }
+        .list-view .menu-info .price { margin: 0; color: var(--primary); font-weight: bold; font-size: 14px; }
+        .list-view .list-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .list-view .mini-img {
+            width: 45px;
+            height: 45px;
+            border-radius: 8px;
+            object-fit: cover;
+            background: #eee;
+        }
+        .list-view .btn-add-mini {
+            background: var(--light-gray);
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            color: var(--primary);
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        /* 3. แบบตาราง (Table View) */
+        .menu-container.table-view {
+            background: white;
+            border-radius: 14px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            overflow: hidden;
+            padding: 0;
+        }
+        .table-view table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 14px;
+        }
+        .table-view th, .table-view td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #f1f2f6;
+        }
+        .table-view th {
+            background: var(--light-gray);
+            color: var(--gray);
+            font-weight: 600;
+        }
+        .table-view tr:last-child td { border-bottom: none; }
+        .table-view tr { cursor: pointer; transition: background 0.1s; }
+        .table-view tr:active { background: #fafafa; }
+        .table-view .price-col {
+            color: var(--primary);
+            font-weight: bold;
+            white-space: nowrap;
+        }
+        .table-view .action-col {
+            text-align: right;
+            white-space: nowrap;
+        }
+
+        .recommend-badge {
+            background: #ff4757;
+            color: white;
+            font-size: 10px;
+            font-weight: bold;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-left: 6px;
+            vertical-align: middle;
         }
 
         .cart-bar {
@@ -343,8 +448,13 @@
         <div class="search-box-wrapper">
             <span class="search-icon">🔍</span>
             <input type="text" id="searchInput" class="search-input" placeholder="ค้นหาชื่อเมนูอาหาร..." oninput="filterMenus()">
-            <!-- เพิ่มปุ่มลบข้อความค้นหา (ซ่อนไว้เป็นค่าเริ่มต้น) -->
             <span id="clearSearchBtn" onclick="clearSearch()" style="display: none; position: absolute; right: 12px; color: var(--primary); font-size: 14px; font-weight: bold; cursor: pointer; background: #ffeaa7; padding: 2px 8px; border-radius: 50%; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">✕</span>
+        </div>
+        <!-- ปุ่มสลับรูปแบบการดูเมนู -->
+        <div class="view-mode-toggle">
+            <button class="view-btn active" id="btnGrid" onclick="setViewMode('grid')" title="มุมมองแบบการ์ดรูปภาพ">🖼️</button>
+            <button class="view-btn" id="btnList" onclick="setViewMode('list')" title="มุมมองแบบรายการ">📄</button>
+            <button class="view-btn" id="btnTable" onclick="setViewMode('table')" title="มุมมองแบบตาราง">📊</button>
         </div>
     </div>
 
@@ -361,7 +471,7 @@
         <button class="cat-btn" onclick="filterMenu('เครื่องดื่ม', this)">🧋 เครื่องดื่ม</button>
     </div>
 
-    <div class="menu-container" id="menu-list"></div>
+    <div class="menu-container grid-view" id="menu-list"></div>
 
     <div class="cart-bar">
         <button class="btn-view-cart" onclick="openCartModal()">🛒 ตะกร้า (<span id="cart-count">0</span>)</button>
@@ -427,17 +537,17 @@
         let isQueue = urlParams.get('queue') === 'true';
         let tableId = urlTable ? urlTable.toUpperCase() : 'PENDING_QUEUE';
 
+        // โหมดการแสดงผลเมนู (ค่าเริ่มต้นอ่านจาก localStorage หรือใช้ 'grid')
+        let currentViewMode = localStorage.getItem('menu_view_mode') || 'grid';
+
         async function initPage() {
-            // 1. ถ้ายังไม่มี Token หรือโต๊ะ (เช่น เพิ่งสแกนเข้ามาครั้งแรก)
             if (!urlToken) {
-                // ถ้าเป็นคิวหน้าร้าน ขอเลขคิวจริงก่อน
                 if (isQueue && tableId === 'PENDING_QUEUE') {
                     const qRes = await fetch('/api/walk-in-queue', { method: 'POST' });
                     const qData = await qRes.json();
                     if (qData.success) tableId = qData.queue_id;
                 }
 
-                // ขอ Token ใหม่จาก Server
                 const res = await fetch('/api/open-table', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -445,15 +555,16 @@
                 });
                 const data = await res.json();
                 
-                // ย้าย URL ให้มี Token ติดตัวไปตลอด
                 window.location.href = `${window.location.pathname}?table=${tableId}&token=${data.token}${isQueue ? '&queue=true' : ''}`;
                 return;
             }
 
-            // 2. ถ้ามี Token แล้ว แสดงข้อมูลโต๊ะ
             const badgePrefix = tableId.startsWith('Q') ? 'คิว: ' : 'โต๊ะ: ';
             document.getElementById('table-badge').innerText = `${badgePrefix}${tableId}`;
             
+            // ตั้งค่าปุ่มโหมดตามที่บันทึกไว้
+            applyViewModeUI(currentViewMode);
+
             fetchMenu();
             startSessionMonitor();
         }
@@ -473,6 +584,21 @@
             1: 'อาหารตามสั่ง', 2: 'อาหารป่า', 3: 'ทอด', 4: 'ผัด', 5: 'ต้มยำ',
             6: 'ยำ', 7: 'เครื่องดื่ม', 8: 'เมนูแนะนำ', 9: 'AdminController', 10: 'อีสาน'
         };
+
+        // ฟังก์ชันสลับมุมมอง
+        function setViewMode(mode) {
+            currentViewMode = mode;
+            localStorage.setItem('menu_view_mode', mode);
+            applyViewModeUI(mode);
+            renderMenus();
+        }
+
+        function applyViewModeUI(mode) {
+            document.querySelectorAll('.view-btn').forEach(btn => btn.classList.remove('active'));
+            if (mode === 'grid') document.getElementById('btnGrid').classList.add('active');
+            else if (mode === 'list') document.getElementById('btnList').classList.add('active');
+            else if (mode === 'table') document.getElementById('btnTable').classList.add('active');
+        }
 
         async function fetchMenu() {
             try {
@@ -496,29 +622,26 @@
         function filterMenus() { 
             const keyword = document.getElementById('searchInput').value.trim();
             const clearBtn = document.getElementById('clearSearchBtn');
-            
-            // แสดง/ซ่อน ปุ่ม ✕ เมื่อมีการพิมพ์ข้อความ
-            if (keyword.length > 0) {
-                clearBtn.style.display = 'block';
-            } else {
-                clearBtn.style.display = 'none';
-            }
-            
+            clearBtn.style.display = keyword.length > 0 ? 'block' : 'none';
             renderMenus(); 
         }
 
-        // เพิ่มฟังก์ชันสำหรับเคลียร์ข้อความเมื่อกดปุ่ม ✕
         function clearSearch() {
             const searchInput = document.getElementById('searchInput');
             searchInput.value = '';
-            filterMenus(); // เรียกเพื่อรีเฟรชรายการเมนูและซ่อนปุ่ม ✕ ทันที
-            searchInput.focus(); // ให้เคอร์เซอร์กลับไปที่ช่องค้นหาพร้อมพิมพ์ต่อ
+            filterMenus();
+            searchInput.focus();
         }
+
         function isRecommendedItem(item) { return Number(item.is_recommended) === 1; }
 
         function renderMenus() {
             const container = document.getElementById('menu-list');
             container.innerHTML = '';
+            
+            // เซ็ตคลาสตามโหมดที่เลือก
+            container.className = `menu-container ${currentViewMode}-view`;
+
             const keyword = document.getElementById('searchInput').value.trim().toLowerCase();
 
             let availableMenus = allMenus.filter(m => {
@@ -546,29 +669,79 @@
             }
 
             if (filtered.length === 0) {
-                container.innerHTML = '<p style="grid-column: span 2; text-align:center; color:#999; margin-top:30px;">ไม่พบเมนูอาหารที่คุณค้นหา</p>';
+                container.innerHTML = '<p style="grid-column: span 2; text-align:center; color:#999; margin-top:30px; width:100%;">ไม่พบเมนูอาหารที่คุณค้นหา</p>';
                 return;
             }
 
-            filtered.forEach(item => {
-                const imgSrc = item.image_url || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c';
-                const showBadge = isRecommendedItem(item);
-                container.innerHTML += `
-                    <div class="menu-card" onclick="openCustomizeModal(${item.id})">
-                        <div>
-                            <div class="menu-img-wrapper">
-                                ${showBadge ? '<span class="recommend-badge">⭐ แนะนำ</span>' : ''}
-                                <img src="${imgSrc}" class="menu-img" alt="${item.name}">
+            // เรนเดอร์ตามโหมด
+            if (currentViewMode === 'grid') {
+                filtered.forEach(item => {
+                    const imgSrc = item.image_url || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c';
+                    const showBadge = isRecommendedItem(item);
+                    container.innerHTML += `
+                        <div class="menu-card" onclick="openCustomizeModal(${item.id})">
+                            <div>
+                                <div class="menu-img-wrapper">
+                                    ${showBadge ? '<span class="recommend-badge" style="position:absolute; top:10px; left:10px; z-index:2;">⭐ แนะนำ</span>' : ''}
+                                    <img src="${imgSrc}" class="menu-img" alt="${item.name}">
+                                </div>
+                                <div class="menu-info">
+                                    <h3>${item.name}</h3>
+                                    <p class="price">${parseFloat(item.price).toFixed(2)} บาท</p>
+                                </div>
                             </div>
+                            <div class="add-hint">➕ เพิ่ม / ใส่หมายเหตุ</div>
+                        </div>
+                    `;
+                });
+            } else if (currentViewMode === 'list') {
+                filtered.forEach(item => {
+                    const imgSrc = item.image_url || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c';
+                    const showBadge = isRecommendedItem(item);
+                    container.innerHTML += `
+                        <div class="menu-card" onclick="openCustomizeModal(${item.id})">
+                            <img src="${imgSrc}" class="mini-img" alt="${item.name}">
                             <div class="menu-info">
-                                <h3>${item.name}</h3>
+                                <h3>${item.name} ${showBadge ? '<span class="recommend-badge">⭐ แนะนำ</span>' : ''}</h3>
                                 <p class="price">${parseFloat(item.price).toFixed(2)} บาท</p>
                             </div>
+                            <div class="list-right">
+                                <button class="btn-add-mini" title="เพิ่มเมนู">＋</button>
+                            </div>
                         </div>
-                        <div class="add-cart-hint">➕ เพิ่ม / ใส่หมายเหตุ</div>
-                    </div>
+                    `;
+                });
+            } else if (currentViewMode === 'table') {
+                let tableHtml = `
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ชื่อเมนูอาหาร</th>
+                                <th style="text-align:right;">ราคา</th>
+                                <th class="action-col">สั่งซื้อ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
                 `;
-            });
+                filtered.forEach(item => {
+                    const showBadge = isRecommendedItem(item);
+                    tableHtml += `
+                        <tr onclick="openCustomizeModal(${item.id})">
+                            <td>
+                                <strong>${item.name}</strong>
+                                ${showBadge ? '<span class="recommend-badge">⭐ แนะนำ</span>' : ''}
+                            </td>
+                            <td class="price-col" style="text-align:right;">${parseFloat(item.price).toFixed(2)} ฿</td>
+                            <td class="action-col">
+                                <button style="background:var(--primary); color:white; border:none; padding:5px 12px; border-radius:6px; font-weight:bold; cursor:pointer; font-size:12px;">เลือก</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+                tableHtml += `</tbody></table>`;
+                container.innerHTML = tableHtml;
+            }
+
             updateSummary();
         }
 
@@ -783,7 +956,7 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
                         table_id: tableId, 
-                        token: urlToken, // ส่ง Token ไปเช็คกับ Server
+                        token: urlToken, 
                         items: orderItems 
                     })
                 });
