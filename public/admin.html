@@ -684,7 +684,6 @@
                 return catName === currentSelectedCategory;
             });
 
-            // จัดเรียงรายการตามลำดับหมวดหมู่ 1 ถึง 10 เสมอ
             filtered.sort((a, b) => {
                 const catA = a.category_name || categoryMap[a.category_id] || '';
                 const catB = b.category_name || categoryMap[b.category_id] || '';
@@ -751,7 +750,7 @@
                     eggDao.checked = false;
                 }
                 if (eggJiao && eggJiao.checked) {
-                    optionsStr.push('ไข่เจียว');
+                    optionsStr.push('ไขเจียว');
                     finalPrice += 10;
                     eggJiao.checked = false;
                 }
@@ -793,14 +792,10 @@
             renderSummaryBox();
         }
 
-        // ==========================================
-        //  ส่วนที่แก้ไขบั๊กให้ส่ง Token ด้วยทุกครั้ง
-        // ==========================================
         async function confirmAndSubmitOrder() {
             if (!activeTableId || currentCart.length === 0) return;
 
             try {
-                // 1. ขอ Token สดใหม่จากหลังบ้าน เพื่อให้สั่งอาหารผ่าน
                 const initRes = await fetch('/api/open-table', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -814,13 +809,12 @@
                     return;
                 }
 
-                // 2. นำ Token ที่ได้มาแนบกับออเดอร์
                 const res = await fetch('/api/orders', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         table_id: activeTableId,
-                        token: initData.token, // ใส่ Token ที่เพิ่งได้มา
+                        token: initData.token,
                         items: currentCart.map(i => ({ 
                             menu_item_id: i.menu_item_id, 
                             name: i.name,
@@ -847,7 +841,6 @@
                 alert('เกิดข้อผิดพลาดในการเชื่อมต่อ');
             }
         }
-        // ==========================================
 
         async function fetchKitchenOrders() {
             try {
@@ -1107,113 +1100,13 @@
             renderSummaryBox();
         }
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-async function renderSummaryBox() {
-=======
-        async function renderSummaryBox() {
->>>>>>> parent of 4153902 (Update admin.html)
-=======
-        async function renderSummaryBox() {
->>>>>>> parent of 4153902 (Update admin.html)
-=======
-        async function renderSummaryBox() {
->>>>>>> parent of 4153902 (Update admin.html)
-    const summaryBox = document.getElementById('tableSummaryBox');
-    if(!activeTableId) {
-        summaryBox.innerHTML = `<div style="font-size:14px; color:var(--gray); text-align:center; padding:40px 0;">ยังไม่ได้เลือกโต๊ะหรือคิว<br>(กรุณาคลิกเลือกจากด้านบน)</div>`;
-        return;
-    }
-
-    try {
-        const res = await fetch(`/api/orders/table/${activeTableId}`);
-        const orders = await res.json();
-
-        let allRawItems = [];
-        orders.forEach(ord => {
-            if (ord.items) {
-                ord.items.forEach(i => {
-                    allRawItems.push(i);
-                });
-=======
         async function renderSummaryBox() {
             const summaryBox = document.getElementById('tableSummaryBox');
             if(!activeTableId) {
-                summaryBox.innerHTML = `<div style="font-size:11px; color:var(--gray); text-align:center; padding:30px 0;">ยังไม่ได้เลือกโต๊ะหรือคิว<br>(กรุณาคลิกเลือกจากด้านบน)</div>`;
+                summaryBox.innerHTML = `<div style="font-size:14px; color:var(--gray); text-align:center; padding:40px 0;">ยังไม่ได้เลือกโต๊ะหรือคิว<br>(กรุณาคลิกเลือกจากด้านบน)</div>`;
                 return;
->>>>>>> parent of ebc0ede (big)
             }
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-        // รายการที่สั่งเข้าครัวไปแล้ว (ปรับให้เล็กลง)
-=======
-        // รายการที่สั่งเข้าครัวไปแล้ว (ขยายปุ่มลบ และตัวหนังสือ)
->>>>>>> parent of 4153902 (Update admin.html)
-=======
-        // รายการที่สั่งเข้าครัวไปแล้ว (ขยายปุ่มลบ และตัวหนังสือ)
->>>>>>> parent of 4153902 (Update admin.html)
-=======
-        // รายการที่สั่งเข้าครัวไปแล้ว (ขยายปุ่มลบ และตัวหนังสือ)
->>>>>>> parent of 4153902 (Update admin.html)
-        let submittedItemsHtml = '';
-        uniqueSubmittedItems.forEach((i, itemIndex) => {
-            submittedItemsHtml += `
-                <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 4px; border-bottom:1px solid #f8f9fa; font-size:14px;">
-                    <span>${i.name} x <strong style="font-size:16px;">${i.quantity}</strong> <span style="color:var(--primary);">(${ (i.price * i.quantity).toFixed(2) }฿)</span></span>
-                    <button onclick="deleteAggregatedOrderItem('${activeTableId}', '${i.name}')" style="background:#ff4757; color:white; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:12px; font-weight:bold;">❌ ลบ</button>
-                </div>
-            `;
-        });
-
-        // รายการที่อยู่ในตะกร้า (ขยายปุ่มเพิ่มลดจำนวน)
-        let cartItemsHtml = '';
-        let cartTotal = 0;
-        currentCart.forEach((item, idx) => {
-            cartTotal += item.price * item.quantity;
-            cartItemsHtml += `
-                <div style="display:flex; justify-content:space-between; align-items:center; background:#fff3cd; padding:8px 10px; margin-bottom:6px; border-radius:6px; font-size:14px; font-weight:500;">
-                    <span>${item.name}</span>
-                    <div style="display:flex; align-items:center; gap:8px;">
-                        <button onclick="updateCartQuantity(${idx}, -1)" style="padding:6px 12px; font-size:16px; font-weight:bold; cursor:pointer; border-radius:6px; border:1px solid #ccc; background:white;">-</button>
-                        <span style="font-size:18px; font-weight:bold; min-width:24px; text-align:center;">${item.quantity}</span>
-                        <button onclick="updateCartQuantity(${idx}, 1)" style="padding:6px 12px; font-size:16px; font-weight:bold; cursor:pointer; border-radius:6px; border:1px solid #ccc; background:white;">+</button>
-                        <span style="color:var(--primary); margin-left:6px; font-weight:bold;">${(item.price * item.quantity).toFixed(2)}฿</span>
-                    </div>
-                </div>
-            `;
-        });
-
-        summaryBox.innerHTML = `
-            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #eee; padding-bottom:6px;">
-                <strong style="font-size:15px; color:var(--primary);">โต๊ะ/คิว: ${activeTableTitleText}</strong>
-                <button onclick="openTableModalFromSummary()" style="background:var(--light-gray); border:1px solid #ddd; padding:6px 10px; border-radius:6px; font-size:12px; cursor:pointer; font-weight:bold;">🔍 ขยายเต็มจอ</button>
-            </div>
-            
-            <div style="flex:1; overflow-y: auto; font-size:12px; margin:8px 0; padding-right: 4px; min-height:120px;">
-                <div style="font-weight:bold; color:var(--success); font-size:14px; margin-bottom:6px;">🛒 ตะกร้า (รอส่งครัว):</div>
-                ${cartItemsHtml || '<div style="color:var(--gray); font-size:13px; margin-bottom:8px;">(ยังไม่มีรายการในตะกร้า)</div>'}
-                
-                <div style="font-weight:bold; color:var(--gray); font-size:14px; margin: 12px 0 6px 0; border-top: 1px dashed #ddd; padding-top: 8px;">📦 ส่งเข้าครัวไปแล้ว:</div>
-                ${submittedItemsHtml || '<div style="color:var(--gray); font-size:13px;">(ยังไม่มีรายการที่สั่ง)</div>'}
-            </div>
-            
-            ${currentCart.length > 0 ? `<button onclick="confirmAndSubmitOrder()" style="background:var(--success); color:white; border:none; padding:12px; border-radius:6px; font-size:15px; cursor:pointer; font-weight:bold; width:100%; margin-bottom:6px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">🚀 ยืนยันสั่งอาหาร (${cartTotal.toFixed(2)} ฿)</button>` : ''}
-            
-            <div style="display:flex; gap:6px; margin-top:4px;">
-                <button onclick="cancelActiveTableOrder()" style="flex:1; background:#ffeaa7; color:#d63031; border:none; padding:10px; border-radius:6px; font-size:13px; cursor:pointer; font-weight:bold;">❌ ยกเลิกโต๊ะ</button>
-                <button onclick="checkoutInlineTable()" style="flex:1; background:var(--primary); color:white; border:none; padding:10px; border-radius:6px; font-size:13px; cursor:pointer; font-weight:bold;">💰 เช็คบิล</button>
-            </div>
-        `;
-    } catch (e) {
-        summaryBox.innerHTML = '<p style="color:var(--primary); font-size:14px; text-align:center;">โหลดข้อมูลไม่สำเร็จ</p>';
-    }
-}
-=======
             try {
                 const res = await fetch(`/api/orders/table/${activeTableId}`);
                 const orders = await res.json();
@@ -1231,9 +1124,9 @@ async function renderSummaryBox() {
                 let submittedItemsHtml = '';
                 uniqueSubmittedItems.forEach((i, itemIndex) => {
                     submittedItemsHtml += `
-                        <div style="display:flex; justify-content:space-between; align-items:center; padding:2px 0; border-bottom:1px solid #f8f9fa;">
-                            <span>${i.name} x ${i.quantity} (${(i.price * i.quantity).toFixed(2)}฿)</span>
-                            <button onclick="deleteAggregatedOrderItem('${activeTableId}', '${i.name}')" style="background:#ff4757; color:white; border:none; padding:1px 4px; border-radius:3px; cursor:pointer; font-size:9px;">❌</button>
+                        <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 4px; border-bottom:1px solid #f8f9fa; font-size:14px;">
+                            <span>${i.name} x <strong style="font-size:16px;">${i.quantity}</strong> <span style="color:var(--primary);">(${ (i.price * i.quantity).toFixed(2) }฿)</span></span>
+                            <button onclick="deleteAggregatedOrderItem('${activeTableId}', '${i.name}')" style="background:#ff4757; color:white; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:12px; font-weight:bold;">❌ ลบ</button>
                         </div>
                     `;
                 });
@@ -1243,41 +1136,43 @@ async function renderSummaryBox() {
                 currentCart.forEach((item, idx) => {
                     cartTotal += item.price * item.quantity;
                     cartItemsHtml += `
-                        <div style="display:flex; justify-content:space-between; align-items:center; background:#fff3cd; padding:3px 5px; margin-bottom:2px; border-radius:4px; font-size:10px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; background:#fff3cd; padding:8px 10px; margin-bottom:6px; border-radius:6px; font-size:14px; font-weight:500;">
                             <span>${item.name}</span>
-                            <div style="display:flex; align-items:center; gap:3px;">
-                                <button onclick="updateCartQuantity(${idx}, -1)" style="padding:1px 4px; font-size:9px;">-</button>
-                                <span>${item.quantity}</span>
-                                <button onclick="updateCartQuantity(${idx}, 1)" style="padding:1px 4px; font-size:9px;">+</button>
-                                <span>${(item.price * item.quantity).toFixed(2)}฿</span>
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                <button onclick="updateCartQuantity(${idx}, -1)" style="padding:6px 12px; font-size:16px; font-weight:bold; cursor:pointer; border-radius:6px; border:1px solid #ccc; background:white;">-</button>
+                                <span style="font-size:18px; font-weight:bold; min-width:24px; text-align:center;">${item.quantity}</span>
+                                <button onclick="updateCartQuantity(${idx}, 1)" style="padding:6px 12px; font-size:16px; font-weight:bold; cursor:pointer; border-radius:6px; border:1px solid #ccc; background:white;">+</button>
+                                <span style="color:var(--primary); margin-left:6px; font-weight:bold;">${(item.price * item.quantity).toFixed(2)}฿</span>
                             </div>
                         </div>
                     `;
                 });
 
                 summaryBox.innerHTML = `
-                    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee; padding-bottom:3px;">
-                        <strong style="font-size:11px; color:var(--primary);">เลือก: ${activeTableTitleText}</strong>
-                        <button onclick="openTableModalFromSummary()" style="background:var(--light-gray); border:none; padding:2px 4px; border-radius:3px; font-size:9px; cursor:pointer;">🔍 ขยาย</button>
+                    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #eee; padding-bottom:6px;">
+                        <strong style="font-size:15px; color:var(--primary);">โต๊ะ/คิว: ${activeTableTitleText}</strong>
+                        <button onclick="openTableModalFromSummary()" style="background:var(--light-gray); border:1px solid #ddd; padding:6px 10px; border-radius:6px; font-size:12px; cursor:pointer; font-weight:bold;">🔍 ขยายเต็มจอ</button>
                     </div>
-                    <div style="flex:1; overflow-y: auto; font-size:10px; margin:3px 0; padding-right: 2px; min-height:80px;">
-                        <div style="font-weight:bold; color:var(--success); font-size:10px; margin-bottom:2px;">🛒 ตะกร้า (รอส่งครัว):</div>
-                        ${cartItemsHtml || '<div style="color:var(--gray); font-size:9px; margin-bottom:3px;">(ไม่มีในตะกร้า)</div>'}
+                    
+                    <div style="flex:1; overflow-y: auto; font-size:12px; margin:8px 0; padding-right: 4px; min-height:120px;">
+                        <div style="font-weight:bold; color:var(--success); font-size:14px; margin-bottom:6px;">🛒 ตะกร้า (รอส่งครัว):</div>
+                        ${cartItemsHtml || '<div style="color:var(--gray); font-size:13px; margin-bottom:8px;">(ยังไม่มีรายการในตะกร้า)</div>'}
                         
-                        <div style="font-weight:bold; color:var(--gray); font-size:10px; margin: 4px 0 2px 0;">📦 สั่งแล้ว:</div>
-                        ${submittedItemsHtml || '<div style="color:var(--gray); font-size:9px;">(ไม่มีรายการ)</div>'}
+                        <div style="font-weight:bold; color:var(--gray); font-size:14px; margin: 12px 0 6px 0; border-top: 1px dashed #ddd; padding-top: 8px;">📦 ส่งเข้าครัวไปแล้ว:</div>
+                        ${submittedItemsHtml || '<div style="color:var(--gray); font-size:13px;">(ยังไม่มีรายการที่สั่ง)</div>'}
                     </div>
-                    ${currentCart.length > 0 ? `<button onclick="confirmAndSubmitOrder()" style="background:var(--success); color:white; border:none; padding:6px; border-radius:4px; font-size:11px; cursor:pointer; font-weight:bold; width:100%; margin-bottom:2px;">🚀 ยืนยันสั่งอาหาร (${cartTotal.toFixed(2)} ฿)</button>` : ''}
-                    <div style="display:flex; gap:4px; margin-top:2px;">
-                        <button onclick="cancelActiveTableOrder()" style="flex:1; background:#ffeaa7; color:#d63031; border:none; padding:5px; border-radius:4px; font-size:10px; cursor:pointer; font-weight:bold;">❌ ยกเลิก</button>
-                        <button onclick="checkoutInlineTable()" style="flex:1; background:var(--primary); color:white; border:none; padding:5px; border-radius:4px; font-size:10px; cursor:pointer; font-weight:bold;">💰 เช็คบิล</button>
+                    
+                    ${currentCart.length > 0 ? `<button onclick="confirmAndSubmitOrder()" style="background:var(--success); color:white; border:none; padding:12px; border-radius:6px; font-size:15px; cursor:pointer; font-weight:bold; width:100%; margin-bottom:6px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">🚀 ยืนยันสั่งอาหาร (${cartTotal.toFixed(2)} ฿)</button>` : ''}
+                    
+                    <div style="display:flex; gap:6px; margin-top:4px;">
+                        <button onclick="cancelActiveTableOrder()" style="flex:1; background:#ffeaa7; color:#d63031; border:none; padding:10px; border-radius:6px; font-size:13px; cursor:pointer; font-weight:bold;">❌ ยกเลิกโต๊ะ</button>
+                        <button onclick="checkoutInlineTable()" style="flex:1; background:var(--primary); color:white; border:none; padding:10px; border-radius:6px; font-size:13px; cursor:pointer; font-weight:bold;">💰 เช็คบิล</button>
                     </div>
                 `;
             } catch (e) {
-                summaryBox.innerHTML = '<p style="color:var(--primary);">โหลดข้อมูลไม่สำเร็จ</p>';
+                summaryBox.innerHTML = '<p style="color:var(--primary); font-size:14px; text-align:center;">โหลดข้อมูลไม่สำเร็จ</p>';
             }
         }
->>>>>>> parent of ebc0ede (big)
 
         async function deleteAggregatedOrderItem(tableId, itemName) {
             if(!confirm(`ต้องการลบเมนู "${itemName}" ทั้งหมดออกจากโต๊ะนี้ใช่หรือไม่?`)) return;
@@ -1311,31 +1206,6 @@ async function renderSummaryBox() {
             loadTableOrders(activeTableId);
         }
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-async function loadTableOrders(tableId) {
-=======
-        async function loadTableOrders(tableId) {
->>>>>>> parent of 4153902 (Update admin.html)
-=======
-        async function loadTableOrders(tableId) {
->>>>>>> parent of 4153902 (Update admin.html)
-=======
-        async function loadTableOrders(tableId) {
->>>>>>> parent of 4153902 (Update admin.html)
-    try {
-        const res = await fetch(`/api/orders/table/${tableId}`);
-        const orders = await res.json();
-        const container = document.getElementById('tableOrderItemsList');
-        container.innerHTML = '';
-
-        if (orders.length === 0) {
-            container.innerHTML = '<p style="color:var(--gray); font-size:14px; text-align:center;">ยังไม่มีรายการอาหาร</p>';
-            return;
-        }
-=======
         async function loadTableOrders(tableId) {
             try {
                 const res = await fetch(`/api/orders/table/${tableId}`);
@@ -1344,10 +1214,9 @@ async function loadTableOrders(tableId) {
                 container.innerHTML = '';
 
                 if (orders.length === 0) {
-                    container.innerHTML = '<p style="color:var(--gray);">ยังไม่มีรายการอาหาร</p>';
+                    container.innerHTML = '<p style="color:var(--gray); font-size:14px; text-align:center;">ยังไม่มีรายการอาหาร</p>';
                     return;
                 }
->>>>>>> parent of ebc0ede (big)
 
                 let allRawItems = [];
                 orders.forEach(ord => {
@@ -1362,60 +1231,23 @@ async function loadTableOrders(tableId) {
                 let itemsHtml = '';
                 uniqueItems.forEach((i) => {
                     itemsHtml += `
-                        <div style="display:flex; justify-content:space-between; align-items:center; padding:4px 0; border-bottom:1px solid #f0f0f0;">
-                            <span>${i.name} x ${i.quantity} (${(i.price * i.quantity).toFixed(2)}฿)</span>
-                            <button onclick="deleteAggregatedOrderItem('${tableId}', '${i.name}')" style="background:#ff4757; color:white; border:none; padding:2px 5px; border-radius:3px; cursor:pointer; font-size:9px;">❌ ลบ</button>
+                        <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 4px; border-bottom:1px solid #f0f0f0;">
+                            <span style="font-size:14px;">${i.name} x <strong style="font-size:16px;">${i.quantity}</strong> <span style="color:var(--primary);">(${ (i.price * i.quantity).toFixed(2) }฿)</span></span>
+                            <button onclick="deleteAggregatedOrderItem('${tableId}', '${i.name}')" style="background:#ff4757; color:white; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:12px; font-weight:bold;">❌ ลบรายการ</button>
                         </div>
                     `;
                 });
 
                 container.innerHTML = `
-                    <div style="margin-bottom:6px; border:1px solid #ddd; padding:8px; border-radius:4px; background:white;">
+                    <div style="margin-bottom:6px; border:1px solid #ddd; padding:12px; border-radius:6px; background:white;">
                         ${itemsHtml}
                     </div>
                 `;
             } catch (e) {
-                document.getElementById('tableOrderItemsList').innerHTML = '<p style="color:var(--primary);">ไม่สามารถโหลดข้อมูลได้</p>';
+                document.getElementById('tableOrderItemsList').innerHTML = '<p style="color:var(--primary); text-align:center;">ไม่สามารถโหลดข้อมูลได้</p>';
             }
-<<<<<<< HEAD
-        });
-        let uniqueItems = consolidateItems(allRawItems);
-
-        let itemsHtml = '';
-        uniqueItems.forEach((i) => {
-            itemsHtml += `
-                <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 4px; border-bottom:1px solid #f0f0f0;">
-                    <span style="font-size:14px;">${i.name} x <strong style="font-size:16px;">${i.quantity}</strong> <span style="color:var(--primary);">(${ (i.price * i.quantity).toFixed(2) }฿)</span></span>
-                    <button onclick="deleteAggregatedOrderItem('${tableId}', '${i.name}')" style="background:#ff4757; color:white; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:12px; font-weight:bold;">❌ ลบรายการ</button>
-                </div>
-            `;
-        });
-
-        container.innerHTML = `
-            <div style="margin-bottom:6px; border:1px solid #ddd; padding:12px; border-radius:6px; background:white;">
-                ${itemsHtml}
-            </div>
-        `;
-    } catch (e) {
-        document.getElementById('tableOrderItemsList').innerHTML = '<p style="color:var(--primary); text-align:center;">ไม่สามารถโหลดข้อมูลได้</p>';
-    }
-}
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
         }
 
->>>>>>> parent of ebc0ede (big)
-=======
-
->>>>>>> parent of 4153902 (Update admin.html)
-=======
-
->>>>>>> parent of 4153902 (Update admin.html)
-=======
-
->>>>>>> parent of 4153902 (Update admin.html)
         function closeTableModal() {
             document.getElementById('tableModal').style.display = 'none';
         }
@@ -1482,9 +1314,7 @@ async function loadTableOrders(tableId) {
             closeTableModal();
         }
 
-<<<<<<< HEAD
         async function openWalkInOrder() {
-<<<<<<< HEAD
             try {
                 const res = await fetch('/api/walk-in-queue', { 
                     method: 'POST',
@@ -1493,7 +1323,6 @@ async function loadTableOrders(tableId) {
                 const data = await res.json();
                 
                 if (data.success) {
-                    // ระบบหลังบ้านจะส่ง queue_id เช่น Q001, Q002 กลับมา
                     selectTableInline(`คิว ${data.queue_id}`, data.queue_id);
                 } else {
                     alert('เกิดข้อผิดพลาดในการสร้างคิว: ' + (data.error || 'Unknown Error'));
@@ -1502,31 +1331,6 @@ async function loadTableOrders(tableId) {
                 console.error(err);
                 alert('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์เพื่อสร้างคิวได้');
             }
-=======
-        function openWalkInOrder() {
-            const queueNum = 'Q' + Math.floor(100 + Math.random() * 900);
-            selectTableInline(`คิว ${queueNum}`, queueNum);
->>>>>>> parent of ebc0ede (big)
-=======
-    try {
-        const res = await fetch('/api/walk-in-queue', { 
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' }
-        });
-        const data = await res.json();
-        
-        if (data.success) {
-            // ระบบหลังบ้านจะส่ง queue_id เช่น Q001, Q002 กลับมา
-            selectTableInline(`คิว ${data.queue_id}`, data.queue_id);
-        } else {
-            alert('เกิดข้อผิดพลาดในการสร้างคิว: ' + (data.error || 'Unknown Error'));
-        }
-    } catch (err) {
-        console.error(err);
-        alert('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์เพื่อสร้างคิวได้');
-    }
-}
->>>>>>> parent of 92a6c14 (Update admin.html)
         }
 
         function openMenuManagerModal() {
