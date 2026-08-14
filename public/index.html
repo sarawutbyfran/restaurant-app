@@ -118,7 +118,6 @@
             font-size: 16px;
         }
 
-        /* ปุ่มสลับมุมมอง (ย้ายมาไว้ด้านซ้าย) */
         .view-mode-toggle {
             display: flex;
             background: #eee;
@@ -175,14 +174,12 @@
             box-shadow: 0 2px 6px rgba(255,71,87,0.3);
         }
 
-        /* ---------------- มุมมองต่างๆ (Layouts) ---------------- */
         .menu-container {
             max-width: 800px;
             margin: 15px auto;
             padding: 0 15px;
         }
 
-        /* 1. แบบการ์ดรูปภาพ (Grid 2 คอลัมน์) */
         .menu-container.grid-view {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -225,7 +222,6 @@
             text-align: center;
         }
 
-        /* 2. แบบรายการ (List View) */
         .menu-container.list-view {
             display: flex;
             flex-direction: column;
@@ -242,16 +238,10 @@
             cursor: pointer;
             gap: 12px;
         }
-        .list-view .menu-info {
-            flex: 1;
-        }
+        .list-view .menu-info { flex: 1; }
         .list-view .menu-info h3 { margin: 0 0 4px 0; font-size: 15px; color: var(--text); }
         .list-view .menu-info .price { margin: 0; color: var(--primary); font-weight: bold; font-size: 14px; }
-        .list-view .list-right {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
+        .list-view .list-right { display: flex; align-items: center; gap: 10px; }
         .list-view .mini-img {
             width: 45px;
             height: 45px;
@@ -273,7 +263,6 @@
             cursor: pointer;
         }
 
-        /* 3. แบบตาราง (Table View) */
         .menu-container.table-view {
             background: white;
             border-radius: 14px;
@@ -299,15 +288,8 @@
         .table-view tr:last-child td { border-bottom: none; }
         .table-view tr { cursor: pointer; transition: background 0.1s; }
         .table-view tr:active { background: #fafafa; }
-        .table-view .price-col {
-            color: var(--primary);
-            font-weight: bold;
-            white-space: nowrap;
-        }
-        .table-view .action-col {
-            text-align: right;
-            white-space: nowrap;
-        }
+        .table-view .price-col { color: var(--primary); font-weight: bold; white-space: nowrap; }
+        .table-view .action-col { text-align: right; white-space: nowrap; }
 
         .recommend-badge {
             background: #ff4757;
@@ -368,6 +350,10 @@
             align-items: flex-end;
             z-index: 1000;
         }
+        /* สำหรับ Modal กรอกชื่อ ให้แสดงอยู่ตรงกลางจอ */
+        .modal.center-modal {
+            align-items: center;
+        }
         .modal-content {
             background: white;
             width: 100%;
@@ -378,6 +364,10 @@
             padding: 20px;
             box-sizing: border-box;
             overflow-y: auto;
+        }
+        .center-modal .modal-content {
+            border-radius: 20px;
+            margin: 20px;
         }
         .modal-header {
             display: flex;
@@ -446,7 +436,6 @@
     </div>
 
     <div class="search-container">
-        <!-- ปุ่มสลับรูปแบบการดูเมนู (ย้ายมาไว้ด้านซ้าย) -->
         <div class="view-mode-toggle">
             <button class="view-btn active" id="btnGrid" onclick="setViewMode('grid')" title="มุมมองแบบการ์ดรูปภาพ">🖼️</button>
             <button class="view-btn" id="btnList" onclick="setViewMode('list')" title="มุมมองแบบรายการ">📄</button>
@@ -481,6 +470,25 @@
             รวม: <span id="grand-total">0.00</span> ฿
         </div>
         <button class="btn-order" onclick="submitOrder()">ยืนยันสั่งอาหาร</button>
+    </div>
+
+    <!-- Modal: กรอกชื่อ/เบอร์โทร สำหรับลูกค้าสแกนรันคิวหน้าร้าน -->
+    <div class="modal center-modal" id="customerInfoModal">
+        <div class="modal-content" style="max-width: 400px;">
+            <div class="modal-header">
+                <h2>📝 ข้อมูลผู้จองคิว</h2>
+            </div>
+            <p style="font-size: 13px; color: var(--gray); margin-top: 0;">กรอกชื่อหรือเบอร์โทรศัพท์ (ไม่บังคับ) เพื่อความสะดวกในการเรียกคิว</p>
+            <div class="form-group">
+                <label>ชื่อของคุณ</label>
+                <input type="text" id="queueCustomerName" class="form-control" placeholder="เช่น คุณสมชาย (ไม่บังคับ)">
+            </div>
+            <div class="form-group">
+                <label>เบอร์โทรศัพท์</label>
+                <input type="tel" id="queueCustomerPhone" class="form-control" placeholder="เช่น 0891234567 (ไม่บังคับ)">
+            </div>
+            <button class="btn-order" style="width: 100%; margin-top: 5px;" onclick="submitQueueCustomerInfo()">รับคิวและเริ่มสั่งอาหาร</button>
+        </div>
     </div>
 
     <div class="modal" id="customizeModal">
@@ -542,13 +550,15 @@
         let currentViewMode = localStorage.getItem('menu_view_mode') || 'grid';
 
         async function initPage() {
-            if (!urlToken) {
-                if (isQueue && tableId === 'PENDING_QUEUE') {
-                    const qRes = await fetch('/api/walk-in-queue', { method: 'POST' });
-                    const qData = await qRes.json();
-                    if (qData.success) tableId = qData.queue_id;
-                }
+            // กรณีเป็นหน้าสแกนคิวหน้าร้านครั้งแรกและยังไม่มี token
+            if (!urlToken && isQueue && tableId === 'PENDING_QUEUE') {
+                // แสดง Modal ให้กรอกชื่อ/เบอร์โทร (ไม่บังคับ)
+                document.getElementById('customerInfoModal').style.display = 'flex';
+                return;
+            }
 
+            // กรณีสแกนโต๊ะปกติ (มี table มาแล้วแต่ไม่มี token)
+            if (!urlToken) {
                 const res = await fetch('/api/open-table', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -556,7 +566,7 @@
                 });
                 const data = await res.json();
                 
-                window.location.href = `${window.location.pathname}?table=${tableId}&token=${data.token}${isQueue ? '&queue=true' : ''}`;
+                window.location.href = `${window.location.pathname}?table=${tableId}&token=${data.token}`;
                 return;
             }
 
@@ -564,9 +574,32 @@
             document.getElementById('table-badge').innerText = `${badgePrefix}${tableId}`;
             
             applyViewModeUI(currentViewMode);
-
             fetchMenu();
             startSessionMonitor();
+        }
+
+        // ฟังก์ชันกดส่งชื่อ/เบอร์โทร เมื่อสแกนรันคิวหน้าร้าน
+        async function submitQueueCustomerInfo() {
+            const name = document.getElementById('queueCustomerName').value.trim();
+            const phone = document.getElementById('queueCustomerPhone').value.trim();
+
+            try {
+                const qRes = await fetch('/api/walk-in-queue', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: name || null, phone: phone || null })
+                });
+                const qData = await qRes.json();
+
+                if (qData.success) {
+                    // รีไดเรกต์ไปพร้อมกับคิวและ Token ที่ได้จาก Backend
+                    window.location.href = `${window.location.pathname}?table=${qData.queue_id}&token=${qData.token}&queue=true`;
+                } else {
+                    alert('เกิดข้อผิดพลาดในการรันคิว กรุณาลองใหม่อีกครั้ง');
+                }
+            } catch (err) {
+                alert('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้');
+            }
         }
 
         let allMenus = [];
