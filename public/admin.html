@@ -1468,6 +1468,7 @@ async function loadTableOrders(tableId) {
 
 <<<<<<< HEAD
         async function openWalkInOrder() {
+<<<<<<< HEAD
             try {
                 const res = await fetch('/api/walk-in-queue', { 
                     method: 'POST',
@@ -1490,6 +1491,26 @@ async function loadTableOrders(tableId) {
             const queueNum = 'Q' + Math.floor(100 + Math.random() * 900);
             selectTableInline(`คิว ${queueNum}`, queueNum);
 >>>>>>> parent of ebc0ede (big)
+=======
+    try {
+        const res = await fetch('/api/walk-in-queue', { 
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+            // ระบบหลังบ้านจะส่ง queue_id เช่น Q001, Q002 กลับมา
+            selectTableInline(`คิว ${data.queue_id}`, data.queue_id);
+        } else {
+            alert('เกิดข้อผิดพลาดในการสร้างคิว: ' + (data.error || 'Unknown Error'));
+        }
+    } catch (err) {
+        console.error(err);
+        alert('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์เพื่อสร้างคิวได้');
+    }
+}
+>>>>>>> parent of 92a6c14 (Update admin.html)
         }
 
         function openMenuManagerModal() {
