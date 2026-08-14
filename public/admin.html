@@ -91,12 +91,14 @@
         }
         .section-header {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
+            flex-direction: column;
+            gap: 8px;
         }
+        
+        /* ปรับปรุง CSS สำหรับรูปแบบการ์ดเมนู */
         .menu-grid-admin {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
             gap: 10px;
         }
         .admin-menu-card {
@@ -105,8 +107,9 @@
             border-radius: 8px;
             box-shadow: 0 1px 3px rgba(0,0,0,0.05);
             display: flex;
-            flex-direction: column;
-            justify-content: space-between;
+            flex-direction: row;
+            gap: 10px;
+            align-items: flex-start;
             cursor: pointer;
             transition: all 0.2s;
             border: 2px solid transparent;
@@ -115,7 +118,14 @@
             border-color: var(--success);
             transform: translateY(-2px);
         }
-        .admin-menu-card img { width: 100%; height: 75px; object-fit: cover; border-radius: 6px; margin-bottom: 4px; }
+        /* รูปภาพสัดส่วน 2.5:4 */
+        .admin-menu-card img { 
+            width: 55px; 
+            height: 88px; 
+            object-fit: cover; 
+            border-radius: 6px; 
+            flex-shrink: 0;
+        }
 
         .tables-column {
             padding: 12px;
@@ -356,7 +366,12 @@
 
     <div class="content-middle">
         <div class="section-header">
-            <h3 id="current-cat-title" style="margin:0; font-size:14px;">รายการอาหาร (คลิกเพื่อใส่ตะกร้า)</h3>
+            <!-- เพิ่มกล่องค้นหาแบบ Global -->
+            <div style="position: relative; display: flex; align-items: center;">
+                <input type="text" id="globalMenuSearch" placeholder="🔍 ค้นหาเมนูทั้งหมด (พิมพ์ชื่อเมนู)..." style="width: 100%; padding: 8px 30px 8px 10px; border: 1px solid #ced6e0; border-radius: 6px; font-size: 13px;" oninput="handleGlobalSearch(event)">
+                <span id="clearSearchBtn" style="position: absolute; right: 10px; cursor: pointer; color: #ff4757; display: none; font-weight: bold; font-size: 14px;" onclick="clearGlobalSearch()">✕</span>
+            </div>
+            <h3 id="current-cat-title" style="margin:0; font-size:14px; color: var(--gray);">รายการอาหาร (คลิกเพื่อใส่ตะกร้า)</h3>
         </div>
         <div class="menu-grid-admin" id="admin-menu-grid"></div>
     </div>
@@ -397,7 +412,7 @@
         </div>
     </div>
 
-    <!-- Modals -->
+    <!-- Modals ทั้งหมดยังคงเดิม -->
     <div class="modal" id="tableModal">
         <div class="modal-content">
             <h3 id="modalTableTitle" style="margin-top:0;">จัดการโต๊ะ/คิว</h3>
@@ -648,14 +663,37 @@
         function selectCategory(catName, element) {
             currentSelectedCategory = catName;
             document.querySelectorAll('.cat-menu-btn').forEach(btn => btn.classList.remove('active'));
-            element.classList.add('active');
+            if(element) element.classList.add('active');
+            
+            // เคลียร์ค่าที่ค้นหาไว้เมื่อกดหมวดหมู่ใหม่
+            document.getElementById('globalMenuSearch').value = '';
+            document.getElementById('clearSearchBtn').style.display = 'none';
+            
             document.getElementById('current-cat-title').innerText = `รายการ: ${catName}`;
+            renderAdminMenus();
+        }
+
+        // ฟังชันก์ใหม่สำหรับการค้นหา Global Search
+        function handleGlobalSearch(e) {
+            const val = e.target.value.trim().toLowerCase();
+            const clearBtn = document.getElementById('clearSearchBtn');
+            clearBtn.style.display = val.length > 0 ? 'block' : 'none';
+            renderAdminMenus();
+        }
+
+        function clearGlobalSearch() {
+            document.getElementById('globalMenuSearch').value = '';
+            document.getElementById('clearSearchBtn').style.display = 'none';
+            // กลับไปแสดงหมวดหมู่ที่เลือกไว้ก่อนหน้า
+            document.getElementById('current-cat-title').innerText = `รายการ: ${currentSelectedCategory}`;
             renderAdminMenus();
         }
 
         function renderAdminMenus() {
             const grid = document.getElementById('admin-menu-grid');
             grid.innerHTML = '';
+            
+            const searchVal = document.getElementById('globalMenuSearch').value.trim().toLowerCase();
             
             const categoryOrder = {
                 'เมนูแนะนำ': 1,
@@ -670,19 +708,27 @@
                 'AdminController': 10
             };
 
-            const filtered = allMenus.filter(m => {
-                const catName = m.category_name || categoryMap[m.category_id] || '';
-                
-                if (currentSelectedCategory === 'AdminController') {
-                    return Number(m.is_admin_menu) === 1;
-                }
-                if (currentSelectedCategory === 'เมนูแนะนำ') {
-                    return Number(m.is_recommended) === 1;
-                }
-                
-                if (currentSelectedCategory === 'ทั้งหมด') return true;
-                return catName === currentSelectedCategory;
-            });
+            let filtered = allMenus;
+
+            // กรองด้วย Search หรือ หมวดหมู่
+            if (searchVal) {
+                filtered = allMenus.filter(m => m.name.toLowerCase().includes(searchVal));
+                document.getElementById('current-cat-title').innerText = `ผลการค้นหา: "${searchVal}"`;
+                // เอาไฮไลต์เมนูด้านซ้ายออกชั่วคราว
+                document.querySelectorAll('.cat-menu-btn').forEach(btn => btn.classList.remove('active'));
+            } else {
+                filtered = allMenus.filter(m => {
+                    const catName = m.category_name || categoryMap[m.category_id] || '';
+                    if (currentSelectedCategory === 'AdminController') {
+                        return Number(m.is_admin_menu) === 1;
+                    }
+                    if (currentSelectedCategory === 'เมนูแนะนำ') {
+                        return Number(m.is_recommended) === 1;
+                    }
+                    if (currentSelectedCategory === 'ทั้งหมด') return true;
+                    return catName === currentSelectedCategory;
+                });
+            }
 
             filtered.sort((a, b) => {
                 const catA = a.category_name || categoryMap[a.category_id] || '';
@@ -697,7 +743,7 @@
             });
 
             if (filtered.length === 0) {
-                grid.innerHTML = '<p style="grid-column: span 2; text-align:center; color:var(--gray); padding:20px; font-size:11px;">ไม่พบเมนูในหมวดหมู่นี้</p>';
+                grid.innerHTML = '<p style="grid-column: 1 / -1; text-align:center; color:var(--gray); padding:20px; font-size:12px;">ไม่พบเมนู</p>';
                 return;
             }
 
@@ -707,26 +753,36 @@
                 
                 const isAllowEgg = Number(item.allow_egg) === 1 || catName === 'อาหารตามสั่ง';
                 if (isAllowEgg) {
+                    // ใช้ onclick="event.stopPropagation()" เพื่อไม่ให้ทะลุไปคลิกที่การ์ดหลัก
                     optionsHtml = `
-                        <div style="margin: 3px 0; font-size: 10px;">
+                        <div style="margin: 4px 0; font-size: 11px;" onclick="event.stopPropagation()">
                             <label><input type="checkbox" id="egg-${item.id}" value="ไข่ดาว"> ไข่ดาว (+10฿)</label>
                             <label style="margin-left: 4px;"><input type="checkbox" id="eggj-${item.id}" value="ไข่เจียว"> ไข่เจียว (+10฿)</label>
                         </div>
                     `;
                 }
+                
+                // ใช้ replace เพื่อป้องกัน single quote ทำลายโค้ดพารามิเตอร์
+                const safeName = item.name.replace(/'/g, "\\'");
 
+                // เปลี่ยน UI เป็นแนวนอน เอาปุ่มเพิ่มออก และทำ note ให้กด Enter ได้
                 grid.innerHTML += `
-                    <div class="admin-menu-card">
-                        <div onclick="addMenuToCartPrompt(${item.id}, '${item.name}', ${item.price}, ${isAllowEgg})">
-                            <img src="${item.image_url || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c'}" alt="">
-                            <div style="font-weight:bold; font-size:11px; margin-bottom:2px;">${item.name}</div>
-                            <div style="color:var(--primary); font-size:10px; font-weight:bold;">${parseFloat(item.price).toFixed(2)} ฿</div>
+                    <div class="admin-menu-card" onclick="addMenuToCartPrompt(${item.id}, '${safeName}', ${item.price}, ${isAllowEgg})">
+                        <img src="${item.image_url || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c'}" alt="">
+                        
+                        <div style="flex: 1; display: flex; flex-direction: column; overflow: hidden;">
+                            <div style="font-weight:bold; font-size:14px; margin-bottom:2px; line-height:1.2; color:var(--text);">${item.name}</div>
+                            <div style="color:var(--primary); font-size:13px; font-weight:bold;">${parseFloat(item.price).toFixed(2)} ฿</div>
+                            
+                            ${optionsHtml}
+                            
+                            <div style="margin-top: auto; padding-top: 5px;">
+                                <input type="text" id="note-${item.id}" placeholder="พิมพ์โน๊ตแล้วกด Enter" 
+                                    style="width: 100%; padding: 4px; font-size: 11px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;"
+                                    onclick="event.stopPropagation()"
+                                    onkeydown="if(event.key === 'Enter') { addMenuToCartPrompt(${item.id}, '${safeName}', ${item.price}, ${isAllowEgg}); event.stopPropagation(); event.preventDefault(); }">
+                            </div>
                         </div>
-                        ${optionsHtml}
-                        <div style="margin-top: 3px;">
-                            <input type="text" id="note-${item.id}" placeholder="หมายเหตุ" style="width: 100%; padding: 2px; font-size: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
-                        </div>
-                        <button onclick="addMenuToCartPrompt(${item.id}, '${item.name}', ${item.price}, ${isAllowEgg})" style="background: var(--success); color: white; border: none; padding: 3px; border-radius: 4px; font-size: 10px; font-weight: bold; cursor: pointer; margin-top: 3px; width: 100%;">➕ เพิ่ม</button>
                     </div>
                 `;
             });
@@ -758,7 +814,7 @@
 
             const noteInput = document.getElementById(`note-${menuItemId}`);
             const note = noteInput ? noteInput.value.trim() : '';
-            if (noteInput) noteInput.value = '';
+            if (noteInput) noteInput.value = ''; // เคลียร์ช่องให้ว่างทันทีหลังดึงข้อมูล
 
             let displayName = menuName;
             if (optionsStr.length > 0) {
@@ -1103,7 +1159,7 @@
         async function renderSummaryBox() {
             const summaryBox = document.getElementById('tableSummaryBox');
             if(!activeTableId) {
-                summaryBox.innerHTML = `<div style="font-size:14px; color:var(--gray); text-align:center; padding:40px 0;">ยังไม่ได้เลือกโต๊ะหรือคิว<br>(กรุณาคลิกเลือกจากด้านบน)</div>`;
+                summaryBox.innerHTML = `<div style="font-size:12px; color:var(--gray); text-align:center; padding:40px 0;">ยังไม่ได้เลือกโต๊ะหรือคิว<br>(กรุณาคลิกเลือกจากด้านบน)</div>`;
                 return;
             }
 
@@ -1121,28 +1177,30 @@
                 });
                 let uniqueSubmittedItems = consolidateItems(allRawItems);
 
+                // ปรับขนาดฟอนต์ในรายการที่ส่งครัวแล้ว ให้เล็กลงนิดหน่อย
                 let submittedItemsHtml = '';
                 uniqueSubmittedItems.forEach((i, itemIndex) => {
                     submittedItemsHtml += `
-                        <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 4px; border-bottom:1px solid #f8f9fa; font-size:14px;">
-                            <span>${i.name} x <strong style="font-size:16px;">${i.quantity}</strong> <span style="color:var(--primary);">(${ (i.price * i.quantity).toFixed(2) }฿)</span></span>
-                            <button onclick="deleteAggregatedOrderItem('${activeTableId}', '${i.name}')" style="background:#ff4757; color:white; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:12px; font-weight:bold;">❌ ลบ</button>
+                        <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 4px; border-bottom:1px solid #f8f9fa; font-size:12px;">
+                            <span>${i.name} x <strong style="font-size:13px;">${i.quantity}</strong> <span style="color:var(--primary);">(${ (i.price * i.quantity).toFixed(2) }฿)</span></span>
+                            <button onclick="deleteAggregatedOrderItem('${activeTableId}', '${i.name}')" style="background:#ff4757; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:11px; font-weight:bold;">❌ ลบ</button>
                         </div>
                     `;
                 });
 
+                // ปรับขนาดฟอนต์ตะกร้าอาหาร ให้เล็กลงนิดหน่อย
                 let cartItemsHtml = '';
                 let cartTotal = 0;
                 currentCart.forEach((item, idx) => {
                     cartTotal += item.price * item.quantity;
                     cartItemsHtml += `
-                        <div style="display:flex; justify-content:space-between; align-items:center; background:#fff3cd; padding:8px 10px; margin-bottom:6px; border-radius:6px; font-size:14px; font-weight:500;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; background:#fff3cd; padding:6px 8px; margin-bottom:4px; border-radius:6px; font-size:12px; font-weight:500;">
                             <span>${item.name}</span>
-                            <div style="display:flex; align-items:center; gap:8px;">
-                                <button onclick="updateCartQuantity(${idx}, -1)" style="padding:6px 12px; font-size:16px; font-weight:bold; cursor:pointer; border-radius:6px; border:1px solid #ccc; background:white;">-</button>
-                                <span style="font-size:18px; font-weight:bold; min-width:24px; text-align:center;">${item.quantity}</span>
-                                <button onclick="updateCartQuantity(${idx}, 1)" style="padding:6px 12px; font-size:16px; font-weight:bold; cursor:pointer; border-radius:6px; border:1px solid #ccc; background:white;">+</button>
-                                <span style="color:var(--primary); margin-left:6px; font-weight:bold;">${(item.price * item.quantity).toFixed(2)}฿</span>
+                            <div style="display:flex; align-items:center; gap:6px;">
+                                <button onclick="updateCartQuantity(${idx}, -1)" style="padding:4px 8px; font-size:14px; font-weight:bold; cursor:pointer; border-radius:4px; border:1px solid #ccc; background:white;">-</button>
+                                <span style="font-size:13px; font-weight:bold; min-width:20px; text-align:center;">${item.quantity}</span>
+                                <button onclick="updateCartQuantity(${idx}, 1)" style="padding:4px 8px; font-size:14px; font-weight:bold; cursor:pointer; border-radius:4px; border:1px solid #ccc; background:white;">+</button>
+                                <span style="color:var(--primary); margin-left:4px; font-weight:bold;">${(item.price * item.quantity).toFixed(2)}฿</span>
                             </div>
                         </div>
                     `;
@@ -1150,27 +1208,27 @@
 
                 summaryBox.innerHTML = `
                     <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #eee; padding-bottom:6px;">
-                        <strong style="font-size:15px; color:var(--primary);">โต๊ะ/คิว: ${activeTableTitleText}</strong>
-                        <button onclick="openTableModalFromSummary()" style="background:var(--light-gray); border:1px solid #ddd; padding:6px 10px; border-radius:6px; font-size:12px; cursor:pointer; font-weight:bold;">🔍 ขยายเต็มจอ</button>
+                        <strong style="font-size:14px; color:var(--primary);">โต๊ะ/คิว: ${activeTableTitleText}</strong>
+                        <button onclick="openTableModalFromSummary()" style="background:var(--light-gray); border:1px solid #ddd; padding:4px 8px; border-radius:6px; font-size:11px; cursor:pointer; font-weight:bold;">🔍 ขยายเต็มจอ</button>
                     </div>
                     
-                    <div style="flex:1; overflow-y: auto; font-size:12px; margin:8px 0; padding-right: 4px; min-height:120px;">
-                        <div style="font-weight:bold; color:var(--success); font-size:14px; margin-bottom:6px;">🛒 ตะกร้า (รอส่งครัว):</div>
-                        ${cartItemsHtml || '<div style="color:var(--gray); font-size:13px; margin-bottom:8px;">(ยังไม่มีรายการในตะกร้า)</div>'}
+                    <div style="flex:1; overflow-y: auto; font-size:11px; margin:8px 0; padding-right: 4px; min-height:120px;">
+                        <div style="font-weight:bold; color:var(--success); font-size:12px; margin-bottom:4px;">🛒 ตะกร้า (รอส่งครัว):</div>
+                        ${cartItemsHtml || '<div style="color:var(--gray); font-size:12px; margin-bottom:8px;">(ยังไม่มีรายการในตะกร้า)</div>'}
                         
-                        <div style="font-weight:bold; color:var(--gray); font-size:14px; margin: 12px 0 6px 0; border-top: 1px dashed #ddd; padding-top: 8px;">📦 ส่งเข้าครัวไปแล้ว:</div>
-                        ${submittedItemsHtml || '<div style="color:var(--gray); font-size:13px;">(ยังไม่มีรายการที่สั่ง)</div>'}
+                        <div style="font-weight:bold; color:var(--gray); font-size:12px; margin: 10px 0 4px 0; border-top: 1px dashed #ddd; padding-top: 6px;">📦 ส่งเข้าครัวไปแล้ว:</div>
+                        ${submittedItemsHtml || '<div style="color:var(--gray); font-size:12px;">(ยังไม่มีรายการที่สั่ง)</div>'}
                     </div>
                     
-                    ${currentCart.length > 0 ? `<button onclick="confirmAndSubmitOrder()" style="background:var(--success); color:white; border:none; padding:12px; border-radius:6px; font-size:15px; cursor:pointer; font-weight:bold; width:100%; margin-bottom:6px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">🚀 ยืนยันสั่งอาหาร (${cartTotal.toFixed(2)} ฿)</button>` : ''}
+                    ${currentCart.length > 0 ? `<button onclick="confirmAndSubmitOrder()" style="background:var(--success); color:white; border:none; padding:10px; border-radius:6px; font-size:14px; cursor:pointer; font-weight:bold; width:100%; margin-bottom:6px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">🚀 ยืนยันสั่งอาหาร (${cartTotal.toFixed(2)} ฿)</button>` : ''}
                     
                     <div style="display:flex; gap:6px; margin-top:4px;">
-                        <button onclick="cancelActiveTableOrder()" style="flex:1; background:#ffeaa7; color:#d63031; border:none; padding:10px; border-radius:6px; font-size:13px; cursor:pointer; font-weight:bold;">❌ ยกเลิกโต๊ะ</button>
-                        <button onclick="checkoutInlineTable()" style="flex:1; background:var(--primary); color:white; border:none; padding:10px; border-radius:6px; font-size:13px; cursor:pointer; font-weight:bold;">💰 เช็คบิล</button>
+                        <button onclick="cancelActiveTableOrder()" style="flex:1; background:#ffeaa7; color:#d63031; border:none; padding:8px; border-radius:6px; font-size:12px; cursor:pointer; font-weight:bold;">❌ ยกเลิกโต๊ะ</button>
+                        <button onclick="checkoutInlineTable()" style="flex:1; background:var(--primary); color:white; border:none; padding:8px; border-radius:6px; font-size:12px; cursor:pointer; font-weight:bold;">💰 เช็คบิล</button>
                     </div>
                 `;
             } catch (e) {
-                summaryBox.innerHTML = '<p style="color:var(--primary); font-size:14px; text-align:center;">โหลดข้อมูลไม่สำเร็จ</p>';
+                summaryBox.innerHTML = '<p style="color:var(--primary); font-size:12px; text-align:center;">โหลดข้อมูลไม่สำเร็จ</p>';
             }
         }
 
@@ -1214,7 +1272,7 @@
                 container.innerHTML = '';
 
                 if (orders.length === 0) {
-                    container.innerHTML = '<p style="color:var(--gray); font-size:14px; text-align:center;">ยังไม่มีรายการอาหาร</p>';
+                    container.innerHTML = '<p style="color:var(--gray); font-size:12px; text-align:center;">ยังไม่มีรายการอาหาร</p>';
                     return;
                 }
 
@@ -1232,19 +1290,19 @@
                 uniqueItems.forEach((i) => {
                     itemsHtml += `
                         <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 4px; border-bottom:1px solid #f0f0f0;">
-                            <span style="font-size:14px;">${i.name} x <strong style="font-size:16px;">${i.quantity}</strong> <span style="color:var(--primary);">(${ (i.price * i.quantity).toFixed(2) }฿)</span></span>
-                            <button onclick="deleteAggregatedOrderItem('${tableId}', '${i.name}')" style="background:#ff4757; color:white; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:12px; font-weight:bold;">❌ ลบรายการ</button>
+                            <span style="font-size:13px;">${i.name} x <strong style="font-size:14px;">${i.quantity}</strong> <span style="color:var(--primary);">(${ (i.price * i.quantity).toFixed(2) }฿)</span></span>
+                            <button onclick="deleteAggregatedOrderItem('${tableId}', '${i.name}')" style="background:#ff4757; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:11px; font-weight:bold;">❌ ลบรายการ</button>
                         </div>
                     `;
                 });
 
                 container.innerHTML = `
-                    <div style="margin-bottom:6px; border:1px solid #ddd; padding:12px; border-radius:6px; background:white;">
+                    <div style="margin-bottom:6px; border:1px solid #ddd; padding:8px; border-radius:6px; background:white;">
                         ${itemsHtml}
                     </div>
                 `;
             } catch (e) {
-                document.getElementById('tableOrderItemsList').innerHTML = '<p style="color:var(--primary); text-align:center;">ไม่สามารถโหลดข้อมูลได้</p>';
+                document.getElementById('tableOrderItemsList').innerHTML = '<p style="color:var(--primary); text-align:center; font-size: 12px;">ไม่สามารถโหลดข้อมูลได้</p>';
             }
         }
 
