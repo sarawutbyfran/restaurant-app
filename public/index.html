@@ -350,7 +350,6 @@
             align-items: flex-end;
             z-index: 1000;
         }
-        /* สำหรับ Modal กรอกชื่อ ให้แสดงอยู่ตรงกลางจอ */
         .modal.center-modal {
             align-items: center;
         }
@@ -409,18 +408,6 @@
             font-family: inherit;
             font-size: 16px; 
         }
-        .checkbox-label {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-weight: normal;
-            cursor: pointer;
-            background: var(--light-gray);
-            padding: 10px;
-            border-radius: 8px;
-            flex: 1;
-        }
-        .checkbox-label input { width: 18px; height: 18px; accent-color: var(--primary); }
     </style>
 </head>
 <body>
@@ -550,15 +537,15 @@
         let currentViewMode = localStorage.getItem('menu_view_mode') || 'grid';
 
         async function initPage() {
-            // กรณีเป็นหน้าสแกนคิวหน้าร้านครั้งแรกและยังไม่มี token
-            if (!urlToken && isQueue && tableId === 'PENDING_QUEUE') {
-                // แสดง Modal ให้กรอกชื่อ/เบอร์โทร (ไม่บังคับ)
+            // เช็คเคสที่ 1: สแกนหน้าร้านมารันคิว (ไม่มี table และไม่มี token ใน URL)
+            if (!urlTable && !urlToken) {
+                // บังคับเปิด Modal ให้กรอกชื่อ/เบอร์โทรเพื่อกดรับคิว (ห้ามเรียก API อัตโนมัติเด็ดขาด)
                 document.getElementById('customerInfoModal').style.display = 'flex';
                 return;
             }
 
-            // กรณีสแกนโต๊ะปกติ (มี table มาแล้วแต่ไม่มี token)
-            if (!urlToken) {
+            // เช็คเคสที่ 2: สแกนโต๊ะปกติ (มี ?table=A1 แต่ยังไม่มี token)
+            if (urlTable && !urlToken) {
                 const res = await fetch('/api/open-table', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -566,10 +553,12 @@
                 });
                 const data = await res.json();
                 
-                window.location.href = `${window.location.pathname}?table=${tableId}&token=${data.token}`;
+                // รีไดเรกต์พร้อมแนบ Token ที่ปลอดภัยของโต๊ะนั้นๆ
+                window.location.replace(`${window.location.pathname}?table=${tableId}&token=${data.token}`);
                 return;
             }
 
+            // เช็คเคสที่ 3: มีครบทั้ง table และ token แล้ว (เข้ามาหน้าสั่งอาหารปกติ)
             const badgePrefix = tableId.startsWith('Q') ? 'คิว: ' : 'โต๊ะ: ';
             document.getElementById('table-badge').innerText = `${badgePrefix}${tableId}`;
             
@@ -578,12 +567,17 @@
             startSessionMonitor();
         }
 
-        // ฟังก์ชันกดส่งชื่อ/เบอร์โทร เมื่อสแกนรันคิวหน้าร้าน
+        // ฟังก์ชันกดส่งข้อมูลเพื่อรันคิวใหม่ (ทำงานเมื่อกดปุ่มใน Modal เท่านั้น)
         async function submitQueueCustomerInfo() {
             const name = document.getElementById('queueCustomerName').value.trim();
             const phone = document.getElementById('queueCustomerPhone').value.trim();
 
             try {
+                // ปิดปุ่มชั่วคราวกันกดซ้ำ
+                const btn = event.target;
+                btn.disabled = true;
+                btn.innerText = 'กำลังสร้างคิว...';
+
                 const qRes = await fetch('/api/walk-in-queue', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -592,13 +586,16 @@
                 const qData = await qRes.json();
 
                 if (qData.success) {
-                    // รีไดเรกต์ไปพร้อมกับคิวและ Token ที่ได้จาก Backend
-                    window.location.href = `${window.location.pathname}?table=${qData.queue_id}&token=${qData.token}&queue=true`;
+                    // ส่งคิวและ Token เฉพาะตัวที่ได้จาก Server ไปที่ URL ทันที
+                    window.location.replace(`${window.location.pathname}?table=${qData.queue_id}&token=${qData.token}&queue=true`);
                 } else {
                     alert('เกิดข้อผิดพลาดในการรันคิว กรุณาลองใหม่อีกครั้ง');
+                    btn.disabled = false;
+                    btn.innerText = 'รับคิวและเริ่มสั่งอาหาร';
                 }
             } catch (err) {
                 alert('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้');
+                location.reload();
             }
         }
 
@@ -792,8 +789,8 @@
             if (allowEgg) {
                 extraContainer.innerHTML = `
                     <div class="form-group" style="display: flex; gap: 10px;">
-                        <label class="checkbox-label"><input type="checkbox" id="addEggCheckbox" value="ไข่ดาว"> ไข่ดาว (+10฿)</label>
-                        <label class="checkbox-label"><input type="checkbox" id="addOmeletCheckbox" value="ไข่เจียว"> ไข่เจียว (+10฿)</label>
+                        <label class="checkbox-label" style="display:flex; align-items:center; gap:8px; background:var(--light-gray); padding:10px; border-radius:8px; flex:1; cursor:pointer;"><input type="checkbox" id="addEggCheckbox" value="ไข่ดาว" style="width:18px; height:18px; accent-color:var(--primary);"> ไข่ดาว (+10฿)</label>
+                        <label class="checkbox-label" style="display:flex; align-items:center; gap:8px; background:var(--light-gray); padding:10px; border-radius:8px; flex:1; cursor:pointer;"><input type="checkbox" id="addOmeletCheckbox" value="ไข่เจียว" style="width:18px; height:18px; accent-color:var(--primary);"> ไข่เจียว (+10฿)</label>
                     </div>
                 `;
             }
