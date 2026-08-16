@@ -83,21 +83,34 @@
         .store-header h1 { margin: 0; font-size: 20px; font-weight: 600; }
         .store-header p { margin: 4px 0 0 0; font-size: 13px; opacity: 0.9; }
 
+        /* เพิ่มคลาสสำหรับทำ Sticky Header */
+        .sticky-header-wrapper {
+            position: sticky;
+            top: 0;
+            background-color: var(--bg);
+            z-index: 50; 
+            padding-top: 15px; 
+            padding-bottom: 5px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.03); 
+        }
+
         .search-container {
             max-width: 800px;
-            margin: 15px auto 0 auto;
+            margin: 0 auto;
             padding: 0 15px;
             box-sizing: border-box;
             display: flex;
             gap: 10px;
             align-items: center;
         }
+        
         .search-box-wrapper {
             position: relative;
             display: flex;
             align-items: center;
             flex: 1;
         }
+        
         .search-input {
             width: 100%;
             padding: 12px 15px 12px 42px;
@@ -153,7 +166,7 @@
             white-space: nowrap;
             box-shadow: 0 2px 5px rgba(0,0,0,0.03);
             scrollbar-width: none;
-            margin-top: 15px;
+            margin-top: 10px;
         }
         .category-scroll::-webkit-scrollbar { display: none; }
 
@@ -444,31 +457,36 @@
         <p>โทร 090-1318376</p>
     </div>
 
-    <div class="search-container">
-        <div class="search-box-wrapper">
-            <span class="search-icon">🔍</span>
-            <input type="text" id="searchInput" class="search-input" placeholder="ค้นหาชื่อเมนูอาหาร..." oninput="filterMenus()">
-            <span id="clearSearchBtn" onclick="clearSearch()" style="display: none; position: absolute; right: 12px; color: var(--primary); font-size: 14px; font-weight: bold; cursor: pointer; background: #ffeaa7; padding: 2px 8px; border-radius: 50%; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">✕</span>
-        </div>
-        <!-- ปุ่มสลับรูปแบบการดูเมนู -->
-        <div class="view-mode-toggle">
-            <button class="view-btn active" id="btnGrid" onclick="setViewMode('grid')" title="มุมมองแบบการ์ดรูปภาพ">🖼️</button>
-            <button class="view-btn" id="btnList" onclick="setViewMode('list')" title="มุมมองแบบรายการ">📄</button>
-            <button class="view-btn" id="btnTable" onclick="setViewMode('table')" title="มุมมองแบบตาราง">📊</button>
-        </div>
-    </div>
+    <!-- ห่อหุ้ม Search และ Category ไว้ด้วยกันเพื่อทำ Sticky -->
+    <div class="sticky-header-wrapper">
+        <div class="search-container">
+            <!-- ย้ายปุ่มสลับรูปแบบการดูเมนู มาไว้ฝั่งซ้าย -->
+            <div class="view-mode-toggle">
+                <button class="view-btn" id="btnGrid" onclick="setViewMode('grid')" title="มุมมองแบบการ์ดรูปภาพ">🖼️</button>
+                <button class="view-btn" id="btnList" onclick="setViewMode('list')" title="มุมมองแบบรายการ">📄</button>
+                <button class="view-btn" id="btnTable" onclick="setViewMode('table')" title="มุมมองแบบตาราง">📊</button>
+            </div>
 
-    <div class="category-scroll" id="category-tabs">
-        <button class="cat-btn active" onclick="filterMenu('ทั้งหมด', this)">ทั้งหมด</button>
-        <button class="cat-btn" onclick="filterMenu('เมนูแนะนำ', this)">⭐ แนะนำ</button>
-        <button class="cat-btn" onclick="filterMenu('อาหารป่า', this)">🌿 อาหารป่า</button>
-        <button class="cat-btn" onclick="filterMenu('ผัด', this)">🔥 ผัด</button>
-        <button class="cat-btn" onclick="filterMenu('ต้มยำ', this)">🍲 ต้มยำ</button>
-        <button class="cat-btn" onclick="filterMenu('ยำ', this)">🥗 ยำ</button>
-        <button class="cat-btn" onclick="filterMenu('ทอด', this)">🍳 ทอด</button>
-        <button class="cat-btn" onclick="filterMenu('อีสาน', this)">🌶️ อีสาน</button>
-        <button class="cat-btn" onclick="filterMenu('อาหารตามสั่ง', this)">🍛 ข้าวเปล่า/ตามสั่ง</button>
-        <button class="cat-btn" onclick="filterMenu('เครื่องดื่ม', this)">🧋 เครื่องดื่ม</button>
+            <!-- ช่องค้นหาจะอยู่ฝั่งขวา -->
+            <div class="search-box-wrapper">
+                <span class="search-icon">🔍</span>
+                <input type="text" id="searchInput" class="search-input" placeholder="ค้นหาชื่อเมนูอาหาร..." oninput="filterMenus()">
+                <span id="clearSearchBtn" onclick="clearSearch()" style="display: none; position: absolute; right: 12px; color: var(--primary); font-size: 14px; font-weight: bold; cursor: pointer; background: #ffeaa7; padding: 2px 8px; border-radius: 50%; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">✕</span>
+            </div>
+        </div>
+
+        <div class="category-scroll" id="category-tabs">
+            <button class="cat-btn active" onclick="filterMenu('ทั้งหมด', this)">ทั้งหมด</button>
+            <button class="cat-btn" onclick="filterMenu('เมนูแนะนำ', this)">⭐ แนะนำ</button>
+            <button class="cat-btn" onclick="filterMenu('อาหารป่า', this)">🌿 อาหารป่า</button>
+            <button class="cat-btn" onclick="filterMenu('ผัด', this)">🔥 ผัด</button>
+            <button class="cat-btn" onclick="filterMenu('ต้มยำ', this)">🍲 ต้มยำ</button>
+            <button class="cat-btn" onclick="filterMenu('ยำ', this)">🥗 ยำ</button>
+            <button class="cat-btn" onclick="filterMenu('ทอด', this)">🍳 ทอด</button>
+            <button class="cat-btn" onclick="filterMenu('อีสาน', this)">🌶️ อีสาน</button>
+            <button class="cat-btn" onclick="filterMenu('อาหารตามสั่ง', this)">🍛 ข้าวเปล่า/ตามสั่ง</button>
+            <button class="cat-btn" onclick="filterMenu('เครื่องดื่ม', this)">🧋 เครื่องดื่ม</button>
+        </div>
     </div>
 
     <div class="menu-container grid-view" id="menu-list"></div>
@@ -537,8 +555,8 @@
         let isQueue = urlParams.get('queue') === 'true';
         let tableId = urlTable ? urlTable.toUpperCase() : 'PENDING_QUEUE';
 
-        // โหมดการแสดงผลเมนู (ค่าเริ่มต้นอ่านจาก localStorage หรือใช้ 'grid')
-        let currentViewMode = localStorage.getItem('menu_view_mode') || 'grid';
+        // โหมดการแสดงผลเมนู (ตั้งค่าเริ่มต้นอ่านเป็น 'list')
+        let currentViewMode = localStorage.getItem('menu_view_mode') || 'list';
 
         async function initPage() {
             if (!urlToken) {
@@ -616,6 +634,13 @@
             currentCategory = categoryName;
             document.querySelectorAll('.cat-btn').forEach(btn => btn.classList.remove('active'));
             element.classList.add('active');
+            
+            // เคลียร์ช่องค้นหาเมื่อคลิกหมวดหมู่
+            const searchInput = document.getElementById('searchInput');
+            if(searchInput.value.trim() !== '') {
+                searchInput.value = '';
+                document.getElementById('clearSearchBtn').style.display = 'none';
+            }
             renderMenus();
         }
 
@@ -649,17 +674,26 @@
                 return catName !== 'AdminController';
             });
 
-            let filtered = currentCategory === 'ทั้งหมด' 
-                ? availableMenus 
-                : availableMenus.filter(m => {
-                    if (currentCategory === 'เมนูแนะนำ') return isRecommendedItem(m);
-                    return (m.category_name || categoryMap[m.category_id] || '') === currentCategory;
-                });
+            let filtered = [];
 
             if (keyword !== '') {
-                filtered = filtered.filter(m => (m.name || '').toLowerCase().includes(keyword));
+                // ปรับระบบค้นหา: ให้แยกคำด้วยเว้นวรรค (สลับหน้าหลังได้) และค้นหาทั้งหมดไม่สนหมวดหมู่
+                const searchTerms = keyword.split(/\s+/); 
+                filtered = availableMenus.filter(m => {
+                    const itemName = (m.name || '').toLowerCase();
+                    return searchTerms.every(term => itemName.includes(term));
+                });
+            } else {
+                // หากไม่ได้พิมพ์ค้นหา ให้ใช้ตัวกรองหมวดหมู่
+                filtered = currentCategory === 'ทั้งหมด' 
+                    ? availableMenus 
+                    : availableMenus.filter(m => {
+                        if (currentCategory === 'เมนูแนะนำ') return isRecommendedItem(m);
+                        return (m.category_name || categoryMap[m.category_id] || '') === currentCategory;
+                    });
             }
 
+            // เรียงลำดับหมวดหมู่เฉพาะตอนที่ไม่ได้พิมพ์ค้นหาเท่านั้น
             if (keyword === '') {
                 filtered.sort((a, b) => {
                     const catA = a.category_name || categoryMap[a.category_id] || '';
