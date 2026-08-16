@@ -392,18 +392,25 @@
         </div>
     </div>
 
-    <div class="sidebar-right">
+<div class="sidebar-right">
         <div class="kitchen-section">
-            <h3 style="margin:0 0 8px 0; font-size:13px; color:var(--primary);"><div class="kitchen-section">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-        <h3 style="margin:0; font-size:13px; color:var(--primary);">👨‍🍳 สถานะการพิมพ์ออเดอร์ในครัว</h3>
-        <button onclick="openMergeModal()" style="background: #8e44ad; color: white; border: none; padding: 5px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">🔗 รวมออเดอร์</button>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <h3 style="margin:0; font-size:13px; color:var(--primary);">👨‍🍳 สถานะการพิมพ์ออเดอร์ในครัว</h3>
+                <button onclick="openMergeModal()" style="background: #8e44ad; color: white; border: none; padding: 5px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">🔗 รวมออเดอร์</button>
+            </div>
+            <div id="kitchen-orders-list" style="max-height: calc(100vh - 160px); overflow-y: auto; padding-right: 4px;">
+                <p style="color:var(--gray); font-size:12px;">กำลังโหลดออเดอร์...</p>
+            </div>
+        </div>
+
+        <div class="right-action-panel">
+            <div id="queue-group-container" style="display:none; flex-direction:column; gap:4px;">
+                <div style="font-size:11px; font-weight:bold; color:var(--primary);">🛍️ คิวหน้าร้าน (Active Queues)</div>
+                <div class="table-grid" id="queues-grid-container" style="grid-template-columns: repeat(3, 1fr);"></div>
+            </div>
+            <button class="btn-walkin" onclick="openWalkInOrder()">➕ สั่งอาหารหน้าร้าน (สร้างคิวใหม่)</button>
+        </div>
     </div>
-    <div id="kitchen-orders-list" style="max-height: calc(100vh - 160px); overflow-y: auto; padding-right: 4px;">
-        <p style="color:var(--gray); font-size:12px;">กำลังโหลดออเดอร์...</p>
-    </div>
-</div>
-</h3>
             <div id="kitchen-orders-list" style="max-height: calc(100vh - 160px); overflow-y: auto; padding-right: 4px;">
                 <p style="color:var(--gray); font-size:12px;">กำลังโหลดออเดอร์...</p>
             </div>
