@@ -394,7 +394,16 @@
 
     <div class="sidebar-right">
         <div class="kitchen-section">
-            <h3 style="margin:0 0 8px 0; font-size:13px; color:var(--primary);">👨‍🍳 สถานะการพิมพ์ออเดอร์ในครัว</h3>
+            <h3 style="margin:0 0 8px 0; font-size:13px; color:var(--primary);"><div class="kitchen-section">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+        <h3 style="margin:0; font-size:13px; color:var(--primary);">👨‍🍳 สถานะการพิมพ์ออเดอร์ในครัว</h3>
+        <button onclick="openMergeModal()" style="background: #8e44ad; color: white; border: none; padding: 5px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">🔗 รวมออเดอร์</button>
+    </div>
+    <div id="kitchen-orders-list" style="max-height: calc(100vh - 160px); overflow-y: auto; padding-right: 4px;">
+        <p style="color:var(--gray); font-size:12px;">กำลังโหลดออเดอร์...</p>
+    </div>
+</div>
+</h3>
             <div id="kitchen-orders-list" style="max-height: calc(100vh - 160px); overflow-y: auto; padding-right: 4px;">
                 <p style="color:var(--gray); font-size:12px;">กำลังโหลดออเดอร์...</p>
             </div>
@@ -410,7 +419,7 @@
     </div>
 
 <div class="modal" id="tableModal">
-        <div class="modal-content" style="width: 550px;">
+        <div class="modal-content" style="width: 850px; max-width: 95vw; min-height: 65vh;">
             <h3 id="modalTableTitle" style="margin-top:0;">จัดการโต๊ะ/คิว</h3>
             
             <!-- ส่วนที่ 1: เปลี่ยนจากช่องพิมพ์เป็น Dropdown เลือกโต๊ะ/ซุ้ม -->
@@ -460,6 +469,32 @@
             </div>
         </div>
     </div>
+
+    <!-- Modal รวมออเดอร์ -->
+<div class="modal" id="mergeModal">
+    <div class="modal-content" style="width: 550px; max-width: 95vw;">
+        <h3 style="margin-top:0; color:#8e44ad; font-size: 15px;">🔗 รวมใบออเดอร์ (เฉพาะโต๊ะเดียวกัน)</h3>
+        
+        <div class="form-group" style="background: #fdfdfd; padding: 10px; border: 1px solid #eee; border-radius: 6px;">
+            <label style="font-size:12px; font-weight:bold; color:var(--text);">📍 เลือกโต๊ะที่มีออเดอร์ค้างหลายใบ:</label>
+            <select id="mergeTableSelect" onchange="loadOrdersToMerge()" style="padding: 8px; font-size: 12px; width: 100%; border: 1px solid #ccc; border-radius: 4px; margin-top:5px;">
+                <option value="">-- กำลังโหลด --</option>
+            </select>
+        </div>
+
+        <div style="margin-top: 10px;">
+            <label style="font-size: 12px; font-weight: bold; color:var(--primary);">เลือกใบออเดอร์ที่ต้องการรวม (ระบบจะส่งพิมพ์ใบใหม่ใบเดียว):</label>
+            <div id="mergeOrdersList" style="background:var(--light-gray); padding:10px; border-radius:6px; min-height:180px; max-height:280px; overflow-y:auto; margin-top: 5px; font-size: 12px;">
+                <p style="color:var(--gray); text-align:center; padding-top:20px;">กรุณาเลือกโต๊ะจากด้านบนก่อน</p>
+            </div>
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:15px; border-top:1px solid #ddd; padding-top:12px;">
+            <button onclick="closeMergeModal()" style="background:#ddd; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; font-size:12px;">ปิด</button>
+            <button onclick="executeMergeAndReprint()" style="background:#8e44ad; color:white; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; font-weight:bold; font-size:12px;">🔗 ยืนยันรวมและสั่งพิมพ์ซ้ำ</button>
+        </div>
+    </div>
+</div>
 
     <div class="modal" id="menuManagerModal">
         <div class="modal-content" style="width: 700px;">
@@ -1721,6 +1756,133 @@ async function updateOrderItemQty(tableId, itemName, change) {
                 }
             }
         }
+        function openMergeModal() {
+    document.getElementById('mergeModal').style.display = 'flex';
+    populateMergeTableSelect();
+}
+
+function closeMergeModal() {
+    document.getElementById('mergeModal').style.display = 'none';
+}
+
+async function populateMergeTableSelect() {
+    const select = document.getElementById('mergeTableSelect');
+    select.innerHTML = '<option value="">-- โหลดข้อมูล... --</option>';
+    document.getElementById('mergeOrdersList').innerHTML = '<p style="color:var(--gray); text-align:center; padding-top:20px;">กรุณาเลือกโต๊ะก่อน</p>';
+
+    try {
+        const res = await fetch('/api/admin/orders');
+        const orders = await res.json();
+        
+        // จัดกลุ่มออเดอร์ตาม table_id
+        const tableGroups = {};
+        orders.forEach(o => {
+            if(o.status !== 'เสร็จสิ้น') {
+                if (!tableGroups[o.table_id]) tableGroups[o.table_id] = [];
+                tableGroups[o.table_id].push(o);
+            }
+        });
+
+        let optionsHtml = '<option value="">-- เลือกโต๊ะ --</option>';
+        for (let tId in tableGroups) {
+            // โชว์เฉพาะโต๊ะที่มีออเดอร์ค้างมากกว่า 1 ใบ
+            if (tableGroups[tId].length > 1) {
+                let tLabel = tId.startsWith('Z') ? `ซุ้ม ${tId}` : (isNaN(tId) ? `คิว ${tId}` : `โต๊ะ ${tId}`);
+                optionsHtml += `<option value="${tId}">${tLabel} (มี ${tableGroups[tId].length} ใบออเดอร์)</option>`;
+            }
+        }
+
+        if(optionsHtml === '<option value="">-- เลือกโต๊ะ --</option>') {
+            select.innerHTML = '<option value="" disabled>-- ไม่มีโต๊ะที่มีมากกว่า 1 ออเดอร์ --</option>';
+        } else {
+            select.innerHTML = optionsHtml;
+        }
+    } catch(e) {
+        select.innerHTML = '<option value="">-- โหลดข้อมูลล้มเหลว --</option>';
+    }
+}
+
+async function loadOrdersToMerge() {
+    const tId = document.getElementById('mergeTableSelect').value;
+    const container = document.getElementById('mergeOrdersList');
+    
+    if(!tId) {
+        container.innerHTML = '<p style="color:var(--gray); text-align:center; padding-top:20px;">กรุณาเลือกโต๊ะก่อน</p>';
+        return;
+    }
+
+    container.innerHTML = '<p style="color:var(--gray); text-align:center;">กำลังโหลดรายการออเดอร์...</p>';
+    try {
+        const res = await fetch(`/api/orders/table/${tId}`);
+        const orders = await res.json();
+        
+        let html = '';
+        orders.forEach(ord => {
+            if (ord.status === 'เสร็จสิ้น') return; // ไม่เอาใบที่ทำเสร็จแล้ว
+            let itemsStr = ord.items ? ord.items.map(i => `${i.name} <span style="color:#e74c3c;">x${i.quantity}</span>`).join(', ') : 'ไม่มีรายการ';
+            let time = new Date(ord.created_at).toLocaleTimeString('th-TH');
+            
+            html += `
+                <label style="display:flex; align-items:flex-start; gap:10px; padding:10px; background:white; border:1px solid #ddd; margin-bottom:6px; border-radius:6px; cursor:pointer;">
+                    <input type="checkbox" class="merge-order-chk" value="${ord.id}" style="margin-top:5px; transform: scale(1.2);">
+                    <div style="flex:1;">
+                        <div style="font-size:13px; font-weight:bold; color:#2c3e50; border-bottom:1px dashed #eee; padding-bottom:4px; margin-bottom:4px;">
+                            เวลาสั่ง: ${time} (เลขออเดอร์ #${ord.id})
+                        </div>
+                        <div style="font-size:12px; color:var(--text); line-height:1.4;">${itemsStr}</div>
+                    </div>
+                </label>
+            `;
+        });
+        
+        container.innerHTML = html || '<p style="color:var(--gray); text-align:center;">ไม่พบออเดอร์ที่สามารถรวมได้</p>';
+    } catch(e) {
+        container.innerHTML = '<p style="color:red; text-align:center;">โหลดล้มเหลว</p>';
+    }
+}
+
+async function executeMergeAndReprint() {
+    const tId = document.getElementById('mergeTableSelect').value;
+    if(!tId) {
+        alert('กรุณาเลือกโต๊ะก่อนครับ'); 
+        return;
+    }
+
+    const checkboxes = document.querySelectorAll('.merge-order-chk:checked');
+    if(checkboxes.length < 2) {
+        alert('กรุณาติ๊กเลือกใบออเดอร์อย่างน้อย 2 ใบเพื่อนำมารวมกันครับ');
+        return;
+    }
+
+    const selectedOrderIds = Array.from(checkboxes).map(c => c.value);
+    
+    if(!confirm(`ระบบจะทำการยุบรวม ${selectedOrderIds.length} ใบออเดอร์ที่เลือกเป็นใบเดียว และสั่งพิมพ์ซ้ำ ยืนยันใช่หรือไม่?`)) return;
+
+    try {
+        const res = await fetch('/api/admin/orders/merge', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ order_ids: selectedOrderIds, table_id: tId })
+        });
+        const data = await res.json();
+        
+        if(res.ok && data.success) {
+            alert('รวมออเดอร์และส่งคำสั่งพิมพ์ซ้ำสำเร็จ! (ใบใหม่กำลังจะพรินต์ออกครัว)');
+            closeMergeModal();
+            fetchKitchenOrders();
+            
+            // อัปเดตข้อมูลบนหน้าจอหากกำลังจัดการโต๊ะนี้อยู่
+            if (activeTableId === tId) {
+                loadTableOrders(tId);
+                renderSummaryBox();
+            }
+        } else {
+            alert('เกิดข้อผิดพลาดในการรวมออเดอร์: ' + (data.error || 'Unknown Error'));
+        }
+    } catch(e) {
+        alert('เชื่อมต่อเซิร์ฟเวอร์ล้มเหลว');
+    }
+}
 
         setInterval(fetchKitchenOrders, 5000);
         fetchAdminData();

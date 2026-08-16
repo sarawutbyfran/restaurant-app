@@ -348,6 +348,51 @@ app.put('/api/admin/orders/:id/reset-print', async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 });
+// API สำหรับรวมใบออเดอร์เข้าด้วยกัน (เพื่อให้พิมพ์ออกมารวมกันเป็นใบเดียว)
+app.post('/api/admin/orders/merge', async (req, res) => {
+    const { order_ids, table_id } = req.body;
+    if (!order_ids || order_ids.length < 2) {
+        return res.status(400).json({ error: 'ต้องเลือกอย่างน้อย 2 ใบออเดอร์' });
+    }
+
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+        
+        // หา order_id ที่เก่าที่สุด (เลขน้อยสุด) เพื่อใช้เป็นใบหลัก
+        const sortedIds = order_ids.sort((a, b) => parseInt(a) - parseInt(b));
+        const targetOrderId = sortedIds[0];
+        const sourceOrderIds = sortedIds.slice(1);
+
+        // 1. ย้ายรายการอาหารทั้งหมดจาก sourceOrderIds มารวมที่ targetOrderId
+        await client.query(
+            `UPDATE order_items SET order_id = $1 WHERE order_id = ANY($2::int[])`, 
+            [targetOrderId, sourceOrderIds]
+        );
+
+        // 2. รีเซ็ตสถานะการพิมพ์ของใบหลัก ให้กลับไปเป็นรอพิมพ์และสถานะกำลังทำอาหาร
+        await client.query(
+            `UPDATE orders 
+             SET printed_kitchen_1 = 0, printed_kitchen_2 = 0, printed_drink = 0, status = 'กำลังทำอาหาร' 
+             WHERE id = $1`, 
+            [targetOrderId]
+        );
+
+        // 3. ลบบิลย่อยที่ถูกย้ายรายการออกไปแล้ว
+        await client.query(
+            `DELETE FROM orders WHERE id = ANY($1::int[])`, 
+            [sourceOrderIds]
+        );
+
+        await client.query('COMMIT');
+        res.json({ success: true, message: 'รวมใบออเดอร์เรียบร้อย' });
+    } catch (err) {
+        await client.query('ROLLBACK');
+        res.status(500).json({ error: err.message });
+    } finally {
+        client.release();
+    }
+});
 
 app.delete('/api/orders/:orderId/item/:itemIndex', async (mainReq, mainRes) => {
     const orderId = mainReq.params.orderId;
