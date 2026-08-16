@@ -369,6 +369,69 @@ app.delete('/api/orders/:orderId/item/:itemIndex', async (mainReq, mainRes) => {
         mainRes.status(500).json({ error: err.message });
     }
 });
+// API สำหรับอัปเดตเพิ่ม/ลดจำนวนรายการอาหารในโต๊ะ/คิว
+app.patch('/api/orders/table/:tableId/item', async (req, res) => {
+    const tableId = String(req.params.tableId).toUpperCase();
+    const { name, quantityChange } = req.body;
+    
+    if (!name || quantityChange === undefined) {
+        return res.status(400).json({ error: 'ข้อมูลไม่ครบถ้วน' });
+    }
+
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+        
+        // ค้นหารายการอาหารทั้งหมดของโต๊ะนี้ที่ชื่อตรงกัน โดยเรียงจากรายการล่าสุดก่อน
+        const itemsResult = await client.query(`
+            SELECT oi.id, oi.quantity 
+            FROM order_items oi
+            JOIN orders o ON oi.order_id = o.id
+            WHERE UPPER(o.table_id) = $1 AND oi.name = $2
+            ORDER BY oi.id DESC
+        `, [tableId, name]);
+
+        if (itemsResult.rows.length === 0) {
+            await client.query('ROLLBACK');
+            return res.status(404).json({ error: 'ไม่พบรายการอาหารที่ต้องการแก้ไข' });
+        }
+
+        if (quantityChange > 0) {
+            // กรณีบวกเพิ่ม (+): ให้นำไปบวกเพิ่มที่รายการล่าสุดที่ค้นเจอได้เลย
+            await client.query('UPDATE order_items SET quantity = quantity + $1 WHERE id = $2', [quantityChange, itemsResult.rows[0].id]);
+        } else if (quantityChange < 0) {
+            // กรณีลดจำนวน (-): ต้องไล่ลดจำนวน หากลดจนเหลือ 0 ให้ลบแถวนั้นทิ้ง
+            let remainingToReduce = Math.abs(quantityChange);
+            for (let row of itemsResult.rows) {
+                if (remainingToReduce <= 0) break;
+                
+                if (row.quantity > remainingToReduce) {
+                    await client.query('UPDATE order_items SET quantity = quantity - $1 WHERE id = $2', [remainingToReduce, row.id]);
+                    remainingToReduce = 0;
+                } else {
+                    remainingToReduce -= row.quantity;
+                    await client.query('DELETE FROM order_items WHERE id = $1', [row.id]);
+                }
+            }
+        }
+
+        // ลบบิล (orders) ที่ไม่มีรายการอาหารเหลืออยู่แล้ว (ป้องกันบิลขยะ)
+        await client.query(`
+            DELETE FROM orders o
+            WHERE UPPER(o.table_id) = $1 AND NOT EXISTS (
+                SELECT 1 FROM order_items oi WHERE oi.order_id = o.id
+            )
+        `, [tableId]);
+
+        await client.query('COMMIT');
+        res.json({ success: true, message: 'อัปเดตจำนวนสำเร็จ' });
+    } catch (err) {
+        await client.query('ROLLBACK');
+        res.status(500).json({ error: err.message });
+    } finally {
+        client.release();
+    }
+});
 
 app.put('/api/orders/table/:tableId/move', async (req, res) => {
     const oldTableId = String(req.params.tableId).toUpperCase();

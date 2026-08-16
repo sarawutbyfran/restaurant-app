@@ -409,29 +409,54 @@
         </div>
     </div>
 
-    <div class="modal" id="tableModal">
-        <div class="modal-content">
+<div class="modal" id="tableModal">
+        <div class="modal-content" style="width: 550px;">
             <h3 id="modalTableTitle" style="margin-top:0;">จัดการโต๊ะ/คิว</h3>
-            <div style="background: var(--light-gray); padding: 8px; border-radius: 6px; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                <span style="font-size: 11px; font-weight: bold;">🔄 ย้ายไปโต๊ะ/ซุ้ม/คิวอื่น:</span>
-                <input type="text" id="targetMoveInput" placeholder="เช่น 5, Z2, Q123" style="padding: 4px; font-size: 11px; width: 120px; border: 1px solid #ccc; border-radius: 4px;">
-                <button onclick="executeMoveTable()" style="background: var(--warning); border: none; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer;">ยืนยันการย้าย</button>
+            
+            <!-- ส่วนที่ 1: เปลี่ยนจากช่องพิมพ์เป็น Dropdown เลือกโต๊ะ/ซุ้ม -->
+            <div style="background: var(--light-gray); padding: 10px; border-radius: 6px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                <span style="font-size: 12px; font-weight: bold;">🔄 ย้ายไปโต๊ะ/ซุ้มอื่น:</span>
+                <select id="targetMoveInput" style="padding: 6px; font-size: 12px; width: 150px; border: 1px solid #ccc; border-radius: 4px; outline: none;">
+                    <option value="" disabled selected>-- เลือกปลายทาง --</option>
+                    <optgroup label="🪑 โซนโต๊ะหลัก (1-12)">
+                        <option value="1">โต๊ะ 1</option>
+                        <option value="2">โต๊ะ 2</option>
+                        <option value="3">โต๊ะ 3</option>
+                        <option value="4">โต๊ะ 4</option>
+                        <option value="5">โต๊ะ 5</option>
+                        <option value="6">โต๊ะ 6</option>
+                        <option value="7">โต๊ะ 7</option>
+                        <option value="8">โต๊ะ 8</option>
+                        <option value="9">โต๊ะ 9</option>
+                        <option value="10">โต๊ะ 10</option>
+                        <option value="11">โต๊ะ 11</option>
+                        <option value="12">โต๊ะ 12</option>
+                    </optgroup>
+                    <optgroup label="⛺ โซนซุ้มส่วนตัว (Z1-Z6)">
+                        <option value="Z1">ซุ้ม Z1</option>
+                        <option value="Z2">ซุ้ม Z2</option>
+                        <option value="Z3">ซุ้ม Z3</option>
+                        <option value="Z4">ซุ้ม Z4</option>
+                        <option value="Z5">ซุ้ม Z5</option>
+                        <option value="Z6">ซุ้ม Z6</option>
+                    </optgroup>
+                </select>
+                <button onclick="executeMoveTable()" style="background: var(--warning); border: none; padding: 6px 12px; border-radius: 4px; font-size: 12px; font-weight: bold; cursor: pointer;">ยืนยันการย้าย</button>
             </div>
-            <div class="modal-body-grid">
-                <div>
-                    <h4 style="margin:0 0 8px 0; font-size:12px; color:var(--primary);">📋 รายการอาหารในคิวนี้ทั้งหมด</h4>
-                    <div id="tableOrderItemsList" style="background:var(--light-gray); padding:8px; border-radius:6px; min-height:150px; max-height:220px; overflow-y:auto; font-size:11px;">
-                        <p style="color:var(--gray);">ไม่มีรายการอาหาร</p>
-                    </div>
+
+            <!-- ส่วนที่ 2: เอาคำแนะนำออก และแสดงรายการอาหารแบบเต็มจอสบายตา -->
+            <div style="margin: 5px 0;">
+                <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom: 8px;">
+                    <h4 style="margin:0; font-size:13px; color:var(--primary);">📋 รายการอาหารที่สั่งแล้วทั้งหมด</h4>
                 </div>
-                <div>
-                    <h4 style="margin:0 0 8px 0; font-size:12px; color:var(--text);">ℹ️ คำแนะนำ</h4>
-                    <p style="font-size:11px; color:var(--gray); line-height: 1.5;">คลิกเลือกเมนูจากตรงกลางเพื่อเพิ่มลงตะกร้าชั่วคราว จากนั้นกดปุ่ม "ยืนยันการสั่งอาหาร" เพื่อส่งเข้าครัวพร้อมกันในบิลเดียว</p>
+                <div id="tableOrderItemsList" style="background:var(--light-gray); padding:10px; border-radius:6px; min-height:220px; max-height:350px; overflow-y:auto; font-size:12px;">
+                    <p style="color:var(--gray); text-align: center; margin-top: 30px;">ไม่มีรายการอาหาร</p>
                 </div>
             </div>
-            <div style="display:flex; justify-content:space-between; margin-top:10px; border-top:1px solid #ddd; padding-top:8px;">
-                <button onclick="closeTableModal()" style="background:#ddd; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:11px;">ปิด</button>
-                <button onclick="checkoutTable()" style="background:var(--primary); color:white; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; font-weight:bold; font-size:12px;">💰 เช็คบิล / เคลียร์คิว</button>
+
+            <div style="display:flex; justify-content:space-between; margin-top:15px; border-top:1px solid #ddd; padding-top:12px;">
+                <button onclick="closeTableModal()" style="background:#ddd; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; font-size:12px;">ปิด</button>
+                <button onclick="checkoutTable()" style="background:var(--primary); color:white; border:none; padding:8px 20px; border-radius:6px; cursor:pointer; font-weight:bold; font-size:13px;">💰 เช็คบิล / เคลียร์คิว</button>
             </div>
         </div>
     </div>
@@ -1263,7 +1288,7 @@
             loadTableOrders(activeTableId);
         }
 
-        async function loadTableOrders(tableId) {
+async function loadTableOrders(tableId) {
             try {
                 const res = await fetch(`/api/orders/table/${tableId}`);
                 const orders = await res.json();
@@ -1271,7 +1296,7 @@
                 container.innerHTML = '';
 
                 if (orders.length === 0) {
-                    container.innerHTML = '<p style="color:var(--gray); font-size:12px; text-align:center;">ยังไม่มีรายการอาหาร</p>';
+                    container.innerHTML = '<p style="color:var(--gray); font-size:12px; text-align:center; padding-top:20px;">ยังไม่มีรายการอาหาร</p>';
                     return;
                 }
 
@@ -1288,23 +1313,63 @@
                 let itemsHtml = '';
                 uniqueItems.forEach((i) => {
                     itemsHtml += `
-                        <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 4px; border-bottom:1px solid #f0f0f0;">
-                            <span style="font-size:13px;">${i.name} x <strong style="font-size:14px;">${i.quantity}</strong> <span style="color:var(--primary);">(${ (i.price * i.quantity).toFixed(2) }฿)</span></span>
-                            <button onclick="deleteAggregatedOrderItem('${tableId}', '${i.name}')" style="background:#ff4757; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:11px; font-weight:bold;">❌ ลบรายการ</button>
+                        <div style="display:flex; justify-content:space-between; align-items:center; padding:10px; background:white; border:1px solid #e0e0e0; border-radius:6px; margin-bottom:8px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+                            <div style="flex:1;">
+                                <div style="font-size:14px; font-weight:bold; color:var(--text);">${i.name}</div>
+                                <div style="font-size:11px; color:var(--gray); margin-top:2px;">ราคา: ${Number(i.price).toFixed(2)} ฿ / หน่วย</div>
+                            </div>
+                            
+                            <div style="display:flex; align-items:center; gap:15px;">
+                                <!-- ส่วนปุ่มเพิ่ม/ลดจำนวน (Requirement 3) -->
+                                <div style="display:flex; align-items:center; gap:5px; background:#f4f6f8; padding:3px 6px; border-radius:6px; border:1px solid #ced6e0;">
+                                    <button onclick="updateOrderItemQty('${tableId}', '${i.name}', -1)" style="background:white; border:1px solid #ddd; padding:2px 8px; border-radius:4px; cursor:pointer; font-weight:bold; color:var(--text); transition:0.2s;">-</button>
+                                    <span style="font-size:14px; font-weight:bold; min-width:24px; text-align:center; color:var(--primary);">${i.quantity}</span>
+                                    <button onclick="updateOrderItemQty('${tableId}', '${i.name}', 1)" style="background:white; border:1px solid #ddd; padding:2px 8px; border-radius:4px; cursor:pointer; font-weight:bold; color:var(--text); transition:0.2s;">+</button>
+                                </div>
+                                
+                                <div style="font-size:15px; font-weight:bold; color:var(--primary); min-width:65px; text-align:right;">
+                                    ${(i.price * i.quantity).toFixed(2)} ฿
+                                </div>
+                                
+                                <button onclick="deleteAggregatedOrderItem('${tableId}', '${i.name}')" style="background:#ff4757; color:white; border:none; padding:6px 10px; border-radius:4px; cursor:pointer; font-size:12px; font-weight:bold;" title="ลบรายการนี้">❌ ลบ</button>
+                            </div>
                         </div>
                     `;
                 });
 
-                container.innerHTML = `
-                    <div style="margin-bottom:6px; border:1px solid #ddd; padding:8px; border-radius:6px; background:white;">
-                        ${itemsHtml}
-                    </div>
-                `;
+                container.innerHTML = itemsHtml;
             } catch (e) {
                 document.getElementById('tableOrderItemsList').innerHTML = '<p style="color:var(--primary); text-align:center; font-size: 12px;">ไม่สามารถโหลดข้อมูลได้</p>';
             }
         }
-
+async function updateOrderItemQty(tableId, itemName, change) {
+            try {
+                const res = await fetch(`/api/orders/table/${tableId}/item`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        name: itemName, 
+                        quantityChange: change 
+                    })
+                });
+                
+                const data = await res.json();
+                
+                if (res.ok && data.success) {
+                    // โหลดรายการใหม่มาแสดงในหน้าต่างจัดการโต๊ะ
+                    await loadTableOrders(tableId);
+                    
+                    // อัปเดตกล่องสรุปตะกร้าด้านนอกด้วย
+                    renderSummaryBox();
+                    fetchKitchenOrders();
+                } else {
+                    alert('ไม่สามารถอัปเดตจำนวนได้: ' + (data.error || 'Unknown Error'));
+                }
+            } catch(e) { 
+                console.error(e);
+                alert('เกิดข้อผิดพลาดในการเชื่อมต่อกับเซิร์ฟเวอร์');
+            }
+        }
         function closeTableModal() {
             document.getElementById('tableModal').style.display = 'none';
         }
