@@ -758,8 +758,7 @@
             extraContainer.innerHTML = '';
 
             const catName = selectedItemForCustom.category_name || categoryMap[selectedItemForCustom.category_id] || '';
-            const allowEgg = Number(selectedItemForCustom.allow_egg) === 1 || catName === 'อาหารตามสั่ง';
-
+            const allowEgg = Number(selectedItemForCustom.allow_egg) === 1;
             if (allowEgg) {
                 extraContainer.innerHTML = `
                     <div class="form-group" style="display: flex; gap: 10px;">
