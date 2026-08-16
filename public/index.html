@@ -332,6 +332,7 @@
             vertical-align: middle;
         }
 
+        /* ปรับปรุงแถบตะกร้าด้านล่าง */
         .cart-bar {
             position: fixed;
             bottom: 0;
@@ -339,7 +340,7 @@
             width: 100%;
             background: white;
             box-shadow: 0 -4px 15px rgba(0,0,0,0.08);
-            padding: 15px 20px;
+            padding: 18px 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -347,18 +348,14 @@
             border-top-left-radius: 20px;
             border-top-right-radius: 20px;
             z-index: 99;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .cart-bar:active {
+            background: #f1f2f6;
         }
         .cart-total span { font-size: 18px; font-weight: bold; color: var(--primary); }
         
-        .btn-view-cart {
-            background: #f1f2f6;
-            border: none;
-            padding: 10px 15px;
-            border-radius: 10px;
-            font-weight: bold;
-            color: var(--text);
-            cursor: pointer;
-        }
         .btn-order {
             background: var(--primary);
             color: white;
@@ -460,14 +457,12 @@
     <!-- ห่อหุ้ม Search และ Category ไว้ด้วยกันเพื่อทำ Sticky -->
     <div class="sticky-header-wrapper">
         <div class="search-container">
-            <!-- ย้ายปุ่มสลับรูปแบบการดูเมนู มาไว้ฝั่งซ้าย -->
             <div class="view-mode-toggle">
                 <button class="view-btn" id="btnGrid" onclick="setViewMode('grid')" title="มุมมองแบบการ์ดรูปภาพ">🖼️</button>
                 <button class="view-btn" id="btnList" onclick="setViewMode('list')" title="มุมมองแบบรายการ">📄</button>
                 <button class="view-btn" id="btnTable" onclick="setViewMode('table')" title="มุมมองแบบตาราง">📊</button>
             </div>
 
-            <!-- ช่องค้นหาจะอยู่ฝั่งขวา -->
             <div class="search-box-wrapper">
                 <span class="search-icon">🔍</span>
                 <input type="text" id="searchInput" class="search-input" placeholder="ค้นหาชื่อเมนูอาหาร..." oninput="filterMenus()">
@@ -491,12 +486,14 @@
 
     <div class="menu-container grid-view" id="menu-list"></div>
 
-    <div class="cart-bar">
-        <button class="btn-view-cart" onclick="openCartModal()">🛒 ตะกร้า (<span id="cart-count">0</span>)</button>
-        <div class="cart-total">
-            รวม: <span id="grand-total">0.00</span> ฿
+    <!-- แถบตะกร้าด้านล่าง (เอาปุ่มสั่งออก และเปลี่ยนให้กดได้ทั้งแถบ) -->
+    <div class="cart-bar" onclick="openCartModal()">
+        <div style="font-weight: bold; font-size: 16px; color: var(--text);">
+            🛒 ในตะกร้ามี <span id="cart-count" style="background: var(--primary); color: white; padding: 2px 10px; border-radius: 12px; margin: 0 5px; font-size: 14px;">0</span> รายการ
         </div>
-        <button class="btn-order" onclick="submitOrder()">ยืนยันสั่งอาหาร</button>
+        <div class="cart-total">
+            ยอดรวม: <span id="grand-total">0.00</span> ฿
+        </div>
     </div>
 
     <div class="modal" id="customizeModal">
@@ -555,7 +552,6 @@
         let isQueue = urlParams.get('queue') === 'true';
         let tableId = urlTable ? urlTable.toUpperCase() : 'PENDING_QUEUE';
 
-        // โหมดการแสดงผลเมนู (ตั้งค่าเริ่มต้นอ่านเป็น 'list')
         let currentViewMode = localStorage.getItem('menu_view_mode') || 'list';
 
         async function initPage() {
@@ -580,7 +576,6 @@
             const badgePrefix = tableId.startsWith('Q') ? 'คิว: ' : 'โต๊ะ: ';
             document.getElementById('table-badge').innerText = `${badgePrefix}${tableId}`;
             
-            // ตั้งค่าปุ่มโหมดตามที่บันทึกไว้
             applyViewModeUI(currentViewMode);
 
             fetchMenu();
@@ -592,7 +587,7 @@
         let currentCategory = 'ทั้งหมด';
         let selectedItemForCustom = null;
         let currentCustomQty = 1;
-        let searchTimeout; // ตัวแปรสำหรับจัดการการหน่วงเวลา
+        let searchTimeout; 
 
         const categoryOrder = {
             'เมนูแนะนำ': 1, 'อาหารป่า': 2, 'ผัด': 3, 'ต้มยำ': 4, 'ยำ': 5,
@@ -604,7 +599,6 @@
             6: 'ยำ', 7: 'เครื่องดื่ม', 8: 'เมนูแนะนำ', 9: 'AdminController', 10: 'อีสาน'
         };
 
-        // ฟังก์ชันสลับมุมมอง
         function setViewMode(mode) {
             currentViewMode = mode;
             localStorage.setItem('menu_view_mode', mode);
@@ -636,7 +630,6 @@
             document.querySelectorAll('.cat-btn').forEach(btn => btn.classList.remove('active'));
             element.classList.add('active');
             
-            // เคลียร์ช่องค้นหาเมื่อคลิกหมวดหมู่
             const searchInput = document.getElementById('searchInput');
             if(searchInput.value.trim() !== '') {
                 searchInput.value = '';
@@ -646,10 +639,8 @@
         }
 
         function filterMenus() { 
-            // ล้างเวลาเก่าทิ้งหากมีการพิมพ์ใหม่เข้ามา
             clearTimeout(searchTimeout);
             
-            // ตั้งเวลาใหม่ หน่วง 300ms (0.3 วินาที) ค่อยทำงาน
             searchTimeout = setTimeout(() => {
                 const keyword = document.getElementById('searchInput').value.trim();
                 const clearBtn = document.getElementById('clearSearchBtn');
@@ -662,7 +653,6 @@
             const searchInput = document.getElementById('searchInput');
             searchInput.value = '';
             document.getElementById('clearSearchBtn').style.display = 'none';
-            // สั่ง render ทันทีโดยไม่ต้องรอ
             renderMenus();
             searchInput.focus();
         }
@@ -673,7 +663,6 @@
             const container = document.getElementById('menu-list');
             container.innerHTML = '';
             
-            // เซ็ตคลาสตามโหมดที่เลือก
             container.className = `menu-container ${currentViewMode}-view`;
 
             const keyword = document.getElementById('searchInput').value.trim().toLowerCase();
@@ -686,14 +675,12 @@
             let filtered = [];
 
             if (keyword !== '') {
-                // ปรับระบบค้นหา: ให้แยกคำด้วยเว้นวรรค (สลับหน้าหลังได้) และค้นหาทั้งหมดไม่สนหมวดหมู่
                 const searchTerms = keyword.split(/\s+/); 
                 filtered = availableMenus.filter(m => {
                     const itemName = (m.name || '').toLowerCase();
                     return searchTerms.every(term => itemName.includes(term));
                 });
             } else {
-                // หากไม่ได้พิมพ์ค้นหา ให้ใช้ตัวกรองหมวดหมู่
                 filtered = currentCategory === 'ทั้งหมด' 
                     ? availableMenus 
                     : availableMenus.filter(m => {
@@ -702,7 +689,6 @@
                     });
             }
 
-            // เรียงลำดับหมวดหมู่เฉพาะตอนที่ไม่ได้พิมพ์ค้นหาเท่านั้น
             if (keyword === '') {
                 filtered.sort((a, b) => {
                     const catA = a.category_name || categoryMap[a.category_id] || '';
@@ -716,10 +702,8 @@
                 return;
             }
 
-            // สร้างตัวแปรมาเก็บโค้ด HTML ไว้ก่อน
             let htmlContent = '';
 
-            // เรนเดอร์ตามโหมด (เปลี่ยนจาก container.innerHTML += เป็น htmlContent +=)
             if (currentViewMode === 'grid') {
                 filtered.forEach(item => {
                     const imgSrc = item.image_url || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c';
@@ -785,12 +769,10 @@
                     `;
                 });
                 tableHtml += `</tbody></table>`;
-                htmlContent = tableHtml; // ถ้าเป็นตาราง ให้แทนที่ด้วยโครงสร้างตาราง
+                htmlContent = tableHtml; 
             }
 
-            // นำ HTML ทั้งหมดมาแสดงผลที่หน้าจอในครั้งเดียว
             container.innerHTML = htmlContent;
-
             updateSummary();
         }
 
@@ -806,7 +788,6 @@
             const extraContainer = document.getElementById('customizeExtraOptions');
             extraContainer.innerHTML = '';
 
-            const catName = selectedItemForCustom.category_name || categoryMap[selectedItemForCustom.category_id] || '';
             const allowEgg = Number(selectedItemForCustom.allow_egg) === 1;
             if (allowEgg) {
                 extraContainer.innerHTML = `
