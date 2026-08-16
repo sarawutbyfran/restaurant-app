@@ -416,7 +416,7 @@ app.delete('/api/orders/table/:tableId', async (req, res) => {
 
 app.post('/api/menu', upload.single('image'), async (req, res) => {
     const { name, price, category_name, category_id, is_recommended, is_admin_menu, allow_egg, kitchen_type } = req.body;
-    const image_url = req.file ? `/uploads/${req.file.filename}` : (req.body.image_url || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c');
+    const image_url = req.file ? `/uploads/${req.file.filename}` : (req.body.image_url || '/uploads/menu.jpg');
     try {
         const result = await pool.query(
             `INSERT INTO menu_items (name, price, category_name, image_url, category_id, is_recommended, is_admin_menu, allow_egg, kitchen_type) 
