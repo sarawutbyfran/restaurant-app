@@ -592,6 +592,7 @@
         let currentCategory = 'ทั้งหมด';
         let selectedItemForCustom = null;
         let currentCustomQty = 1;
+        let searchTimeout; // ตัวแปรสำหรับจัดการการหน่วงเวลา
 
         const categoryOrder = {
             'เมนูแนะนำ': 1, 'อาหารป่า': 2, 'ผัด': 3, 'ต้มยำ': 4, 'ยำ': 5,
@@ -645,16 +646,24 @@
         }
 
         function filterMenus() { 
-            const keyword = document.getElementById('searchInput').value.trim();
-            const clearBtn = document.getElementById('clearSearchBtn');
-            clearBtn.style.display = keyword.length > 0 ? 'block' : 'none';
-            renderMenus(); 
+            // ล้างเวลาเก่าทิ้งหากมีการพิมพ์ใหม่เข้ามา
+            clearTimeout(searchTimeout);
+            
+            // ตั้งเวลาใหม่ หน่วง 300ms (0.3 วินาที) ค่อยทำงาน
+            searchTimeout = setTimeout(() => {
+                const keyword = document.getElementById('searchInput').value.trim();
+                const clearBtn = document.getElementById('clearSearchBtn');
+                clearBtn.style.display = keyword.length > 0 ? 'block' : 'none';
+                renderMenus(); 
+            }, 300);
         }
 
         function clearSearch() {
             const searchInput = document.getElementById('searchInput');
             searchInput.value = '';
-            filterMenus();
+            document.getElementById('clearSearchBtn').style.display = 'none';
+            // สั่ง render ทันทีโดยไม่ต้องรอ
+            renderMenus();
             searchInput.focus();
         }
 
@@ -707,17 +716,20 @@
                 return;
             }
 
-            // เรนเดอร์ตามโหมด
+            // สร้างตัวแปรมาเก็บโค้ด HTML ไว้ก่อน
+            let htmlContent = '';
+
+            // เรนเดอร์ตามโหมด (เปลี่ยนจาก container.innerHTML += เป็น htmlContent +=)
             if (currentViewMode === 'grid') {
                 filtered.forEach(item => {
                     const imgSrc = item.image_url || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c';
                     const showBadge = isRecommendedItem(item);
-                    container.innerHTML += `
+                    htmlContent += `
                         <div class="menu-card" onclick="openCustomizeModal(${item.id})">
                             <div>
                                 <div class="menu-img-wrapper">
                                     ${showBadge ? '<span class="recommend-badge" style="position:absolute; top:10px; left:10px; z-index:2;">⭐ แนะนำ</span>' : ''}
-                                    <img src="${imgSrc}" class="menu-img" alt="${item.name}">
+                                    <img src="${imgSrc}" class="menu-img" alt="${item.name}" loading="lazy">
                                 </div>
                                 <div class="menu-info">
                                     <h3>${item.name}</h3>
@@ -732,9 +744,9 @@
                 filtered.forEach(item => {
                     const imgSrc = item.image_url || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c';
                     const showBadge = isRecommendedItem(item);
-                    container.innerHTML += `
+                    htmlContent += `
                         <div class="menu-card" onclick="openCustomizeModal(${item.id})">
-                            <img src="${imgSrc}" class="mini-img" alt="${item.name}">
+                            <img src="${imgSrc}" class="mini-img" alt="${item.name}" loading="lazy">
                             <div class="menu-info">
                                 <h3>${item.name} ${showBadge ? '<span class="recommend-badge">⭐ แนะนำ</span>' : ''}</h3>
                                 <p class="price">${parseFloat(item.price).toFixed(2)} บาท</p>
@@ -773,8 +785,11 @@
                     `;
                 });
                 tableHtml += `</tbody></table>`;
-                container.innerHTML = tableHtml;
+                htmlContent = tableHtml; // ถ้าเป็นตาราง ให้แทนที่ด้วยโครงสร้างตาราง
             }
+
+            // นำ HTML ทั้งหมดมาแสดงผลที่หน้าจอในครั้งเดียว
+            container.innerHTML = htmlContent;
 
             updateSummary();
         }
