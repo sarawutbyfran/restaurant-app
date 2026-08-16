@@ -20,7 +20,7 @@
             margin: 0;
             padding: 0;
             color: var(--text);
-            padding-bottom: 100px;
+            padding-bottom: 110px; /* เพิ่มพื้นที่ด้านล่างเผื่อปุ่มตะกร้าที่ใหญ่ขึ้น */
         }
 
         .store-header {
@@ -194,7 +194,7 @@
             padding: 0 15px;
         }
 
-        /* 1. แบบการ์ดรูปภาพ (Grid 2 คอลัมน์ เดิม) */
+        /* 1. แบบการ์ดรูปภาพ (Grid 2 คอลัมน์) */
         .menu-container.grid-view {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -237,7 +237,7 @@
             text-align: center;
         }
 
-        /* 2. แบบรายการ (List View - ไม่มีรูป หรือ รูปเล็กแนวนอน) */
+        /* 2. แบบรายการ (List View) */
         .menu-container.list-view {
             display: flex;
             flex-direction: column;
@@ -332,30 +332,51 @@
             vertical-align: middle;
         }
 
-        /* ปรับปรุงแถบตะกร้าด้านล่าง */
+        /* --- ปรับปรุงแถบตะกร้าด้านล่างแบบปุ่ม (UX Design ใหม่) --- */
         .cart-bar {
             position: fixed;
             bottom: 0;
             left: 0;
             width: 100%;
-            background: white;
+            background: white; /* ฐานพื้นหลังสีขาว */
             box-shadow: 0 -4px 15px rgba(0,0,0,0.08);
-            padding: 18px 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            padding: 15px 20px;
             box-sizing: border-box;
             border-top-left-radius: 20px;
             border-top-right-radius: 20px;
             z-index: 99;
+        }
+        .cart-btn-wrapper {
+            background: var(--primary); /* ปุ่มสีหลักของร้าน */
+            color: white;
+            border-radius: 16px;
+            padding: 12px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-shadow: 0 4px 12px rgba(255,71,87,0.3); /* เงาปุ่มให้ดูลอยตัวน่ากด */
             cursor: pointer;
-            transition: background 0.2s;
+            transition: transform 0.1s, background 0.2s;
         }
-        .cart-bar:active {
-            background: #f1f2f6;
+        .cart-btn-wrapper:active {
+            transform: scale(0.98); /* ลูกเล่นกดยุบตัว */
+            background: var(--primary-hover);
         }
-        .cart-total span { font-size: 18px; font-weight: bold; color: var(--primary); }
-        
+        .cart-btn-top {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            font-size: 16px;
+            font-weight: bold;
+            align-items: center;
+        }
+        .cart-btn-hint {
+            font-size: 12px;
+            margin-top: 4px;
+            font-weight: normal;
+            opacity: 0.95;
+        }
+
         .btn-order {
             background: var(--primary);
             color: white;
@@ -368,6 +389,7 @@
             box-shadow: 0 4px 10px rgba(255,71,87,0.3);
         }
 
+        /* Modals */
         .modal {
             display: none;
             position: fixed;
@@ -486,13 +508,14 @@
 
     <div class="menu-container grid-view" id="menu-list"></div>
 
-    <!-- แถบตะกร้าด้านล่าง (เอาปุ่มสั่งออก และเปลี่ยนให้กดได้ทั้งแถบ) -->
-    <div class="cart-bar" onclick="openCartModal()">
-        <div style="font-weight: bold; font-size: 16px; color: var(--text);">
-            🛒 ในตะกร้ามี <span id="cart-count" style="background: var(--primary); color: white; padding: 2px 10px; border-radius: 12px; margin: 0 5px; font-size: 14px;">0</span> รายการ
-        </div>
-        <div class="cart-total">
-            ยอดรวม: <span id="grand-total">0.00</span> ฿
+    <!-- แถบตะกร้าด้านล่าง (ดีไซน์ใหม่เป็นปุ่มกดยืนยันการกระทำ) -->
+    <div class="cart-bar">
+        <div class="cart-btn-wrapper" onclick="openCartModal()">
+            <div class="cart-btn-top">
+                <div>🛒 ตะกร้า <span id="cart-count" style="background: white; color: var(--primary); padding: 2px 10px; border-radius: 12px; margin-left: 5px; font-size: 14px;">0</span></div>
+                <div><span id="grand-total">0.00</span> ฿ <span style="margin-left:5px; font-size:14px;">❯</span></div>
+            </div>
+            <div class="cart-btn-hint">(กดเพื่อตรวจสอบและยืนยันการสั่งอาหาร)</div>
         </div>
     </div>
 

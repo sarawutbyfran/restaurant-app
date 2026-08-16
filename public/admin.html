@@ -392,7 +392,7 @@
         </div>
     </div>
 
-<div class="sidebar-right">
+    <div class="sidebar-right">
         <div class="kitchen-section">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                 <h3 style="margin:0; font-size:13px; color:var(--primary);">👨‍🍳 สถานะการพิมพ์ออเดอร์ในครัว</h3>
@@ -411,25 +411,11 @@
             <button class="btn-walkin" onclick="openWalkInOrder()">➕ สั่งอาหารหน้าร้าน (สร้างคิวใหม่)</button>
         </div>
     </div>
-            <div id="kitchen-orders-list" style="max-height: calc(100vh - 160px); overflow-y: auto; padding-right: 4px;">
-                <p style="color:var(--gray); font-size:12px;">กำลังโหลดออเดอร์...</p>
-            </div>
-        </div>
 
-        <div class="right-action-panel">
-            <div id="queue-group-container" style="display:none; flex-direction:column; gap:4px;">
-                <div style="font-size:11px; font-weight:bold; color:var(--primary);">🛍️ คิวหน้าร้าน (Active Queues)</div>
-                <div class="table-grid" id="queues-grid-container" style="grid-template-columns: repeat(3, 1fr);"></div>
-            </div>
-            <button class="btn-walkin" onclick="openWalkInOrder()">➕ สั่งอาหารหน้าร้าน (สร้างคิวใหม่)</button>
-        </div>
-    </div>
-
-<div class="modal" id="tableModal">
+    <div class="modal" id="tableModal">
         <div class="modal-content" style="width: 850px; max-width: 95vw; min-height: 65vh;">
             <h3 id="modalTableTitle" style="margin-top:0;">จัดการโต๊ะ/คิว</h3>
             
-            <!-- ส่วนที่ 1: เปลี่ยนจากช่องพิมพ์เป็น Dropdown เลือกโต๊ะ/ซุ้ม -->
             <div style="background: var(--light-gray); padding: 10px; border-radius: 6px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
                 <span style="font-size: 12px; font-weight: bold;">🔄 ย้ายไปโต๊ะ/ซุ้มอื่น:</span>
                 <select id="targetMoveInput" style="padding: 6px; font-size: 12px; width: 150px; border: 1px solid #ccc; border-radius: 4px; outline: none;">
@@ -460,7 +446,6 @@
                 <button onclick="executeMoveTable()" style="background: var(--warning); border: none; padding: 6px 12px; border-radius: 4px; font-size: 12px; font-weight: bold; cursor: pointer;">ยืนยันการย้าย</button>
             </div>
 
-            <!-- ส่วนที่ 2: เอาคำแนะนำออก และแสดงรายการอาหารแบบเต็มจอสบายตา -->
             <div style="margin: 5px 0;">
                 <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom: 8px;">
                     <h4 style="margin:0; font-size:13px; color:var(--primary);">📋 รายการอาหารที่สั่งแล้วทั้งหมด</h4>
@@ -478,30 +463,30 @@
     </div>
 
     <!-- Modal รวมออเดอร์ -->
-<div class="modal" id="mergeModal">
-    <div class="modal-content" style="width: 550px; max-width: 95vw;">
-        <h3 style="margin-top:0; color:#8e44ad; font-size: 15px;">🔗 รวมใบออเดอร์ (เฉพาะโต๊ะเดียวกัน)</h3>
-        
-        <div class="form-group" style="background: #fdfdfd; padding: 10px; border: 1px solid #eee; border-radius: 6px;">
-            <label style="font-size:12px; font-weight:bold; color:var(--text);">📍 เลือกโต๊ะที่มีออเดอร์ค้างหลายใบ:</label>
-            <select id="mergeTableSelect" onchange="loadOrdersToMerge()" style="padding: 8px; font-size: 12px; width: 100%; border: 1px solid #ccc; border-radius: 4px; margin-top:5px;">
-                <option value="">-- กำลังโหลด --</option>
-            </select>
-        </div>
+    <div class="modal" id="mergeModal">
+        <div class="modal-content" style="width: 550px; max-width: 95vw;">
+            <h3 style="margin-top:0; color:#8e44ad; font-size: 15px;">🔗 รวมใบออเดอร์ (เฉพาะโต๊ะเดียวกัน)</h3>
+            
+            <div class="form-group" style="background: #fdfdfd; padding: 10px; border: 1px solid #eee; border-radius: 6px;">
+                <label style="font-size:12px; font-weight:bold; color:var(--text);">📍 เลือกโต๊ะที่มีออเดอร์ค้างหลายใบ:</label>
+                <select id="mergeTableSelect" onchange="loadOrdersToMerge()" style="padding: 8px; font-size: 12px; width: 100%; border: 1px solid #ccc; border-radius: 4px; margin-top:5px;">
+                    <option value="">-- กำลังโหลด --</option>
+                </select>
+            </div>
 
-        <div style="margin-top: 10px;">
-            <label style="font-size: 12px; font-weight: bold; color:var(--primary);">เลือกใบออเดอร์ที่ต้องการรวม (ระบบจะส่งพิมพ์ใบใหม่ใบเดียว):</label>
-            <div id="mergeOrdersList" style="background:var(--light-gray); padding:10px; border-radius:6px; min-height:180px; max-height:280px; overflow-y:auto; margin-top: 5px; font-size: 12px;">
-                <p style="color:var(--gray); text-align:center; padding-top:20px;">กรุณาเลือกโต๊ะจากด้านบนก่อน</p>
+            <div style="margin-top: 10px;">
+                <label style="font-size: 12px; font-weight: bold; color:var(--primary);">เลือกใบออเดอร์ที่ต้องการรวม (ระบบจะส่งพิมพ์ใบใหม่ใบเดียว):</label>
+                <div id="mergeOrdersList" style="background:var(--light-gray); padding:10px; border-radius:6px; min-height:180px; max-height:280px; overflow-y:auto; margin-top: 5px; font-size: 12px;">
+                    <p style="color:var(--gray); text-align:center; padding-top:20px;">กรุณาเลือกโต๊ะจากด้านบนก่อน</p>
+                </div>
+            </div>
+
+            <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:15px; border-top:1px solid #ddd; padding-top:12px;">
+                <button onclick="closeMergeModal()" style="background:#ddd; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; font-size:12px;">ปิด</button>
+                <button onclick="executeMergeAndReprint()" style="background:#8e44ad; color:white; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; font-weight:bold; font-size:12px;">🔗 ยืนยันรวมและสั่งพิมพ์ซ้ำ</button>
             </div>
         </div>
-
-        <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:15px; border-top:1px solid #ddd; padding-top:12px;">
-            <button onclick="closeMergeModal()" style="background:#ddd; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; font-size:12px;">ปิด</button>
-            <button onclick="executeMergeAndReprint()" style="background:#8e44ad; color:white; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; font-weight:bold; font-size:12px;">🔗 ยืนยันรวมและสั่งพิมพ์ซ้ำ</button>
-        </div>
     </div>
-</div>
 
     <div class="modal" id="menuManagerModal">
         <div class="modal-content" style="width: 700px;">
@@ -684,6 +669,8 @@
         let currentActiveOrders = [];
         let currentCart = [];
         let salesHistoryCache = {};
+        let adminSearchTimeout; // ตัวแปรสำหรับจัดการการหน่วงเวลาค้นหาของหน้า Admin
+        let manageMenuSearchTimeout; // ตัวแปรสำหรับหน่วงเวลาช่องค้นหาในหน้าต่างตั้งค่าเมนู
 
         const categoryMap = {
             1: 'อาหารตามสั่ง', 
@@ -736,10 +723,14 @@
         }
 
         function handleGlobalSearch(e) {
-            const val = e.target.value.trim().toLowerCase();
-            const clearBtn = document.getElementById('clearSearchBtn');
-            clearBtn.style.display = val.length > 0 ? 'block' : 'none';
-            renderAdminMenus();
+            // ระบบหน่วงเวลา (Debounce) ค้นหา
+            clearTimeout(adminSearchTimeout);
+            adminSearchTimeout = setTimeout(() => {
+                const val = e.target.value.trim().toLowerCase();
+                const clearBtn = document.getElementById('clearSearchBtn');
+                clearBtn.style.display = val.length > 0 ? 'block' : 'none';
+                renderAdminMenus();
+            }, 300);
         }
 
         function clearGlobalSearch() {
@@ -805,15 +796,16 @@
                 return;
             }
 
+            // ใช้ตัวแปรสะสม HTML เพื่อ Batch DOM rendering
+            let htmlContent = '';
+
             filtered.forEach(item => {
                 const catName = item.category_name || categoryMap[item.category_id] || '';
                 let optionsHtml = '';
                 
-                // ใช้ตรรกะคอลัมน์ allow_egg ตามฐานข้อมูล
                 const isAllowEgg = Number(item.allow_egg) === 1;
                 
                 if (isAllowEgg) {
-                    // จัดไข่ดาวไข่เจียวอยู่คนละบรรทัด
                     optionsHtml = `
                         <div style="margin: 4px 0; font-size: 11px; display: flex; flex-direction: column; gap: 3px;" onclick="event.stopPropagation()">
                             <label><input type="checkbox" id="egg-${item.id}" value="ไข่ดาว"> ไข่ดาว (+10฿)</label>
@@ -822,7 +814,6 @@
                     `;
                 }
 
-                // ถ้าเป็น Admin Menu จะไม่แสดงช่องหมายเหตุ
                 let noteHtml = '';
                 if (Number(item.is_admin_menu) !== 1) {
                     noteHtml = `
@@ -837,12 +828,12 @@
                 
                 const safeName = item.name.replace(/'/g, "\\'");
 
-                grid.innerHTML += `
+                // เปลี่ยน innerHTML += เป็นการนำโค้ดไปต่อในตัวแปร และเพิ่ม loading="lazy" ในรูปภาพ
+                htmlContent += `
                     <div class="admin-menu-card" onclick="addMenuToCartPrompt(${item.id}, '${safeName}', ${item.price}, ${isAllowEgg})">
-                        <img src="${item.image_url || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c'}" alt="">
+                        <img src="${item.image_url || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c'}" alt="" loading="lazy">
                         
                         <div style="flex: 1; display: flex; flex-direction: column; overflow: hidden;">
-                            <!-- เพิ่มขนาดตัวหนังสือชื่อเมนูเป็น 15px -->
                             <div style="font-weight:bold; font-size:15px; margin-bottom:2px; line-height:1.2; color:var(--text);">${item.name}</div>
                             <div style="color:var(--primary); font-size:13px; font-weight:bold;">${parseFloat(item.price).toFixed(2)} ฿</div>
                             
@@ -852,6 +843,9 @@
                     </div>
                 `;
             });
+            
+            // นำ HTML ไปใส่รวดเดียว
+            grid.innerHTML = htmlContent;
         }
 
         function addMenuToCartPrompt(menuItemId, menuName, basePrice, isAllowEgg) {
@@ -974,14 +968,15 @@
                 renderTablesAndZones();
 
                 const container = document.getElementById('kitchen-orders-list');
-                container.innerHTML = '';
-
+                
                 const pendingKitchenOrders = orders.filter(ord => ord.status !== 'เสร็จสิ้น');
 
                 if (pendingKitchenOrders.length === 0) {
                     container.innerHTML = '<p style="color:var(--gray); font-size:11px;">ไม่มีออเดอร์ค้างในครัว</p>';
                     return;
                 }
+
+                let htmlContent = '';
 
                 pendingKitchenOrders.forEach(ord => {
                     let tableStr = String(ord.table_id);
@@ -1034,7 +1029,7 @@
 
                     let cardStyle = allPrinted ? 'border-left-color: #3742fa; background: #f0f4ff;' : '';
 
-                    container.innerHTML += `
+                    htmlContent += `
                         <div class="kitchen-card ${isBlinking ? 'unprinted-blink' : ''}" style="${cardStyle}">
                             <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 1px dashed #eee; padding-bottom: 3px; margin-bottom: 3px;">
                                 <span style="font-weight:bold; color:var(--primary); font-size: 12px;">📍 ${locationLabel}</span>
@@ -1051,6 +1046,9 @@
                         </div>
                     `;
                 });
+                
+                container.innerHTML = htmlContent;
+
             } catch (err) {
                 console.error(err);
             }
@@ -1243,7 +1241,6 @@
                 });
                 let uniqueSubmittedItems = consolidateItems(allRawItems);
 
-                // ปรับลดขนาดตัวอักษรลง (font-size 11px) ในคอลัมน์ตะกร้าที่ถูกส่งเข้าครัวแล้ว
                 let submittedItemsHtml = '';
                 uniqueSubmittedItems.forEach((i, itemIndex) => {
                     submittedItemsHtml += `
@@ -1254,7 +1251,6 @@
                     `;
                 });
 
-                // ปรับลดขนาดตัวหนังสือปุ่ม + - (font-size 11px)
                 let cartItemsHtml = '';
                 let cartTotal = 0;
                 currentCart.forEach((item, idx) => {
@@ -1330,7 +1326,7 @@
             loadTableOrders(activeTableId);
         }
 
-async function loadTableOrders(tableId) {
+        async function loadTableOrders(tableId) {
             try {
                 const res = await fetch(`/api/orders/table/${tableId}`);
                 const orders = await res.json();
@@ -1362,7 +1358,6 @@ async function loadTableOrders(tableId) {
                             </div>
                             
                             <div style="display:flex; align-items:center; gap:15px;">
-                                <!-- ส่วนปุ่มเพิ่ม/ลดจำนวน (Requirement 3) -->
                                 <div style="display:flex; align-items:center; gap:5px; background:#f4f6f8; padding:3px 6px; border-radius:6px; border:1px solid #ced6e0;">
                                     <button onclick="updateOrderItemQty('${tableId}', '${i.name}', -1)" style="background:white; border:1px solid #ddd; padding:2px 8px; border-radius:4px; cursor:pointer; font-weight:bold; color:var(--text); transition:0.2s;">-</button>
                                     <span style="font-size:14px; font-weight:bold; min-width:24px; text-align:center; color:var(--primary);">${i.quantity}</span>
@@ -1384,7 +1379,8 @@ async function loadTableOrders(tableId) {
                 document.getElementById('tableOrderItemsList').innerHTML = '<p style="color:var(--primary); text-align:center; font-size: 12px;">ไม่สามารถโหลดข้อมูลได้</p>';
             }
         }
-async function updateOrderItemQty(tableId, itemName, change) {
+        
+        async function updateOrderItemQty(tableId, itemName, change) {
             try {
                 const res = await fetch(`/api/orders/table/${tableId}/item`, {
                     method: 'PATCH',
@@ -1398,10 +1394,7 @@ async function updateOrderItemQty(tableId, itemName, change) {
                 const data = await res.json();
                 
                 if (res.ok && data.success) {
-                    // โหลดรายการใหม่มาแสดงในหน้าต่างจัดการโต๊ะ
                     await loadTableOrders(tableId);
-                    
-                    // อัปเดตกล่องสรุปตะกร้าด้านนอกด้วย
                     renderSummaryBox();
                     fetchKitchenOrders();
                 } else {
@@ -1412,6 +1405,7 @@ async function updateOrderItemQty(tableId, itemName, change) {
                 alert('เกิดข้อผิดพลาดในการเชื่อมต่อกับเซิร์ฟเวอร์');
             }
         }
+        
         function closeTableModal() {
             document.getElementById('tableModal').style.display = 'none';
         }
@@ -1550,6 +1544,7 @@ async function updateOrderItemQty(tableId, itemName, change) {
                     return;
                 }
 
+                let htmlContent = '';
                 historyList.forEach(record => {
                     totalSum += Number(record.total_price || 0);
                     salesHistoryCache[record.id] = record;
@@ -1561,7 +1556,7 @@ async function updateOrderItemQty(tableId, itemName, change) {
 
                     const formattedDate = new Date(record.checked_out_at).toLocaleString('th-TH');
 
-                    tbody.innerHTML += `
+                    htmlContent += `
                         <tr style="border-bottom: 1px solid #f1f2f6;">
                             <td style="padding: 5px 6px; color: var(--gray);">${formattedDate}</td>
                             <td style="padding: 5px 6px; font-weight: bold; color: var(--primary);">${record.title}</td>
@@ -1573,7 +1568,8 @@ async function updateOrderItemQty(tableId, itemName, change) {
                         </tr>
                     `;
                 });
-
+                
+                tbody.innerHTML = htmlContent;
                 document.getElementById('totalSalesAmount').innerText = totalSum.toFixed(2) + ' ฿';
             } catch (e) {
                 console.error(e);
@@ -1583,12 +1579,15 @@ async function updateOrderItemQty(tableId, itemName, change) {
         }
 
         function filterManageMenuList() {
-            const keyword = document.getElementById('searchMenuInput').value.toLowerCase();
-            const items = document.querySelectorAll('.manage-menu-item-row');
-            items.forEach(item => {
-                const text = item.innerText.toLowerCase();
-                item.style.display = text.includes(keyword) ? 'flex' : 'none';
-            });
+            clearTimeout(manageMenuSearchTimeout);
+            manageMenuSearchTimeout = setTimeout(() => {
+                const keyword = document.getElementById('searchMenuInput').value.toLowerCase();
+                const items = document.querySelectorAll('.manage-menu-item-row');
+                items.forEach(item => {
+                    const text = item.innerText.toLowerCase();
+                    item.style.display = text.includes(keyword) ? 'flex' : 'none';
+                });
+            }, 300);
         }
 
         async function loadManageMenuList() {
@@ -1597,21 +1596,21 @@ async function updateOrderItemQty(tableId, itemName, change) {
             try {
                 const res = await fetch('/api/menu');
                 const menus = await res.json();
-                container.innerHTML = '';
-
+                
                 if(menus.length === 0) {
                     container.innerHTML = '<p style="color:var(--gray);">ไม่มีเมนูอาหาร</p>';
                     return;
                 }
 
+                let htmlContent = '';
                 menus.forEach(m => {
                     const cName = m.category_name || categoryMap[m.category_id] || 'ไม่ระบุ';
                     const safeName = m.name.replace(/'/g, "\\'");
                     
-                    container.innerHTML += `
+                    htmlContent += `
                         <div class="manage-menu-item-row" style="display:flex; justify-content:space-between; align-items:center; background:white; padding:5px; margin-bottom:3px; border-radius:4px;">
                             <div style="display: flex; align-items: center; gap: 6px;">
-                                <img src="${m.image_url || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c'}" style="width: 30px; height: 30px; object-fit: cover; border-radius: 4px;">
+                                <img src="${m.image_url || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c'}" style="width: 30px; height: 30px; object-fit: cover; border-radius: 4px;" loading="lazy">
                                 <div>
                                     <strong style="font-size:11px;">${m.name}</strong><br>
                                     <span style="color:var(--primary); font-size:10px;">${parseFloat(m.price).toFixed(2)}฿ (${cName})</span>
@@ -1624,6 +1623,9 @@ async function updateOrderItemQty(tableId, itemName, change) {
                         </div>
                     `;
                 });
+                
+                container.innerHTML = htmlContent;
+                
             } catch(e) {
                 container.innerHTML = '<p style="color:red;">โหลดรายการไม่สำเร็จ</p>';
             }
@@ -1764,132 +1766,129 @@ async function updateOrderItemQty(tableId, itemName, change) {
             }
         }
         function openMergeModal() {
-    document.getElementById('mergeModal').style.display = 'flex';
-    populateMergeTableSelect();
-}
+            document.getElementById('mergeModal').style.display = 'flex';
+            populateMergeTableSelect();
+        }
 
-function closeMergeModal() {
-    document.getElementById('mergeModal').style.display = 'none';
-}
+        function closeMergeModal() {
+            document.getElementById('mergeModal').style.display = 'none';
+        }
 
-async function populateMergeTableSelect() {
-    const select = document.getElementById('mergeTableSelect');
-    select.innerHTML = '<option value="">-- โหลดข้อมูล... --</option>';
-    document.getElementById('mergeOrdersList').innerHTML = '<p style="color:var(--gray); text-align:center; padding-top:20px;">กรุณาเลือกโต๊ะก่อน</p>';
+        async function populateMergeTableSelect() {
+            const select = document.getElementById('mergeTableSelect');
+            select.innerHTML = '<option value="">-- โหลดข้อมูล... --</option>';
+            document.getElementById('mergeOrdersList').innerHTML = '<p style="color:var(--gray); text-align:center; padding-top:20px;">กรุณาเลือกโต๊ะก่อน</p>';
 
-    try {
-        const res = await fetch('/api/admin/orders');
-        const orders = await res.json();
-        
-        // จัดกลุ่มออเดอร์ตาม table_id
-        const tableGroups = {};
-        orders.forEach(o => {
-            if(o.status !== 'เสร็จสิ้น') {
-                if (!tableGroups[o.table_id]) tableGroups[o.table_id] = [];
-                tableGroups[o.table_id].push(o);
-            }
-        });
+            try {
+                const res = await fetch('/api/admin/orders');
+                const orders = await res.json();
+                
+                const tableGroups = {};
+                orders.forEach(o => {
+                    if(o.status !== 'เสร็จสิ้น') {
+                        if (!tableGroups[o.table_id]) tableGroups[o.table_id] = [];
+                        tableGroups[o.table_id].push(o);
+                    }
+                });
 
-        let optionsHtml = '<option value="">-- เลือกโต๊ะ --</option>';
-        for (let tId in tableGroups) {
-            // โชว์เฉพาะโต๊ะที่มีออเดอร์ค้างมากกว่า 1 ใบ
-            if (tableGroups[tId].length > 1) {
-                let tLabel = tId.startsWith('Z') ? `ซุ้ม ${tId}` : (isNaN(tId) ? `คิว ${tId}` : `โต๊ะ ${tId}`);
-                optionsHtml += `<option value="${tId}">${tLabel} (มี ${tableGroups[tId].length} ใบออเดอร์)</option>`;
+                let optionsHtml = '<option value="">-- เลือกโต๊ะ --</option>';
+                for (let tId in tableGroups) {
+                    if (tableGroups[tId].length > 1) {
+                        let tLabel = tId.startsWith('Z') ? `ซุ้ม ${tId}` : (isNaN(tId) ? `คิว ${tId}` : `โต๊ะ ${tId}`);
+                        optionsHtml += `<option value="${tId}">${tLabel} (มี ${tableGroups[tId].length} ใบออเดอร์)</option>`;
+                    }
+                }
+
+                if(optionsHtml === '<option value="">-- เลือกโต๊ะ --</option>') {
+                    select.innerHTML = '<option value="" disabled>-- ไม่มีโต๊ะที่มีมากกว่า 1 ออเดอร์ --</option>';
+                } else {
+                    select.innerHTML = optionsHtml;
+                }
+            } catch(e) {
+                select.innerHTML = '<option value="">-- โหลดข้อมูลล้มเหลว --</option>';
             }
         }
 
-        if(optionsHtml === '<option value="">-- เลือกโต๊ะ --</option>') {
-            select.innerHTML = '<option value="" disabled>-- ไม่มีโต๊ะที่มีมากกว่า 1 ออเดอร์ --</option>';
-        } else {
-            select.innerHTML = optionsHtml;
-        }
-    } catch(e) {
-        select.innerHTML = '<option value="">-- โหลดข้อมูลล้มเหลว --</option>';
-    }
-}
-
-async function loadOrdersToMerge() {
-    const tId = document.getElementById('mergeTableSelect').value;
-    const container = document.getElementById('mergeOrdersList');
-    
-    if(!tId) {
-        container.innerHTML = '<p style="color:var(--gray); text-align:center; padding-top:20px;">กรุณาเลือกโต๊ะก่อน</p>';
-        return;
-    }
-
-    container.innerHTML = '<p style="color:var(--gray); text-align:center;">กำลังโหลดรายการออเดอร์...</p>';
-    try {
-        const res = await fetch(`/api/orders/table/${tId}`);
-        const orders = await res.json();
-        
-        let html = '';
-        orders.forEach(ord => {
-            if (ord.status === 'เสร็จสิ้น') return; // ไม่เอาใบที่ทำเสร็จแล้ว
-            let itemsStr = ord.items ? ord.items.map(i => `${i.name} <span style="color:#e74c3c;">x${i.quantity}</span>`).join(', ') : 'ไม่มีรายการ';
-            let time = new Date(ord.created_at).toLocaleTimeString('th-TH');
+        async function loadOrdersToMerge() {
+            const tId = document.getElementById('mergeTableSelect').value;
+            const container = document.getElementById('mergeOrdersList');
             
-            html += `
-                <label style="display:flex; align-items:flex-start; gap:10px; padding:10px; background:white; border:1px solid #ddd; margin-bottom:6px; border-radius:6px; cursor:pointer;">
-                    <input type="checkbox" class="merge-order-chk" value="${ord.id}" style="margin-top:5px; transform: scale(1.2);">
-                    <div style="flex:1;">
-                        <div style="font-size:13px; font-weight:bold; color:#2c3e50; border-bottom:1px dashed #eee; padding-bottom:4px; margin-bottom:4px;">
-                            เวลาสั่ง: ${time} (เลขออเดอร์ #${ord.id})
-                        </div>
-                        <div style="font-size:12px; color:var(--text); line-height:1.4;">${itemsStr}</div>
-                    </div>
-                </label>
-            `;
-        });
-        
-        container.innerHTML = html || '<p style="color:var(--gray); text-align:center;">ไม่พบออเดอร์ที่สามารถรวมได้</p>';
-    } catch(e) {
-        container.innerHTML = '<p style="color:red; text-align:center;">โหลดล้มเหลว</p>';
-    }
-}
-
-async function executeMergeAndReprint() {
-    const tId = document.getElementById('mergeTableSelect').value;
-    if(!tId) {
-        alert('กรุณาเลือกโต๊ะก่อนครับ'); 
-        return;
-    }
-
-    const checkboxes = document.querySelectorAll('.merge-order-chk:checked');
-    if(checkboxes.length < 2) {
-        alert('กรุณาติ๊กเลือกใบออเดอร์อย่างน้อย 2 ใบเพื่อนำมารวมกันครับ');
-        return;
-    }
-
-    const selectedOrderIds = Array.from(checkboxes).map(c => c.value);
-    
-    if(!confirm(`ระบบจะทำการยุบรวม ${selectedOrderIds.length} ใบออเดอร์ที่เลือกเป็นใบเดียว และสั่งพิมพ์ซ้ำ ยืนยันใช่หรือไม่?`)) return;
-
-    try {
-        const res = await fetch('/api/admin/orders/merge', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ order_ids: selectedOrderIds, table_id: tId })
-        });
-        const data = await res.json();
-        
-        if(res.ok && data.success) {
-            alert('รวมออเดอร์และส่งคำสั่งพิมพ์ซ้ำสำเร็จ! (ใบใหม่กำลังจะพรินต์ออกครัว)');
-            closeMergeModal();
-            fetchKitchenOrders();
-            
-            // อัปเดตข้อมูลบนหน้าจอหากกำลังจัดการโต๊ะนี้อยู่
-            if (activeTableId === tId) {
-                loadTableOrders(tId);
-                renderSummaryBox();
+            if(!tId) {
+                container.innerHTML = '<p style="color:var(--gray); text-align:center; padding-top:20px;">กรุณาเลือกโต๊ะก่อน</p>';
+                return;
             }
-        } else {
-            alert('เกิดข้อผิดพลาดในการรวมออเดอร์: ' + (data.error || 'Unknown Error'));
+
+            container.innerHTML = '<p style="color:var(--gray); text-align:center;">กำลังโหลดรายการออเดอร์...</p>';
+            try {
+                const res = await fetch(`/api/orders/table/${tId}`);
+                const orders = await res.json();
+                
+                let html = '';
+                orders.forEach(ord => {
+                    if (ord.status === 'เสร็จสิ้น') return;
+                    let itemsStr = ord.items ? ord.items.map(i => `${i.name} <span style="color:#e74c3c;">x${i.quantity}</span>`).join(', ') : 'ไม่มีรายการ';
+                    let time = new Date(ord.created_at).toLocaleTimeString('th-TH');
+                    
+                    html += `
+                        <label style="display:flex; align-items:flex-start; gap:10px; padding:10px; background:white; border:1px solid #ddd; margin-bottom:6px; border-radius:6px; cursor:pointer;">
+                            <input type="checkbox" class="merge-order-chk" value="${ord.id}" style="margin-top:5px; transform: scale(1.2);">
+                            <div style="flex:1;">
+                                <div style="font-size:13px; font-weight:bold; color:#2c3e50; border-bottom:1px dashed #eee; padding-bottom:4px; margin-bottom:4px;">
+                                    เวลาสั่ง: ${time} (เลขออเดอร์ #${ord.id})
+                                </div>
+                                <div style="font-size:12px; color:var(--text); line-height:1.4;">${itemsStr}</div>
+                            </div>
+                        </label>
+                    `;
+                });
+                
+                container.innerHTML = html || '<p style="color:var(--gray); text-align:center;">ไม่พบออเดอร์ที่สามารถรวมได้</p>';
+            } catch(e) {
+                container.innerHTML = '<p style="color:red; text-align:center;">โหลดล้มเหลว</p>';
+            }
         }
-    } catch(e) {
-        alert('เชื่อมต่อเซิร์ฟเวอร์ล้มเหลว');
-    }
-}
+
+        async function executeMergeAndReprint() {
+            const tId = document.getElementById('mergeTableSelect').value;
+            if(!tId) {
+                alert('กรุณาเลือกโต๊ะก่อนครับ'); 
+                return;
+            }
+
+            const checkboxes = document.querySelectorAll('.merge-order-chk:checked');
+            if(checkboxes.length < 2) {
+                alert('กรุณาติ๊กเลือกใบออเดอร์อย่างน้อย 2 ใบเพื่อนำมารวมกันครับ');
+                return;
+            }
+
+            const selectedOrderIds = Array.from(checkboxes).map(c => c.value);
+            
+            if(!confirm(`ระบบจะทำการยุบรวม ${selectedOrderIds.length} ใบออเดอร์ที่เลือกเป็นใบเดียว และสั่งพิมพ์ซ้ำ ยืนยันใช่หรือไม่?`)) return;
+
+            try {
+                const res = await fetch('/api/admin/orders/merge', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ order_ids: selectedOrderIds, table_id: tId })
+                });
+                const data = await res.json();
+                
+                if(res.ok && data.success) {
+                    alert('รวมออเดอร์และส่งคำสั่งพิมพ์ซ้ำสำเร็จ! (ใบใหม่กำลังจะพรินต์ออกครัว)');
+                    closeMergeModal();
+                    fetchKitchenOrders();
+                    
+                    if (activeTableId === tId) {
+                        loadTableOrders(tId);
+                        renderSummaryBox();
+                    }
+                } else {
+                    alert('เกิดข้อผิดพลาดในการรวมออเดอร์: ' + (data.error || 'Unknown Error'));
+                }
+            } catch(e) {
+                alert('เชื่อมต่อเซิร์ฟเวอร์ล้มเหลว');
+            }
+        }
 
         setInterval(fetchKitchenOrders, 5000);
         fetchAdminData();
