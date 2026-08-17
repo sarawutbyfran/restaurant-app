@@ -1273,8 +1273,14 @@
                 });
 
                 summaryBox.innerHTML = `
-                    <div style="font-weight:bold; color:var(--gray); font-size:11px; margin: 10px 0 4px 0; border-top: 1px dashed #ddd; padding-top: 6px;">📦 ส่งเข้าครัวไปแล้ว:</div>
+                    <div style="max-height: 150px; overflow-y: auto; margin-bottom: 6px;">
+                        <div style="font-weight:bold; color:var(--gray); font-size:11px; margin-bottom: 4px; border-top: 1px dashed #ddd; padding-top: 6px;">📦 ส่งเข้าครัวไปแล้ว:</div>
                         ${submittedItemsHtml || '<div style="color:var(--gray); font-size:11px;">(ยังไม่มีรายการที่สั่ง)</div>'}
+                    </div>
+
+                    <div style="max-height: 150px; overflow-y: auto; margin-bottom: 6px;">
+                        <div style="font-weight:bold; color:var(--primary); font-size:11px; margin-bottom: 4px;">🛒 ตะกร้ารอส่ง:</div>
+                        ${cartItemsHtml || '<div style="color:var(--gray); font-size:11px;">(ตะกร้าว่าง)</div>'}
                     </div>
                     
                     ${currentCart.length > 0 ? `
@@ -1283,7 +1289,7 @@
                         <button onclick="confirmAndSubmitOrder(true)" style="flex: 1; background:#9b59b6; color:white; border:none; padding:8px; border-radius:6px; font-size:12px; cursor:pointer; font-weight:bold; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">🔕 ลงบิล (ไม่พิมพ์)</button>
                     </div>` : ''}
                     
-                    <div style="display:flex; gap:6px; margin-top:4px;">
+                    <div style="display:flex; gap:6px; margin-top:auto;">
                         <button onclick="cancelActiveTableOrder()" style="flex:1; background:#ffeaa7; color:#d63031; border:none; padding:6px; border-radius:6px; font-size:11px; cursor:pointer; font-weight:bold;">❌ ยกเลิก</button>
                         <button onclick="checkoutInlineTable()" style="flex:1; background:var(--primary); color:white; border:none; padding:6px; border-radius:6px; font-size:11px; cursor:pointer; font-weight:bold;">💰 เช็คบิล</button>
                     </div>
