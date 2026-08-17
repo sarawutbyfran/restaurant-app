@@ -911,11 +911,9 @@
 
             let displayName = menuName;
             if (optionsStr.length > 0) {
-                // ใส่ออปชั่นไว้ในวงเล็บ
                 displayName += ` (${optionsStr.join(', ')})`;
             }
 
-            // ค้นหารายการเดิมที่มีอยู่ในตะกร้า (เช็ค id, ชื่อ และ โน๊ตให้ตรงกัน)
             const existing = currentCart.find(i => i.menu_item_id === menuItemId && i.name === displayName && i.notes === (note || null));
             if (existing) {
                 existing.quantity += 1;
@@ -1021,7 +1019,6 @@
 
                     if (ord.items) {
                         ord.items.forEach(i => {
-                            // เพิ่มการแสดงผลโน๊ต ในหน้าออเดอร์ครัว
                             let noteDisplay = i.notes ? `<div style="color:#d35400; font-size:10.5px; margin-left: 8px;">-(โน๊ต: ${i.notes})</div>` : '';
                             itemsHtml += `<div style="padding: 3px 0;">• ${i.name} <strong>x${i.quantity}</strong> ${noteDisplay}</div>`;
                             
@@ -1255,100 +1252,93 @@
             renderSummaryBox();
         }
 
-        async function fetchKitchenOrders() {
+        async function renderSummaryBox() {
+            const summaryBox = document.getElementById('tableSummaryBox');
+            if(!activeTableId) {
+                summaryBox.innerHTML = `<div style="font-size:11px; color:var(--gray); text-align:center; padding:40px 0;">ยังไม่ได้เลือกโต๊ะหรือคิว<br>(กรุณาคลิกเลือกจากด้านล่าง)</div>`;
+                return;
+            }
+
             try {
-                const res = await fetch('/api/admin/orders');
+                const res = await fetch(`/api/orders/table/${activeTableId}`);
                 const orders = await res.json();
-                currentActiveOrders = orders;
-                
-                renderActiveQueues(orders);
-                renderTablesAndZones();
 
-                const container = document.getElementById('kitchen-orders-list');
-                const pendingKitchenOrders = orders.filter(ord => ord.status !== 'เสร็จสิ้น');
-
-                if (pendingKitchenOrders.length === 0) {
-                    container.innerHTML = '<p style="color:var(--gray); font-size:11px;">ไม่มีออเดอร์ค้างในครัว</p>';
-                    return;
-                }
-
-                let htmlContent = '';
-
-                pendingKitchenOrders.forEach(ord => {
-                    let tableStr = String(ord.table_id);
-                    let locationLabel = tableStr.startsWith('Z') ? `ซุ้ม ${tableStr}` : (isNaN(tableStr) ? `คิว ${tableStr}` : `โต๊ะ ${tableStr}`);
-
-                    let itemsHtml = '';
-                    let hasK1 = false;
-                    let hasK2 = false;
-                    let hasDrk = false;
-
+                let allRawItems = [];
+                orders.forEach(ord => {
                     if (ord.items) {
                         ord.items.forEach(i => {
-                            // เพิ่มการแสดงผลโน๊ต ในหน้าออเดอร์ครัว
-                            let noteDisplay = i.notes ? `<div style="color:#d35400; font-size:10.5px; margin-left: 8px;">-(โน๊ต: ${i.notes})</div>` : '';
-                            itemsHtml += `<div style="padding: 3px 0;">• ${i.name} <strong>x${i.quantity}</strong> ${noteDisplay}</div>`;
-                            
-                            let matchedMenu = null;
-                            if (i.menu_item_id) {
-                                matchedMenu = allMenus.find(m => String(m.id) === String(i.menu_item_id));
-                            }
-                            if (!matchedMenu) {
-                                const cleanName = i.name.split(' [')[0].split(' (+')[0].trim();
-                                matchedMenu = allMenus.find(m => m.name.trim() === cleanName);
-                            }
-
-                            const kType = matchedMenu ? (matchedMenu.kitchen_type || 'kitchen_1') : 'kitchen_1';
-                            
-                            if (kType === 'drink') hasDrk = true;
-                            else if (kType === 'kitchen_2') hasK2 = true;
-                            else hasK1 = true;
+                            allRawItems.push(i);
                         });
                     }
-                    
-                    let p1 = ord.printed_kitchen_1 === 1;
-                    let p2 = ord.printed_kitchen_2 === 1;
-                    let p3 = ord.printed_drink === 1;
+                });
+                let uniqueSubmittedItems = consolidateItems(allRawItems);
 
-                    let k1Done = !hasK1 || p1;
-                    let k2Done = !hasK2 || p2;
-                    let drkDone = !hasDrk || p3;
-
-                    let allPrinted = k1Done && k2Done && drkDone;
-                    let isBlinking = !allPrinted;
-
-                    let statusBadge = `
-                        <div style="font-size:10px; margin-top:2px; display:flex; gap:6px; flex-wrap:wrap;">
-                            ${hasK1 ? `<span style="color:${p1 ? '#2ed573' : '#ffa502'}">ครัว 1: ${p1 ? '🖨️ พิมพ์แล้ว' : '⏳ รอพิมพ์'}</span>` : ''}
-                            ${hasK2 ? `<span style="color:${p2 ? '#2ed573' : '#ffa502'}">ครัว 2: ${p2 ? '🖨️ พิมพ์แล้ว' : '⏳ รอพิมพ์'}</span>` : ''}
-                            ${hasDrk ? `<span style="color:${p3 ? '#2ed573' : '#ffa502'}">เครื่องดื่ม: ${p3 ? '🖨️ พิมพ์แล้ว' : '⏳ รอพิมพ์'}</span>` : ''}
-                        </div>
-                    `;
-
-                    let cardStyle = allPrinted ? 'border-left-color: #3742fa; background: #f0f4ff;' : '';
-
-                    htmlContent += `
-                        <div class="kitchen-card ${isBlinking ? 'unprinted-blink' : ''}" style="${cardStyle}">
-                            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 1px dashed #eee; padding-bottom: 3px; margin-bottom: 3px;">
-                                <span style="font-weight:bold; color:var(--primary); font-size: 12px;">📍 ${locationLabel}</span>
-                                <span style="font-size:10px; color:var(--gray);">
-                                    ${allPrinted ? '✅ พิมพ์ครบแล้ว' : '⏳ กำลังพิมพ์'}
-                                </span>
+                let submittedItemsHtml = '';
+                uniqueSubmittedItems.forEach((i) => {
+                    let noteDisplay = i.notes ? `<div style="color:#d35400; font-size:10px; margin-top:2px;">-(โน๊ต: ${i.notes})</div>` : '';
+                    submittedItemsHtml += `
+                        <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 2px; border-bottom:1px solid #f8f9fa; font-size:11px;">
+                            <div style="flex:1; padding-right: 5px;">
+                                <span style="font-weight:500;">${i.name}</span>
+                                ${noteDisplay}
                             </div>
-                            <div style="color:var(--text); margin:4px 0; line-height: 1.4;">${itemsHtml}</div>
-                            ${statusBadge}
-                            <div style="display:flex; justify-content:flex-end; gap:4px; margin-top:6px; border-top: 1px solid #eee; padding-top: 4px;">
-                                <button class="btn-action" onclick="completeSingleOrder('${ord.id}')">✔️ เสร็จ</button>
-                                <button class="btn-print" onclick="resetOrderToPrint('${ord.id}')">🔄 พิมพ์ใหม่</button>
+                            <div style="display:flex; align-items:center; gap: 8px;">
+                                <span>x <strong style="font-size:12px;">${i.quantity}</strong> <span style="color:var(--primary);">(${ (i.price * i.quantity).toFixed(2) }฿)</span></span>
+                                <button onclick="deleteAggregatedOrderItem('${activeTableId}', '${i.name}')" style="background:#ff4757; color:white; border:none; padding:3px 6px; border-radius:4px; cursor:pointer; font-size:10px; font-weight:bold;">❌ ลบ</button>
                             </div>
                         </div>
                     `;
                 });
-                
-                container.innerHTML = htmlContent;
 
-            } catch (err) {
-                console.error(err);
+                let cartItemsHtml = '';
+                let cartTotal = 0;
+                currentCart.forEach((item, idx) => {
+                    cartTotal += item.price * item.quantity;
+                    let noteDisplay = item.notes ? `<div style="color:#d35400; font-size:10px; margin-top:2px;">-(โน๊ต: ${item.notes})</div>` : '';
+                    cartItemsHtml += `
+                        <div style="display:flex; justify-content:space-between; align-items:center; background:#fff3cd; padding:5px 6px; margin-bottom:4px; border-radius:6px; font-size:11px; font-weight:500;">
+                            <div style="flex:1; padding-right: 5px;">
+                                <span>${item.name}</span>
+                                ${noteDisplay}
+                            </div>
+                            <div style="display:flex; align-items:center; gap:4px;">
+                                <button onclick="updateCartQuantity(${idx}, -1)" style="padding:2px 6px; font-size:12px; font-weight:bold; cursor:pointer; border-radius:4px; border:1px solid #ccc; background:white;">-</button>
+                                <span style="font-size:11px; font-weight:bold; min-width:16px; text-align:center;">${item.quantity}</span>
+                                <button onclick="updateCartQuantity(${idx}, 1)" style="padding:2px 6px; font-size:12px; font-weight:bold; cursor:pointer; border-radius:4px; border:1px solid #ccc; background:white;">+</button>
+                                <span style="color:var(--primary); margin-left:4px; font-weight:bold;">${(item.price * item.quantity).toFixed(2)}฿</span>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                summaryBox.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #eee; padding-bottom:6px;">
+                        <strong style="font-size:13px; color:var(--primary);">โต๊ะ/คิว: ${activeTableTitleText}</strong>
+                        <button onclick="openTableModalFromSummary()" style="background:var(--light-gray); border:1px solid #ddd; padding:4px 8px; border-radius:4px; font-size:10px; cursor:pointer; font-weight:bold;">🔍 เต็มจอ</button>
+                    </div>
+                    
+                    <div style="flex:1; overflow-y: auto; font-size:11px; margin:8px 0; padding-right: 4px; min-height:120px;">
+                        <div style="font-weight:bold; color:var(--success); font-size:11px; margin-bottom:4px;">🛒 ตะกร้า (รอส่ง):</div>
+                        ${cartItemsHtml || '<div style="color:var(--gray); font-size:11px; margin-bottom:8px;">(ยังไม่ได้เลือกเมนูในตะกร้า)</div>'}
+                        
+                        ${currentCart.length > 0 ? `
+                            <div style="display:flex; gap:6px; margin: 8px 0;">
+                                <button onclick="confirmAndSubmitOrder(true)" style="flex:1; background:#8e44ad; color:white; border:none; padding:7px; border-radius:6px; font-size:11px; cursor:pointer; font-weight:bold;">🔕 ลงบิล (ไม่พิมพ์)</button>
+                                <button onclick="confirmAndSubmitOrder(false)" style="flex:1; background:var(--success); color:white; border:none; padding:7px; border-radius:6px; font-size:11px; cursor:pointer; font-weight:bold;">🚀 พิมพ์เข้าครัว (${cartTotal.toFixed(2)}฿)</button>
+                            </div>
+                        ` : ''}
+
+                        <div style="font-weight:bold; color:var(--gray); font-size:11px; margin: 10px 0 4px 0; border-top: 1px dashed #ddd; padding-top: 6px;">📦 รายการอาหารที่สั่งแล้ว:</div>
+                        ${submittedItemsHtml || '<div style="color:var(--gray); font-size:11px;">(ยังไม่มีรายการที่สั่ง)</div>'}
+                    </div>
+                    
+                    <div style="display:flex; gap:6px; margin-top:4px;">
+                        <button onclick="cancelActiveTableOrder()" style="flex:1; background:#ffeaa7; color:#d63031; border:none; padding:6px; border-radius:6px; font-size:11px; cursor:pointer; font-weight:bold;">❌ ยกเลิก</button>
+                        <button onclick="checkoutInlineTable()" style="flex:1; background:var(--primary); color:white; border:none; padding:6px; border-radius:6px; font-size:11px; cursor:pointer; font-weight:bold;">💰 เช็คบิล</button>
+                    </div>
+                `;
+            } catch (e) {
+                summaryBox.innerHTML = '<p style="color:var(--primary); font-size:11px; text-align:center;">โหลดข้อมูลไม่สำเร็จ</p>';
             }
         }
 
@@ -1514,7 +1504,7 @@
                 alert('ยกเลิกและล้างออเดอร์เรียบร้อยแล้ว');
                 activeTableId = null;
                 currentCart = [];
-                document.getElementById('tableSummaryBox').innerHTML = `<div style="font-size:11px; color:var(--gray); text-align:center; padding:30px 0;">ยังไม่ได้เลือกโต๊ะหรือคิว<br>(กรุณาคลิกเลือกจากด้านบน)</div>`;
+                document.getElementById('tableSummaryBox').innerHTML = `<div style="font-size:11px; color:var(--gray); text-align:center; padding:30px 0;">ยังไม่ได้เลือกโต๊ะหรือคิว<br>(กรุณาคลิกเลือกจากด้านล่าง)</div>`;
                 fetchKitchenOrders();
             }
         }
