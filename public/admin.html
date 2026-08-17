@@ -89,11 +89,20 @@
             border-right: 1px solid #ddd;
             background: #fff;
         }
-        .section-header {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
+.section-header {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    
+    /* เพิ่มโค้ดส่วนนี้เพื่อ Fix ช่องค้นหาให้อยู่ด้านบน */
+    position: sticky;
+    top: -12px;          /* ชดเชยระยะ padding ของกล่องที่ครอบอยู่ */
+    background: #fff;    /* ใส่พื้นหลังสีขาวเพื่อไม่ให้รูปเมนูเลื่อนขึ้นมาซ้อนทับ */
+    z-index: 10;         /* ให้อยู่เลเยอร์หน้าสุดเสมอ */
+    padding-top: 12px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #f1f2f6; /* เพิ่มเส้นคั่นขอบล่างจางๆ ให้ดูมีมิติเวลาเลื่อน */
+}
         
         .menu-grid-admin {
             display: grid;
