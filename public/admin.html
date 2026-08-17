@@ -1307,9 +1307,9 @@
                     </div>
                     
                     ${currentCart.length > 0 ? `
-                        <div style="display:flex; gap:6px; margin-bottom:6px;">
-                            <button onclick="confirmAndSubmitOrder(false)" style="flex:1; background:var(--success); color:white; border:none; padding:7px; border-radius:6px; font-size:11px; cursor:pointer; font-weight:bold;">🚀 พิมพ์เข้าครัว (${cartTotal.toFixed(2)}฿)</button>
-                            <button onclick="confirmAndSubmitOrder(true)" style="flex:1; background:#8e44ad; color:white; border:none; padding:7px; border-radius:6px; font-size:11px; cursor:pointer; font-weight:bold;">🔕 ลงบิล (ไม่พิมพ์)</button>
+                        <div style="display:flex; flex-direction: column; gap:6px; margin-bottom:6px;">
+                            <button onclick="confirmAndSubmitOrder(true)" style="background:#8e44ad; color:white; border:none; padding:7px; border-radius:6px; font-size:11px; cursor:pointer; font-weight:bold;">🔕 ลงบิล (ไม่พิมพ์)</button>
+                            <button onclick="confirmAndSubmitOrder(false)" style="background:var(--success); color:white; border:none; padding:7px; border-radius:6px; font-size:11px; cursor:pointer; font-weight:bold;">🚀 พิมพ์เข้าครัว (${cartTotal.toFixed(2)}฿)</button>
                         </div>
                     ` : ''}
                     
