@@ -419,7 +419,7 @@
         </div>
     </div>
 
-    <!-- Modal จัดการโต๊ะแบบเต็มจอ (สำหรับจัดการรายการ / แก้ไขจำนวน / ลบ / ย้ายโต๊ะ) -->
+    <!-- Modal จัดการโต๊ะแบบเต็มจอ -->
     <div class="modal" id="tableModal">
         <div class="modal-content" style="width: 850px; max-width: 95vw; min-height: 65vh;">
             <h3 id="modalTableTitle" style="margin-top:0;">จัดการโต๊ะ/คิว</h3>
@@ -911,13 +911,12 @@
 
             let displayName = menuName;
             if (optionsStr.length > 0) {
-                displayName += ` (+${optionsStr.join(', ')})`;
-            }
-            if (note) {
-                displayName += ` [โน๊ต: ${note}]`;
+                // ใส่ออปชั่นไว้ในวงเล็บ
+                displayName += ` (${optionsStr.join(', ')})`;
             }
 
-            const existing = currentCart.find(i => i.menu_item_id === menuItemId && i.name === displayName);
+            // ค้นหารายการเดิมที่มีอยู่ในตะกร้า (เช็ค id, ชื่อ และ โน๊ตให้ตรงกัน)
+            const existing = currentCart.find(i => i.menu_item_id === menuItemId && i.name === displayName && i.notes === (note || null));
             if (existing) {
                 existing.quantity += 1;
             } else {
@@ -1277,9 +1276,10 @@
 
                 let submittedItemsHtml = '';
                 uniqueSubmittedItems.forEach((i) => {
+                    let noteDisplay = i.notes ? `<br><span style="color:#d35400; font-size:10px;">-(โน๊ต: ${i.notes})</span>` : '';
                     submittedItemsHtml += `
                         <div style="display:flex; justify-content:space-between; align-items:center; padding:4px 2px; border-bottom:1px solid #f8f9fa; font-size:11px;">
-                            <span>${i.name} x <strong style="font-size:12px;">${i.quantity}</strong> <span style="color:var(--primary);">(${ (i.price * i.quantity).toFixed(2) }฿)</span></span>
+                            <span>${i.name} ${noteDisplay} <br>x <strong style="font-size:12px;">${i.quantity}</strong> <span style="color:var(--primary);">(${ (i.price * i.quantity).toFixed(2) }฿)</span></span>
                             <button onclick="deleteAggregatedOrderItem('${activeTableId}', '${i.name}')" style="background:#ff4757; color:white; border:none; padding:3px 6px; border-radius:4px; cursor:pointer; font-size:10px; font-weight:bold;">❌ ลบ</button>
                         </div>
                     `;
@@ -1289,9 +1289,10 @@
                 let cartTotal = 0;
                 currentCart.forEach((item, idx) => {
                     cartTotal += item.price * item.quantity;
+                    let noteDisplay = item.notes ? `<br><span style="color:#d35400; font-size:10px;">-(โน๊ต: ${item.notes})</span>` : '';
                     cartItemsHtml += `
                         <div style="display:flex; justify-content:space-between; align-items:center; background:#fff3cd; padding:5px 6px; margin-bottom:4px; border-radius:6px; font-size:11px; font-weight:500;">
-                            <span>${item.name}</span>
+                            <span>${item.name} ${noteDisplay}</span>
                             <div style="display:flex; align-items:center; gap:4px;">
                                 <button onclick="updateCartQuantity(${idx}, -1)" style="padding:2px 6px; font-size:12px; font-weight:bold; cursor:pointer; border-radius:4px; border:1px solid #ccc; background:white;">-</button>
                                 <span style="font-size:11px; font-weight:bold; min-width:16px; text-align:center;">${item.quantity}</span>
@@ -1390,10 +1391,12 @@
 
                 let itemsHtml = '';
                 uniqueItems.forEach((i) => {
+                    let noteDisplay = i.notes ? `<div style="font-size:12px; color:#d35400; margin-top:2px;">-(โน๊ต: ${i.notes})</div>` : '';
                     itemsHtml += `
                         <div style="display:flex; justify-content:space-between; align-items:center; padding:10px; background:white; border:1px solid #e0e0e0; border-radius:6px; margin-bottom:8px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
                             <div style="flex:1;">
                                 <div style="font-size:14px; font-weight:bold; color:var(--text);">${i.name}</div>
+                                ${noteDisplay}
                                 <div style="font-size:11px; color:var(--gray); margin-top:2px;">ราคา: ${Number(i.price).toFixed(2)} ฿ / หน่วย</div>
                             </div>
                             
