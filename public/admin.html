@@ -673,17 +673,28 @@
 
     <!-- Modal สำหรับเลือกการพิมพ์ตอนเช็คบิล -->
     <div class="modal" id="checkoutModal">
-        <div class="modal-content" style="width: 450px; text-align: center;">
+        <div class="modal-content" style="width: 700px; max-width: 95vw; text-align: center;">
             <h3 style="margin-top:0; color: var(--primary); font-size: 18px;">💰 เลือกรูปแบบการเช็คบิล</h3>
             <p id="checkoutTableTitle" style="font-size: 14px; font-weight: bold; margin-bottom: 20px; color: var(--text);"></p>
             
-            <div style="display: flex; flex-direction: column; gap: 10px;">
-                <button onclick="executeCheckout('ไม่ต้องพิมพ์')" style="background: #747d8c; color: white; padding: 12px; border: none; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer;">❌ 1. ไม่ต้องพิมพ์ใบเสร็จ</button>
-                <button onclick="executeCheckout('รอพิมพ์ใบเสร็จ')" style="background: #3742fa; color: white; padding: 12px; border: none; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer;">🖨️ 2. พิมพ์ใบเสร็จ</button>
-                <button onclick="executeCheckout('รอพิมพ์ใบเสร็จ+QR')" style="background: var(--success); color: white; padding: 12px; border: none; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer;">📱 3. พิมพ์ใบเสร็จพร้อม คิวอาร์โค้ด</button>
+            <div style="display: flex; gap: 12px; width: 100%; box-sizing: border-box; margin-bottom: 15px;">
+                <button onclick="executeCheckout('ไม่ต้องพิมพ์')" style="flex: 1; background: #747d8c; color: white; padding: 25px 10px; border: none; border-radius: 12px; font-size: 15px; font-weight: bold; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: 0.2s;">
+                    <span style="font-size: 24px;">❌</span>
+                    <span>1. ไม่พิม</span>
+                </button>
+                <button onclick="executeCheckout('รอพิมพ์ใบเสร็จ')" style="flex: 1; background: #3742fa; color: white; padding: 25px 10px; border: none; border-radius: 12px; font-size: 15px; font-weight: bold; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: 0.2s;">
+                    <span style="font-size: 24px;">🖨️</span>
+                    <span>2. พิมพ์</span>
+                </button>
+                <button onclick="executeCheckout('รอพิมพ์ใบเสร็จ+QR')" style="flex: 1; background: var(--success); color: white; padding: 25px 10px; border: none; border-radius: 12px; font-size: 15px; font-weight: bold; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: 0.2s;">
+                    <span style="font-size: 24px;">📱</span>
+                    <span>3. พิมพ์+QR</span>
+                </button>
             </div>
             
-            <button onclick="closeCheckoutModal()" style="margin-top: 20px; background: #eee; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-size: 12px;">ยกเลิก</button>
+            <div style="margin-top: 15px; border-top: 1px solid #eee; padding-top: 15px;">
+                <button onclick="closeCheckoutModal()" style="background: #e2e8f0; color: var(--text); padding: 8px 24px; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: bold;">ยกเลิก</button>
+            </div>
         </div>
     </div>
 
