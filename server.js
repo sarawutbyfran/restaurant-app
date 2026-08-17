@@ -621,7 +621,9 @@ app.get('/api/admin/sales-history', async (req, res) => {
 
 app.get('/api/admin/unprinted-receipts', async (req, res) => {
     try {
-        const result = await pool.query("SELECT * FROM sales_history WHERE print_status = 'รอพิมพ์ใบเสร็จ' ORDER BY checked_out_at ASC");
+        const result = await pool.query(
+            "SELECT * FROM sales_history WHERE print_status IN ('รอพิมพ์ใบเสร็จ', 'รอพิมพ์ใบเสร็จ+QR') ORDER BY checked_out_at ASC"
+        );
         res.json(result.rows);
     } catch (err) {
         res.status(500).json({ error: err.message });
