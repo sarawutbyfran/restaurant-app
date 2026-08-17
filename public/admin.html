@@ -89,20 +89,18 @@
             border-right: 1px solid #ddd;
             background: #fff;
         }
-.section-header {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    
-    /* เพิ่มโค้ดส่วนนี้เพื่อ Fix ช่องค้นหาให้อยู่ด้านบน */
-    position: sticky;
-    top: -12px;          /* ชดเชยระยะ padding ของกล่องที่ครอบอยู่ */
-    background: #fff;    /* ใส่พื้นหลังสีขาวเพื่อไม่ให้รูปเมนูเลื่อนขึ้นมาซ้อนทับ */
-    z-index: 10;         /* ให้อยู่เลเยอร์หน้าสุดเสมอ */
-    padding-top: 12px;
-    padding-bottom: 10px;
-    border-bottom: 1px solid #f1f2f6; /* เพิ่มเส้นคั่นขอบล่างจางๆ ให้ดูมีมิติเวลาเลื่อน */
-}
+        .section-header {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            position: sticky;
+            top: -12px;
+            background: #fff;
+            z-index: 10;
+            padding-top: 12px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #f1f2f6;
+        }
         
         .menu-grid-admin {
             display: grid;
@@ -678,8 +676,8 @@
         let currentActiveOrders = [];
         let currentCart = [];
         let salesHistoryCache = {};
-        let adminSearchTimeout; // ตัวแปรสำหรับจัดการการหน่วงเวลาค้นหาของหน้า Admin
-        let manageMenuSearchTimeout; // ตัวแปรสำหรับหน่วงเวลาช่องค้นหาในหน้าต่างตั้งค่าเมนู
+        let adminSearchTimeout; 
+        let manageMenuSearchTimeout; 
 
         const categoryMap = {
             1: 'อาหารตามสั่ง', 
@@ -732,7 +730,6 @@
         }
 
         function handleGlobalSearch(e) {
-            // ระบบหน่วงเวลา (Debounce) ค้นหา
             clearTimeout(adminSearchTimeout);
             adminSearchTimeout = setTimeout(() => {
                 const val = e.target.value.trim().toLowerCase();
@@ -805,7 +802,6 @@
                 return;
             }
 
-            // ใช้ตัวแปรสะสม HTML เพื่อ Batch DOM rendering
             let htmlContent = '';
 
             filtered.forEach(item => {
@@ -837,7 +833,6 @@
                 
                 const safeName = item.name.replace(/'/g, "\\'");
 
-                // เปลี่ยน innerHTML += เป็นการนำโค้ดไปต่อในตัวแปร และเพิ่ม loading="lazy" ในรูปภาพ
                 htmlContent += `
                     <div class="admin-menu-card" onclick="addMenuToCartPrompt(${item.id}, '${safeName}', ${item.price}, ${isAllowEgg})">
                         <img src="${item.image_url || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c'}" alt="" loading="lazy">
@@ -853,7 +848,6 @@
                 `;
             });
             
-            // นำ HTML ไปใส่รวดเดียว
             grid.innerHTML = htmlContent;
         }
 
@@ -917,7 +911,8 @@
             renderSummaryBox();
         }
 
-async function confirmAndSubmitOrder(isSilent = false) {            if (!activeTableId || currentCart.length === 0) return;
+        async function confirmAndSubmitOrder(isSilent = false) {            
+            if (!activeTableId || currentCart.length === 0) return;
 
             try {
                 const initRes = await fetch('/api/open-table', {
@@ -937,10 +932,10 @@ async function confirmAndSubmitOrder(isSilent = false) {            if (!activeT
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-    table_id: activeTableId,
-    token: initData.token,
-    is_silent: isSilent, // ส่งค่าไปยัง Backend ว่าต้องพิมพ์เข้าครัวหรือไม่
-    items: currentCart.map(i => ({ 
+                        table_id: activeTableId,
+                        token: initData.token,
+                        is_silent: isSilent,
+                        items: currentCart.map(i => ({ 
                             menu_item_id: i.menu_item_id, 
                             name: i.name,
                             quantity: i.quantity, 
@@ -977,7 +972,6 @@ async function confirmAndSubmitOrder(isSilent = false) {            if (!activeT
                 renderTablesAndZones();
 
                 const container = document.getElementById('kitchen-orders-list');
-                
                 const pendingKitchenOrders = orders.filter(ord => ord.status !== 'เสร็จสิ้น');
 
                 if (pendingKitchenOrders.length === 0) {
@@ -1112,7 +1106,8 @@ async function confirmAndSubmitOrder(isSilent = false) {            if (!activeT
             }
         }
 
-async function printReceiptAndCheckout(tableId, titleText, printOption = 'รอพิมพ์ใบเสร็จ') {            try {
+        async function printReceiptAndCheckout(tableId, titleText, printOption = 'รอพิมพ์ใบเสร็จ') {            
+            try {
                 const res = await fetch(`/api/orders/table/${tableId}`);
                 const orders = await res.json();
                 
@@ -1138,12 +1133,12 @@ async function printReceiptAndCheckout(tableId, titleText, printOption = 'รอ
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-    table_id: String(tableId),
-    title: titleText,
-    total_price: totalPrice,
-    items: allItemsToSave,
-    print_status: printOption // แจ้ง backend 
-})
+                        table_id: String(tableId),
+                        title: titleText,
+                        total_price: totalPrice,
+                        items: allItemsToSave,
+                        print_status: printOption 
+                    })
                 });
 
                 await fetch(`/api/orders/table/${tableId}`, {
@@ -1296,6 +1291,7 @@ async function printReceiptAndCheckout(tableId, titleText, printOption = 'รอ
             } catch (e) {
                 summaryBox.innerHTML = '<p style="color:var(--primary); font-size:11px; text-align:center;">โหลดข้อมูลไม่สำเร็จ</p>';
             }
+        }
 
         async function deleteAggregatedOrderItem(tableId, itemName) {
             if(!confirm(`ต้องการลบเมนู "${itemName}" ทั้งหมดออกจากโต๊ะนี้ใช่หรือไม่?`)) return;
@@ -1462,40 +1458,37 @@ async function printReceiptAndCheckout(tableId, titleText, printOption = 'รอ
             }
         }
 
-        // --- ระบบจัดการ Checkout Modal ---
-let checkoutTargetTableId = null;
-let checkoutTargetTitle = null;
+        let checkoutTargetTableId = null;
+        let checkoutTargetTitle = null;
 
-function openCheckoutModal(tableId, titleText) {
-    checkoutTargetTableId = tableId;
-    checkoutTargetTitle = titleText;
-    document.getElementById('checkoutTableTitle').innerText = `เช็คบิล: ${titleText}`;
-    document.getElementById('checkoutModal').style.display = 'flex';
-}
+        function openCheckoutModal(tableId, titleText) {
+            checkoutTargetTableId = tableId;
+            checkoutTargetTitle = titleText;
+            document.getElementById('checkoutTableTitle').innerText = `เช็คบิล: ${titleText}`;
+            document.getElementById('checkoutModal').style.display = 'flex';
+        }
 
-function closeCheckoutModal() {
-    document.getElementById('checkoutModal').style.display = 'none';
-}
+        function closeCheckoutModal() {
+            document.getElementById('checkoutModal').style.display = 'none';
+        }
 
-function checkoutInlineTable() {
-    if(!activeTableId) return;
-    openCheckoutModal(activeTableId, activeTableTitleText);
-}
+        function checkoutInlineTable() {
+            if(!activeTableId) return;
+            openCheckoutModal(activeTableId, activeTableTitleText);
+        }
 
-function checkoutTable() {
-    if(!activeTableId) return;
-    openCheckoutModal(activeTableId, activeTableTitleText);
-}
+        function checkoutTable() {
+            if(!activeTableId) return;
+            openCheckoutModal(activeTableId, activeTableTitleText);
+        }
 
-function executeCheckout(printOption) {
-    printReceiptAndCheckout(checkoutTargetTableId, checkoutTargetTitle, printOption);
-    closeCheckoutModal();
-    // ถ้าหน้าต่างจัดการโต๊ะเปิดอยู่ ให้ปิดด้วย
-    if(document.getElementById('tableModal').style.display === 'flex') {
-        closeTableModal();
-    }
-}
-// ------------------------------
+        function executeCheckout(printOption) {
+            printReceiptAndCheckout(checkoutTargetTableId, checkoutTargetTitle, printOption);
+            closeCheckoutModal();
+            if(document.getElementById('tableModal').style.display === 'flex') {
+                closeTableModal();
+            }
+        }
 
         async function openWalkInOrder() {
             try {
@@ -1790,6 +1783,7 @@ function executeCheckout(printOption) {
                 }
             }
         }
+
         function openMergeModal() {
             document.getElementById('mergeModal').style.display = 'flex';
             populateMergeTableSelect();
@@ -1918,20 +1912,21 @@ function executeCheckout(printOption) {
         setInterval(fetchKitchenOrders, 5000);
         fetchAdminData();
     </script>
+
     <!-- Modal สำหรับเลือกการพิมพ์ตอนเช็คบิล -->
-<div class="modal" id="checkoutModal">
-    <div class="modal-content" style="width: 450px; text-align: center;">
-        <h3 style="margin-top:0; color: var(--primary); font-size: 18px;">💰 เลือกรูปแบบการเช็คบิล</h3>
-        <p id="checkoutTableTitle" style="font-size: 14px; font-weight: bold; margin-bottom: 20px; color: var(--text);"></p>
-        
-        <div style="display: flex; flex-direction: column; gap: 10px;">
-            <button onclick="executeCheckout('ไม่ต้องพิมพ์')" style="background: #747d8c; color: white; padding: 12px; border: none; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer;">❌ 1. ไม่ต้องพิมพ์ใบเสร็จ</button>
-            <button onclick="executeCheckout('รอพิมพ์ใบเสร็จ')" style="background: #3742fa; color: white; padding: 12px; border: none; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer;">🖨️ 2. พิมพ์ใบเสร็จ</button>
-            <button onclick="executeCheckout('รอพิมพ์ใบเสร็จ+QR')" style="background: var(--success); color: white; padding: 12px; border: none; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer;">📱 3. พิมพ์ใบเสร็จพร้อม คิวอาร์โค้ด</button>
+    <div class="modal" id="checkoutModal">
+        <div class="modal-content" style="width: 450px; text-align: center;">
+            <h3 style="margin-top:0; color: var(--primary); font-size: 18px;">💰 เลือกรูปแบบการเช็คบิล</h3>
+            <p id="checkoutTableTitle" style="font-size: 14px; font-weight: bold; margin-bottom: 20px; color: var(--text);"></p>
+            
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <button onclick="executeCheckout('ไม่ต้องพิมพ์')" style="background: #747d8c; color: white; padding: 12px; border: none; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer;">❌ 1. ไม่ต้องพิมพ์ใบเสร็จ</button>
+                <button onclick="executeCheckout('รอพิมพ์ใบเสร็จ')" style="background: #3742fa; color: white; padding: 12px; border: none; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer;">🖨️ 2. พิมพ์ใบเสร็จ</button>
+                <button onclick="executeCheckout('รอพิมพ์ใบเสร็จ+QR')" style="background: var(--success); color: white; padding: 12px; border: none; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer;">📱 3. พิมพ์ใบเสร็จพร้อม คิวอาร์โค้ด</button>
+            </div>
+            
+            <button onclick="closeCheckoutModal()" style="margin-top: 20px; background: #eee; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-size: 12px;">ยกเลิก</button>
         </div>
-        
-        <button onclick="closeCheckoutModal()" style="margin-top: 20px; background: #eee; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-size: 12px;">ยกเลิก</button>
     </div>
-</div>
 </body>
 </html>
