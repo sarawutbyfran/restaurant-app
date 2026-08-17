@@ -269,7 +269,14 @@ app.post('/api/orders', async (req, res) => {
             return res.status(403).json({ error: 'โต๊ะนี้เช็คบิลแล้ว ขอบคุณที่ใช้บริการ' });
         }
         
-        const orderResult = await client.query('INSERT INTO orders (table_id) VALUES ($1) RETURNING id', [upperTableId]);
+        let insertQuery = 'INSERT INTO orders (table_id) VALUES ($1) RETURNING id';
+let params = [upperTableId];
+
+// ถ้าระบุว่าไม่พิมพ์ (is_silent = true) ให้ปรับสถานะเป็นเสร็จสิ้น และถือว่าพิมพ์ครัวไปแล้วทั้งหมดทันที
+if (req.body.is_silent) {
+    insertQuery = "INSERT INTO orders (table_id, status, printed_kitchen_1, printed_kitchen_2, printed_drink) VALUES ($1, 'เสร็จสิ้น', 1, 1, 1) RETURNING id";
+}
+const orderResult = await client.query(insertQuery, params);
         const orderId = orderResult.rows[0].id;
         
         for (const item of items) {
@@ -576,13 +583,19 @@ app.delete('/api/menu/:id', async (req, res) => {
 
 app.post('/api/admin/sales-history', async (req, res) => {
     try {
-        const { table_id, title, total_price, items } = req.body;
+        // ใช้โค้ดชุดใหม่ทั้งหมด ไม่ต้องมีบรรทัดซ้ำ
+        const { table_id, title, total_price, items, print_status } = req.body;
         const consolidatedItems = consolidateItems(items || []);
+
+        // ถ้าไม่มีสถานะส่งมา ให้ใช้ค่าเริ่มต้นเป็น 'รอพิมพ์ใบเสร็จ'
+        const statusToSave = print_status || 'รอพิมพ์ใบเสร็จ';
+
         const result = await pool.query(
             `INSERT INTO sales_history (table_id, title, total_price, items, print_status) 
-             VALUES ($1, $2, $3, $4, 'รอพิมพ์ใบเสร็จ') RETURNING id`,
-            [table_id, title, total_price, JSON.stringify(consolidatedItems)]
+             VALUES ($1, $2, $3, $4, $5) RETURNING id`,
+            [table_id, title, total_price, JSON.stringify(consolidatedItems), statusToSave]
         );
+        
         res.status(200).json({ success: true, id: result.rows[0].id });
     } catch (err) {
         res.status(500).json({ error: err.message });
