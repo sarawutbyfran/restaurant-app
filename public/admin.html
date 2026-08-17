@@ -419,6 +419,7 @@
         </div>
     </div>
 
+    <!-- Modal จัดการโต๊ะแบบเต็มจอ (สำหรับจัดการรายการ / แก้ไขจำนวน / ลบ / ย้ายโต๊ะ) -->
     <div class="modal" id="tableModal">
         <div class="modal-content" style="width: 850px; max-width: 95vw; min-height: 65vh;">
             <h3 id="modalTableTitle" style="margin-top:0;">จัดการโต๊ะ/คิว</h3>
@@ -495,6 +496,7 @@
         </div>
     </div>
 
+    <!-- Modal จัดการเมนูอาหาร -->
     <div class="modal" id="menuManagerModal">
         <div class="modal-content" style="width: 700px;">
             <h3 style="margin-top:0; color:var(--primary); font-size: 16px;">⚙️ ระบบจัดการเมนูอาหาร</h3>
@@ -567,6 +569,7 @@
         </div>
     </div>
 
+    <!-- Modal รายงานยอดขาย -->
     <div class="modal" id="salesReportModal">
         <div class="modal-content" style="width: 800px; max-height: 90vh;">
             <h3 style="margin-top:0; color:var(--primary); font-size: 16px;">📊 สรุปยอดขายและประวัติใบเสร็จ</h3>
@@ -665,6 +668,22 @@
                     <button type="submit" style="background:var(--success); color:white; border:none; padding:6px 12px; border-radius:6px; font-weight:bold; cursor:pointer; font-size:11px;">บันทึก</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- Modal สำหรับเลือกการพิมพ์ตอนเช็คบิล -->
+    <div class="modal" id="checkoutModal">
+        <div class="modal-content" style="width: 450px; text-align: center;">
+            <h3 style="margin-top:0; color: var(--primary); font-size: 18px;">💰 เลือกรูปแบบการเช็คบิล</h3>
+            <p id="checkoutTableTitle" style="font-size: 14px; font-weight: bold; margin-bottom: 20px; color: var(--text);"></p>
+            
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <button onclick="executeCheckout('ไม่ต้องพิมพ์')" style="background: #747d8c; color: white; padding: 12px; border: none; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer;">❌ 1. ไม่ต้องพิมพ์ใบเสร็จ</button>
+                <button onclick="executeCheckout('รอพิมพ์ใบเสร็จ')" style="background: #3742fa; color: white; padding: 12px; border: none; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer;">🖨️ 2. พิมพ์ใบเสร็จ</button>
+                <button onclick="executeCheckout('รอพิมพ์ใบเสร็จ+QR')" style="background: var(--success); color: white; padding: 12px; border: none; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer;">📱 3. พิมพ์ใบเสร็จพร้อม คิวอาร์โค้ด</button>
+            </div>
+            
+            <button onclick="closeCheckoutModal()" style="margin-top: 20px; background: #eee; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-size: 12px;">ยกเลิก</button>
         </div>
     </div>
 
@@ -911,7 +930,7 @@
             renderSummaryBox();
         }
 
-        async function confirmAndSubmitOrder(isSilent = false) {            
+        async function confirmAndSubmitOrder(isSilent = false) {
             if (!activeTableId || currentCart.length === 0) return;
 
             try {
@@ -950,7 +969,7 @@
                     currentCart = []; 
                     renderSummaryBox();
                     fetchKitchenOrders();
-                    alert('ส่งออเดอร์เข้าครัวสำเร็จ!');
+                    alert(isSilent ? 'ลงบิลสำเร็จ (ไม่พิมพ์)' : 'ส่งออเดอร์เข้าครัวสำเร็จ!');
                 } else if (res.status === 403) {
                     alert('โต๊ะนี้ถูกเช็คบิลไปแล้ว กรุณาเปิดโต๊ะใหม่');
                 } else {
@@ -1106,7 +1125,7 @@
             }
         }
 
-        async function printReceiptAndCheckout(tableId, titleText, printOption = 'รอพิมพ์ใบเสร็จ') {            
+        async function printReceiptAndCheckout(tableId, titleText, printOption = 'รอพิมพ์ใบเสร็จ') {
             try {
                 const res = await fetch(`/api/orders/table/${tableId}`);
                 const orders = await res.json();
@@ -1137,7 +1156,7 @@
                         title: titleText,
                         total_price: totalPrice,
                         items: allItemsToSave,
-                        print_status: printOption 
+                        print_status: printOption
                     })
                 });
 
@@ -1145,10 +1164,10 @@
                     method: 'DELETE'
                 });
 
-                alert('เช็คบิลสำเร็จ! ระบบหลังบ้านกำลังพิมพ์ใบเสร็จให้อัตโนมัติ');
+                alert('เช็คบิลสำเร็จ!');
                 activeTableId = null;
                 currentCart = [];
-                document.getElementById('tableSummaryBox').innerHTML = `<div style="font-size:11px; color:var(--gray); text-align:center; padding:30px 0;">ยังไม่ได้เลือกโต๊ะหรือคิว<br>(กรุณาคลิกเลือกจากด้านบน)</div>`;
+                document.getElementById('tableSummaryBox').innerHTML = `<div style="font-size:11px; color:var(--gray); text-align:center; padding:30px 0;">ยังไม่ได้เลือกโต๊ะหรือคิว<br>(กรุณาคลิกเลือกจากด้านล่าง)</div>`;
                 fetchKitchenOrders();
 
             } catch(e) {
@@ -1246,7 +1265,7 @@
                 let uniqueSubmittedItems = consolidateItems(allRawItems);
 
                 let submittedItemsHtml = '';
-                uniqueSubmittedItems.forEach((i, itemIndex) => {
+                uniqueSubmittedItems.forEach((i) => {
                     submittedItemsHtml += `
                         <div style="display:flex; justify-content:space-between; align-items:center; padding:4px 2px; border-bottom:1px solid #f8f9fa; font-size:11px;">
                             <span>${i.name} x <strong style="font-size:12px;">${i.quantity}</strong> <span style="color:var(--primary);">(${ (i.price * i.quantity).toFixed(2) }฿)</span></span>
@@ -1272,24 +1291,29 @@
                     `;
                 });
 
+                // คืนโครงสร้างเดิม: ตะกร้าอยู่ด้านบน รายการบิลอยู่ด้านล่าง พร้อมปุ่ม 🔍 เต็มจอ
                 summaryBox.innerHTML = `
-                    <div style="max-height: 150px; overflow-y: auto; margin-bottom: 6px;">
-                        <div style="font-weight:bold; color:var(--gray); font-size:11px; margin-bottom: 4px; border-top: 1px dashed #ddd; padding-top: 6px;">📦 ส่งเข้าครัวไปแล้ว:</div>
-                        ${submittedItemsHtml || '<div style="color:var(--gray); font-size:11px;">(ยังไม่มีรายการที่สั่ง)</div>'}
+                    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #eee; padding-bottom:6px;">
+                        <strong style="font-size:13px; color:var(--primary);">โต๊ะ/คิว: ${activeTableTitleText}</strong>
+                        <button onclick="openTableModalFromSummary()" style="background:var(--light-gray); border:1px solid #ddd; padding:4px 8px; border-radius:4px; font-size:10px; cursor:pointer; font-weight:bold;">🔍 เต็มจอ</button>
                     </div>
-
-                    <div style="max-height: 150px; overflow-y: auto; margin-bottom: 6px;">
-                        <div style="font-weight:bold; color:var(--primary); font-size:11px; margin-bottom: 4px;">🛒 ตะกร้ารอส่ง:</div>
-                        ${cartItemsHtml || '<div style="color:var(--gray); font-size:11px;">(ตะกร้าว่าง)</div>'}
+                    
+                    <div style="flex:1; overflow-y: auto; font-size:11px; margin:8px 0; padding-right: 4px; min-height:120px;">
+                        <div style="font-weight:bold; color:var(--success); font-size:11px; margin-bottom:4px;">🛒 ตะกร้า (รอส่ง):</div>
+                        ${cartItemsHtml || '<div style="color:var(--gray); font-size:11px; margin-bottom:8px;">(ยังไม่มีรายการในตะกร้า)</div>'}
+                        
+                        <div style="font-weight:bold; color:var(--gray); font-size:11px; margin: 10px 0 4px 0; border-top: 1px dashed #ddd; padding-top: 6px;">📦 รายการอาหารที่สั่งแล้ว:</div>
+                        ${submittedItemsHtml || '<div style="color:var(--gray); font-size:11px;">(ยังไม่มีรายการที่สั่ง)</div>'}
                     </div>
                     
                     ${currentCart.length > 0 ? `
-                    <div style="display:flex; gap:6px; margin-bottom:6px;">
-                        <button onclick="confirmAndSubmitOrder(false)" style="flex: 1; background:var(--success); color:white; border:none; padding:8px; border-radius:6px; font-size:12px; cursor:pointer; font-weight:bold; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">🚀 พิมพ์เข้าครัว (${cartTotal.toFixed(2)}฿)</button>
-                        <button onclick="confirmAndSubmitOrder(true)" style="flex: 1; background:#9b59b6; color:white; border:none; padding:8px; border-radius:6px; font-size:12px; cursor:pointer; font-weight:bold; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">🔕 ลงบิล (ไม่พิมพ์)</button>
-                    </div>` : ''}
+                        <div style="display:flex; gap:6px; margin-bottom:6px;">
+                            <button onclick="confirmAndSubmitOrder(false)" style="flex:1; background:var(--success); color:white; border:none; padding:7px; border-radius:6px; font-size:11px; cursor:pointer; font-weight:bold;">🚀 พิมพ์เข้าครัว (${cartTotal.toFixed(2)}฿)</button>
+                            <button onclick="confirmAndSubmitOrder(true)" style="flex:1; background:#8e44ad; color:white; border:none; padding:7px; border-radius:6px; font-size:11px; cursor:pointer; font-weight:bold;">🔕 ลงบิล (ไม่พิมพ์)</button>
+                        </div>
+                    ` : ''}
                     
-                    <div style="display:flex; gap:6px; margin-top:auto;">
+                    <div style="display:flex; gap:6px; margin-top:4px;">
                         <button onclick="cancelActiveTableOrder()" style="flex:1; background:#ffeaa7; color:#d63031; border:none; padding:6px; border-radius:6px; font-size:11px; cursor:pointer; font-weight:bold;">❌ ยกเลิก</button>
                         <button onclick="checkoutInlineTable()" style="flex:1; background:var(--primary); color:white; border:none; padding:6px; border-radius:6px; font-size:11px; cursor:pointer; font-weight:bold;">💰 เช็คบิล</button>
                     </div>
@@ -1918,21 +1942,5 @@
         setInterval(fetchKitchenOrders, 5000);
         fetchAdminData();
     </script>
-
-    <!-- Modal สำหรับเลือกการพิมพ์ตอนเช็คบิล -->
-    <div class="modal" id="checkoutModal">
-        <div class="modal-content" style="width: 450px; text-align: center;">
-            <h3 style="margin-top:0; color: var(--primary); font-size: 18px;">💰 เลือกรูปแบบการเช็คบิล</h3>
-            <p id="checkoutTableTitle" style="font-size: 14px; font-weight: bold; margin-bottom: 20px; color: var(--text);"></p>
-            
-            <div style="display: flex; flex-direction: column; gap: 10px;">
-                <button onclick="executeCheckout('ไม่ต้องพิมพ์')" style="background: #747d8c; color: white; padding: 12px; border: none; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer;">❌ 1. ไม่ต้องพิมพ์ใบเสร็จ</button>
-                <button onclick="executeCheckout('รอพิมพ์ใบเสร็จ')" style="background: #3742fa; color: white; padding: 12px; border: none; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer;">🖨️ 2. พิมพ์ใบเสร็จ</button>
-                <button onclick="executeCheckout('รอพิมพ์ใบเสร็จ+QR')" style="background: var(--success); color: white; padding: 12px; border: none; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer;">📱 3. พิมพ์ใบเสร็จพร้อม คิวอาร์โค้ด</button>
-            </div>
-            
-            <button onclick="closeCheckoutModal()" style="margin-top: 20px; background: #eee; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-size: 12px;">ยกเลิก</button>
-        </div>
-    </div>
 </body>
 </html>
