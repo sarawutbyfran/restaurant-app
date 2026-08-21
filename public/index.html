@@ -815,7 +815,7 @@
             if (allowEgg) {
                 extraContainer.innerHTML = `
                     <div class="form-group" style="display: flex; gap: 10px;">
-                        <label class="checkbox-label"><input type="checkbox" id="addEggCheckbox" value="พิเศษ"> พิเศษ (+10฿)</label>
+                        <label class="checkbox-label"><input type="checkbox" id="extraCheckbox" value="พิเศษ"> พิเศษ (+10฿)</label>
                         <label class="checkbox-label"><input type="checkbox" id="addEggCheckbox" value="ไข่ดาว"> ไข่ดาว (+10฿)</label>
                         <label class="checkbox-label"><input type="checkbox" id="addOmeletCheckbox" value="ไข่เจียว"> ไข่เจียว (+10฿)</label>
                     </div>
@@ -843,6 +843,7 @@
             const omeletCheckbox = document.getElementById('addOmeletCheckbox');
             const hasEgg = eggCheckbox ? eggCheckbox.checked : false;
             const hasOmelet = omeletCheckbox ? omeletCheckbox.checked : false;
+            const hasExtra = extraCheckbox ? extraCheckbox.checked : false;
 
             let finalPrice = parseFloat(selectedItemForCustom.price);
             let itemCustomName = selectedItemForCustom.name;
@@ -850,10 +851,11 @@
 
             if (hasEgg) { finalPrice += 10; optionsTextArr.push('ไข่ดาว'); }
             if (hasOmelet) { finalPrice += 10; optionsTextArr.push('ไข่เจียว'); }
+            if (hasExtra) { finalPrice += 10; optionsTextArr.push('พิเศษ'); }
             if (optionsTextArr.length > 0) itemCustomName += ` (+${optionsTextArr.join(', ')})`;
 
             const existingIndex = cart.findIndex(c => 
-                c.id === selectedItemForCustom.id && c.notes === notes && c.hasEgg === hasEgg && c.hasOmelet === hasOmelet
+                c.id === selectedItemForCustom.id && c.notes === notes && c.hasEgg === hasEgg && c.hasOmelet === hasOmelet && c.hasExtra === hasExtra
             );
 
             if (existingIndex > -1) {
