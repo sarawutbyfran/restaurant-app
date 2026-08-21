@@ -836,23 +836,27 @@
         }
 
         function confirmAddToCart() {
-            if (!selectedItemForCustom) return;
+    if (!selectedItemForCustom) return;
 
-            const notes = document.getElementById('itemNotesInput').value.trim();
-            const eggCheckbox = document.getElementById('addEggCheckbox');
-            const omeletCheckbox = document.getElementById('addOmeletCheckbox');
-            const hasEgg = eggCheckbox ? eggCheckbox.checked : false;
-            const hasOmelet = omeletCheckbox ? omeletCheckbox.checked : false;
-            const hasExtra = extraCheckbox ? extraCheckbox.checked : false;
+    const notes = document.getElementById('itemNotesInput').value.trim();
+    const eggCheckbox = document.getElementById('addEggCheckbox');
+    const omeletCheckbox = document.getElementById('addOmeletCheckbox');
+    const extraCheckbox = document.getElementById('extraCheckbox'); // ✅ เพิ่มบรรทัดนี้เข้าไป
 
-            let finalPrice = parseFloat(selectedItemForCustom.price);
-            let itemCustomName = selectedItemForCustom.name;
-            let optionsTextArr = [];
+    const hasEgg = eggCheckbox ? eggCheckbox.checked : false;
+    const hasOmelet = omeletCheckbox ? omeletCheckbox.checked : false;
+    const hasExtra = extraCheckbox ? extraCheckbox.checked : false; 
 
-            if (hasEgg) { finalPrice += 10; optionsTextArr.push('ไข่ดาว'); }
-            if (hasOmelet) { finalPrice += 10; optionsTextArr.push('ไข่เจียว'); }
-            if (hasExtra) { finalPrice += 10; optionsTextArr.push('พิเศษ'); }
-            if (optionsTextArr.length > 0) itemCustomName += ` (+${optionsTextArr.join(', ')})`;
+    let finalPrice = parseFloat(selectedItemForCustom.price);
+    let itemCustomName = selectedItemForCustom.name;
+    let optionsTextArr = [];
+
+    if (hasEgg) { finalPrice += 10; optionsTextArr.push('ไข่ดาว'); }
+    if (hasOmelet) { finalPrice += 10; optionsTextArr.push('ไข่เจียว'); }
+    if (hasExtra) { finalPrice += 10; optionsTextArr.push('พิเศษ'); }
+    if (optionsTextArr.length > 0) itemCustomName += ` (+${optionsTextArr.join(', ')})`;
+
+    // ... (ส่วนที่เหลือปล่อยไว้เหมือนเดิมครับ)
 
             const existingIndex = cart.findIndex(c => 
                 c.id === selectedItemForCustom.id && c.notes === notes && c.hasEgg === hasEgg && c.hasOmelet === hasOmelet && c.hasExtra === hasExtra
