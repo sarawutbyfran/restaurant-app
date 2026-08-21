@@ -843,6 +843,7 @@
                 if (isAllowEgg) {
                     optionsHtml = `
                         <div style="margin: 4px 0; font-size: 11px; display: flex; flex-direction: column; gap: 3px;" onclick="event.stopPropagation()">
+                            <label><input type="checkbox" id="egg-${item.id}" value="พิเศษ"> พิเศษ (+10฿)</label>
                             <label><input type="checkbox" id="egg-${item.id}" value="ไข่ดาว"> ไข่ดาว (+10฿)</label>
                             <label><input type="checkbox" id="eggj-${item.id}" value="ไข่เจียว"> ไข่เจียว (+10฿)</label>
                         </div>
