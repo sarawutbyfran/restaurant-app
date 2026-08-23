@@ -30,7 +30,7 @@
         .header {
             background: linear-gradient(135deg, #2d3436 0%, #000000 100%);
             color: white;
-            padding: 25px 20px 60px 20px;
+            padding: 25px 20px 20px 20px;
             border-bottom-left-radius: 30px;
             border-bottom-right-radius: 30px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
@@ -43,7 +43,7 @@
             letter-spacing: 0.5px;
         }
         .header .subtitle {
-            margin: 5px 0 0 0;
+            margin: 5px 0 15px 0;
             font-size: 12px;
             color: #b2bec3;
         }
@@ -75,27 +75,56 @@
             100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(85, 239, 196, 0); }
         }
 
+        /* Navigation Tabs */
+        .nav-tabs {
+            display: flex;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 4px;
+            gap: 4px;
+            margin-top: 10px;
+        }
+        .tab-btn {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: #b2bec3;
+            padding: 8px;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+            text-align: center;
+        }
+        .tab-btn.active {
+            background: white;
+            color: var(--text-dark);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        }
+
         .container {
-            padding: 0 20px;
-            max-width: 800px;
+            padding: 20px;
+            max-width: 900px;
             margin: 0 auto;
         }
+
+        .dashboard-view { display: none; }
+        .dashboard-view.active { display: block; }
 
         /* KPI Cards Grid */
         .kpi-grid {
             display: grid;
             grid-template-columns: 1fr;
             gap: 15px;
-            margin-top: -40px;
-            position: relative;
-            z-index: 10;
+            margin-top: 20px;
         }
-
         .kpi-card {
             background: var(--card-bg);
             border-radius: 16px;
-            padding: 20px;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.06);
+            padding: 16px 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.04);
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -111,249 +140,466 @@
         .kpi-month::before { background: var(--primary); }
         .kpi-year::before { background: #6c5ce7; }
 
-        .kpi-title {
-            font-size: 13px;
-            color: var(--text-gray);
-            font-weight: 600;
-            margin-bottom: 5px;
-        }
-        .kpi-amount {
-            font-size: 32px;
-            font-weight: 700;
-            color: var(--text-dark);
-            display: flex;
-            align-items: baseline;
-            gap: 4px;
-        }
-        .kpi-unit {
-            font-size: 14px;
-            color: var(--text-gray);
-            font-weight: 400;
-        }
+        .kpi-title { font-size: 12px; color: var(--text-gray); font-weight: 600; margin-bottom: 2px; }
+        .kpi-amount { font-size: 28px; font-weight: 700; color: var(--text-dark); display: flex; align-items: baseline; gap: 4px; }
+        .kpi-unit { font-size: 13px; color: var(--text-gray); font-weight: 400; }
 
-        /* Responsive grid for larger screens */
         @media (min-width: 600px) {
             .kpi-grid { grid-template-columns: repeat(3, 1fr); }
-            .kpi-amount { font-size: 26px; }
+            .kpi-amount { font-size: 24px; }
         }
 
-        /* Transaction List */
+        /* Section Header */
         .section-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin: 30px 0 15px 0;
+            margin: 25px 0 10px 0;
         }
-        .section-header h3 {
-            margin: 0;
-            font-size: 16px;
-            font-weight: 600;
-        }
-        .btn-refresh {
+        .section-header h3 { margin: 0; font-size: 15px; font-weight: 600; }
+        .btn-action-sm {
             background: #dfe6e9;
             border: none;
             color: var(--text-dark);
-            padding: 6px 12px;
+            padding: 5px 10px;
             border-radius: 8px;
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 600;
             cursor: pointer;
-            transition: 0.2s;
         }
-        .btn-refresh:active { transform: scale(0.95); }
 
-        .transaction-list {
+        /* Chart Card */
+        .chart-card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+            margin-top: 15px;
+        }
+        .chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .chart-toggles { display: flex; background: #f1f2f6; border-radius: 8px; padding: 3px; gap: 3px; }
+        .chart-toggle-btn { background: transparent; border: none; padding: 4px 10px; font-size: 11px; font-weight: 600; border-radius: 6px; cursor: pointer; color: var(--text-gray); font-family: inherit; }
+        .chart-toggle-btn.active { background: white; color: var(--primary); box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+
+        .bar-chart-container { display: flex; align-items: flex-end; gap: 8px; height: 180px; padding-top: 20px; border-bottom: 1px solid #dfe6e9; overflow-x: auto; padding-bottom: 5px; }
+        .bar-group { flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%; justify-content: flex-end; min-width: 32px; }
+        .bar-value { font-size: 9px; color: var(--text-gray); margin-bottom: 4px; white-space: nowrap; }
+        .bar { width: 100%; max-width: 24px; background: linear-gradient(180deg, var(--primary) 0%, #0652dd 100%); border-radius: 6px 6px 0 0; min-height: 2px; }
+        .bar-label { font-size: 10px; color: var(--text-gray); margin-top: 6px; text-align: center; white-space: nowrap; }
+
+        /* Split View: Calendar & Transactions */
+        .split-dashboard {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+            margin-top: 10px;
+        }
+        @media (min-width: 768px) {
+            .split-dashboard { grid-template-columns: 320px 1fr; }
+        }
+
+        .pane-card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.04);
             display: flex;
             flex-direction: column;
-            gap: 12px;
-            padding-bottom: 40px;
+        }
+
+        .pane-title { font-size: 13px; font-weight: 600; margin-bottom: 12px; color: var(--text-dark); display: flex; justify-content: space-between; align-items: center; }
+        
+        /* Date Inputs for Range */
+        .date-range-box {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 12px;
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 10px;
+            border: 1px solid #edf2f7;
+        }
+        .date-input-group { display: flex; justify-content: space-between; align-items: center; font-size: 12px; }
+        .date-input-group input { padding: 5px; border: 1px solid #ced6e0; border-radius: 6px; font-family: inherit; font-size: 12px; }
+
+        .summary-filter-box {
+            background: #e1f5fe;
+            border: 1px solid #b3e5fc;
+            padding: 10px;
+            border-radius: 10px;
+            text-align: center;
+            margin-top: auto;
+        }
+        .summary-filter-title { font-size: 11px; color: #0277bd; }
+        .summary-filter-amount { font-size: 18px; font-weight: 700; color: #01579b; margin-top: 2px; }
+
+        /* Scrollable Transaction Pane */
+        .tx-scroll-pane {
+            max-height: 380px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding-right: 4px;
         }
 
         .transaction-item {
-            background: var(--card-bg);
-            border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.02);
-            overflow: hidden;
-            transition: 0.3s ease;
-        }
-
-        .transaction-header {
-            padding: 15px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            cursor: pointer;
-        }
-        .transaction-header:active {
-            background-color: #fafafa;
-        }
-
-        .tx-info { display: flex; flex-direction: column; gap: 4px; }
-        .tx-title { font-size: 14px; font-weight: 600; color: var(--text-dark); }
-        .tx-time { font-size: 11px; color: var(--text-gray); }
-
-        .tx-amount-group { text-align: right; }
-        .tx-amount { font-size: 16px; font-weight: 700; color: var(--success); }
-        .tx-hint { font-size: 10px; color: #b2bec3; margin-top: 2px; }
-
-        /* Accordion Details */
-        .transaction-details {
-            display: none; /* ซ่อนไว้เป็นค่าเริ่มต้น */
-            padding: 0 15px 15px 15px;
-            border-top: 1px dashed #dfe6e9;
             background: #fafbfc;
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid #edf2f7;
         }
-        .order-item-row {
-            display: flex;
-            justify-content: space-between;
-            font-size: 12px;
-            padding: 6px 0;
-            border-bottom: 1px solid #f1f2f6;
-            color: var(--text-gray);
-        }
-        .order-item-row:last-child { border-bottom: none; }
-        .order-item-name { flex: 1; padding-right: 10px; }
+        .transaction-header { padding: 10px 12px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+        .transaction-header:active { background-color: #f1f2f6; }
+
+        .tx-info { display: flex; align-items: center; gap: 8px; }
+        .tx-title { font-size: 13px; font-weight: 600; color: var(--text-dark); }
+        .tx-time { font-size: 10px; color: var(--text-gray); }
+
+        .tx-right { display: flex; align-items: center; gap: 8px; }
+        .tx-amount { font-size: 13px; font-weight: 700; color: var(--success); }
+        .tx-arrow { font-size: 9px; color: #b2bec3; transition: transform 0.2s; }
+
+        .transaction-details { display: none; padding: 10px 12px; border-top: 1px dashed #edf2f7; background: white; }
+        .order-item-row { display: flex; justify-content: space-between; font-size: 11px; padding: 3px 0; color: var(--text-gray); }
+        .order-item-name { flex: 1; padding-right: 8px; }
         .order-item-qty { font-weight: 600; color: var(--text-dark); }
 
-        .empty-state {
-            text-align: center;
-            padding: 40px 20px;
-            color: var(--text-gray);
-            font-size: 14px;
-        }
+        /* Fullscreen Modal for All Transactions */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000; padding: 15px; box-sizing: border-box; }
+        .modal-content { background: white; width: 100%; max-width: 700px; max-height: 85vh; border-radius: 16px; padding: 20px; display: flex; flex-direction: column; box-sizing: border-box; }
+        .modal-body { flex: 1; overflow-y: auto; margin-top: 10px; display: flex; flex-direction: column; gap: 8px; }
+
+        /* Ranking Card Styles */
+        .rank-list { display: flex; flex-direction: column; gap: 10px; padding-bottom: 40px; }
+        .rank-item { background: var(--card-bg); border-radius: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.02); display: flex; align-items: center; padding: 12px 16px; gap: 12px; border: 1px solid #edf2f7; }
+        .rank-number { font-size: 16px; font-weight: 700; width: 28px; text-align: center; color: var(--text-gray); }
+        .rank-1 { color: #f1c40f !important; font-size: 20px; }
+        .rank-2 { color: #95a5a6 !important; font-size: 18px; }
+        .rank-3 { color: #e67e22 !important; font-size: 18px; }
+        .rank-info { flex: 1; }
+        .rank-name { font-size: 14px; font-weight: 600; color: var(--text-dark); margin-bottom: 2px; }
+        .rank-stats { font-size: 11px; color: var(--text-gray); }
+        .rank-sales { font-size: 15px; font-weight: 700; color: var(--primary); text-align: right; }
+
+        .empty-state { text-align: center; padding: 30px; color: var(--text-gray); font-size: 13px; }
     </style>
 </head>
 <body>
 
     <div class="header">
         <h1>ByfranCircuit Dashboard</h1>
-        <p class="subtitle">ระบบวิเคราะห์ยอดขายสำหรับผู้บริหาร</p>
+        <p class="subtitle">ระบบวิเคราะห์ยอดขายและบริหารร้านอาหาร</p>
         <div class="status">
             <div class="live-dot"></div>
             Real-time
         </div>
+
+        <div class="nav-tabs">
+            <button class="tab-btn active" onclick="switchTab('sales', this)">📊 ภาพรวม & กราฟ</button>
+            <button class="tab-btn" onclick="switchTab('ranking', this)">🏆 เมนูขายดี</button>
+        </div>
     </div>
 
     <div class="container">
-        <div class="kpi-grid">
-            <div class="kpi-card kpi-today">
-                <div class="kpi-title">ยอดขายวันนี้</div>
-                <div class="kpi-amount" id="salesToday">0.00 <span class="kpi-unit">฿</span></div>
+        <!-- VIEW 1: ภาพรวมยอดขาย & กราฟ & แยกดูตามวันที่ -->
+        <div id="view-sales" class="dashboard-view active">
+            <div class="kpi-grid">
+                <div class="kpi-card kpi-today">
+                    <div class="kpi-title">ยอดขายวันนี้</div>
+                    <div class="kpi-amount" id="salesToday">0.00 <span class="kpi-unit">฿</span></div>
+                </div>
+                <div class="kpi-card kpi-month">
+                    <div class="kpi-title">ยอดขายเดือนนี้</div>
+                    <div class="kpi-amount" id="salesMonth">0.00 <span class="kpi-unit">฿</span></div>
+                </div>
+                <div class="kpi-card kpi-year">
+                    <div class="kpi-title">ยอดขายรวมปีนี้</div>
+                    <div class="kpi-amount" id="salesYear">0.00 <span class="kpi-unit">฿</span></div>
+                </div>
             </div>
-            <div class="kpi-card kpi-month">
-                <div class="kpi-title">ยอดขายเดือนนี้</div>
-                <div class="kpi-amount" id="salesMonth">0.00 <span class="kpi-unit">฿</span></div>
+
+            <!-- กราฟแสดงยอดขาย -->
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h3 id="chartTitle" style="margin:0; font-size:14px;">📈 สถิติยอดขาย (รายเดือน)</h3>
+                    <div class="chart-toggles">
+                        <button class="chart-toggle-btn active" id="btnMonthly" onclick="setChartMode('monthly')">รายเดือน</button>
+                        <button class="chart-toggle-btn" id="btnYearly" onclick="setChartMode('yearly')">รายปี</button>
+                    </div>
+                </div>
+                <div class="bar-chart-container" id="barChart">
+                    <div class="empty-state">กำลังโหลดกราฟ...</div>
+                </div>
             </div>
-            <div class="kpi-card kpi-year">
-                <div class="kpi-title">ยอดขายรวมปีนี้</div>
-                <div class="kpi-amount" id="salesYear">0.00 <span class="kpi-unit">฿</span></div>
+
+            <div class="section-header">
+                <h3>🔍 ค้นหาและดูบิลตามช่วงวันที่เลือก</h3>
+                <button class="btn-action-sm" onclick="openAllTransactionsModal()">📋 ดูบิลทั้งหมด</button>
+            </div>
+
+            <!-- Split View: ซ้ายตัวกรองวันที่ / ขวารายการบิลภายในวันที่เลือก -->
+            <div class="split-dashboard">
+                <div class="pane-card">
+                    <div class="pane-title">📅 เลือกช่วงเวลาดูยอดขาย</div>
+                    <div class="date-range-box">
+                        <div class="date-input-group">
+                            <label>จากวันที่:</label>
+                            <input type="date" id="filterStartDate" onchange="filterTransactionsByDateRange()">
+                        </div>
+                        <div class="date-input-group">
+                            <label>ถึงวันที่:</label>
+                            <input type="date" id="filterEndDate" onchange="filterTransactionsByDateRange()">
+                        </div>
+                    </div>
+                    <button class="btn-action-sm" onclick="resetDateFilter()" style="margin-bottom: 12px; background: #ffeaa7; color: #d63031;">🔄 ล้างตัวกรอง (ดูวันนี้)</button>
+                    
+                    <div class="summary-filter-box">
+                        <div class="summary-filter-title" id="filterSummaryLabel">ยอดรวมช่วงวันที่เลือก</div>
+                        <div class="summary-filter-amount" id="filterSummaryAmount">0.00 ฿</div>
+                    </div>
+                </div>
+
+                <div class="pane-card">
+                    <div class="pane-title">
+                        <span>📦 รายการบิลในช่วงเวลาที่เลือก</span>
+                        <span id="filteredCountBadge" style="font-size: 11px; color: var(--text-gray); font-weight: normal;">(0 บิล)</span>
+                    </div>
+                    <div class="tx-scroll-pane" id="filteredTransactionList">
+                        <div class="empty-state">ไม่มีรายการบิลในช่วงเวลานี้</div>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <div class="section-header">
-            <h3>รายการบิลล่าสุด</h3>
-            <button class="btn-refresh" onclick="loadDashboardData()">🔄 อัปเดต</button>
+        <!-- VIEW 2: จัดอันดับเมนูขายดี -->
+        <div id="view-ranking" class="dashboard-view">
+            <div class="section-header" style="margin-top: 15px;">
+                <h3>🏆 จัดอันดับเมนูยอดฮิต (ตามจำนวนที่ขายได้)</h3>
+            </div>
+            <div class="rank-list" id="rankingList">
+                <div class="empty-state">กำลังวิเคราะห์ข้อมูลเมนู...</div>
+            </div>
         </div>
+    </div>
 
-        <div class="transaction-list" id="transactionList">
-            <div class="empty-state">กำลังโหลดข้อมูล...</div>
+    <!-- Modal ดูบิลทั้งหมดแบบเต็มหน้าต่าง -->
+    <div class="modal" id="allTransactionsModal">
+        <div class="modal-content">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #edf2f7; padding-bottom: 10px;">
+                <h3 style="margin: 0; font-size: 16px;">📋 ประวัติบิลทั้งหมดในระบบ</h3>
+                <button onclick="closeAllTransactionsModal()" style="background: #dfe6e9; border: none; padding: 5px 10px; border-radius: 6px; cursor: pointer; font-weight: bold;">✕ ปิด</button>
+            </div>
+            <div class="modal-body" id="modalTransactionList">
+                <div class="empty-state">กำลังโหลด...</div>
+            </div>
         </div>
     </div>
 
     <script>
+        let cachedHistory = [];
+        let currentChartMode = 'monthly';
+
         document.addEventListener("DOMContentLoaded", () => {
+            // ตั้งค่าวันที่เริ่มต้นเป็นวันนี้ทั้ง 2 ช่อง
+            const todayStr = new Date().toLocaleDateString('en-CA');
+            document.getElementById('filterStartDate').value = todayStr;
+            document.getElementById('filterEndDate').value = todayStr;
+
             loadDashboardData();
-            // รีเฟรชอัตโนมัติทุกๆ 15 วินาที
             setInterval(loadDashboardData, 15000);
         });
 
+        function switchTab(viewName, btnElement) {
+            document.querySelectorAll('.dashboard-view').forEach(v => v.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+
+            document.getElementById(`view-${viewName}`).classList.add('active');
+            btnElement.classList.add('active');
+        }
+
         async function loadDashboardData() {
-            const listContainer = document.getElementById('transactionList');
-            
             try {
-                // ดึงข้อมูลประวัติใบเสร็จทั้งหมด
                 const res = await fetch('/api/admin/sales-history');
-                const historyList = await res.json();
+                cachedHistory = await res.json();
 
-                // ข้อมูลวันที่ปัจจุบัน
-                const now = new Date();
-                const todayStr = now.toLocaleDateString('en-CA'); // รูปแบบ YYYY-MM-DD
-                const currentMonth = now.getMonth();
-                const currentYear = now.getFullYear();
-
-                let totalToday = 0;
-                let totalMonth = 0;
-                let totalYear = 0;
-
-                // คำนวณยอดขาย
-                historyList.forEach(record => {
-                    const recordDate = new Date(record.checked_out_at);
-                    const rDateStr = recordDate.toLocaleDateString('en-CA');
-                    const rMonth = recordDate.getMonth();
-                    const rYear = recordDate.getFullYear();
-                    const amount = Number(record.total_price || 0);
-
-                    // ยอดปีนี้
-                    if (rYear === currentYear) {
-                        totalYear += amount;
-                        // ยอดเดือนนี้
-                        if (rMonth === currentMonth) {
-                            totalMonth += amount;
-                        }
-                    }
-                    // ยอดวันนี้
-                    if (rDateStr === todayStr) {
-                        totalToday += amount;
-                    }
-                });
-
-                // อัปเดตตัวเลขขึ้นหน้าจอ
-                document.getElementById('salesToday').innerHTML = `${totalToday.toLocaleString('th-TH', {minimumFractionDigits: 2})} <span class="kpi-unit">฿</span>`;
-                document.getElementById('salesMonth').innerHTML = `${totalMonth.toLocaleString('th-TH', {minimumFractionDigits: 2})} <span class="kpi-unit">฿</span>`;
-                document.getElementById('salesYear').innerHTML = `${totalYear.toLocaleString('th-TH', {minimumFractionDigits: 2})} <span class="kpi-unit">฿</span>`;
-
-                // จัดการแสดงผลรายการบิลล่าสุด (แสดงเฉพาะบิลของวันนี้ หรือล่าสุด 50 บิล)
-                renderTransactionList(historyList);
+                calculateKPIs(cachedHistory);
+                renderChart(cachedHistory);
+                filterTransactionsByDateRange(); // อัปเดตรายการบิลตามวันที่เลือก
+                renderRankingList(cachedHistory);
 
             } catch (error) {
                 console.error("Error loading dashboard:", error);
-                if(listContainer.innerHTML.includes('กำลังโหลด')) {
-                    listContainer.innerHTML = '<div class="empty-state" style="color:var(--danger);">ไม่สามารถเชื่อมต่อฐานข้อมูลได้</div>';
-                }
             }
         }
 
-        function renderTransactionList(historyList) {
-            const listContainer = document.getElementById('transactionList');
-            listContainer.innerHTML = '';
+        function calculateKPIs(historyList) {
+            const now = new Date();
+            const todayStr = now.toLocaleDateString('en-CA');
+            const currentMonth = now.getMonth();
+            const currentYear = now.getFullYear();
 
+            let totalToday = 0;
+            let totalMonth = 0;
+            let totalYear = 0;
+
+            historyList.forEach(record => {
+                const recordDate = new Date(record.checked_out_at);
+                const rDateStr = recordDate.toLocaleDateString('en-CA');
+                const rMonth = recordDate.getMonth();
+                const rYear = recordDate.getFullYear();
+                const amount = Number(record.total_price || 0);
+
+                if (rYear === currentYear) {
+                    totalYear += amount;
+                    if (rMonth === currentMonth) {
+                        totalMonth += amount;
+                    }
+                }
+                if (rDateStr === todayStr) {
+                    totalToday += amount;
+                }
+            });
+
+            document.getElementById('salesToday').innerHTML = `${totalToday.toLocaleString('th-TH', {minimumFractionDigits: 2})} <span class="kpi-unit">฿</span>`;
+            document.getElementById('salesMonth').innerHTML = `${totalMonth.toLocaleString('th-TH', {minimumFractionDigits: 2})} <span class="kpi-unit">฿</span>`;
+            document.getElementById('salesYear').innerHTML = `${totalYear.toLocaleString('th-TH', {minimumFractionDigits: 2})} <span class="kpi-unit">฿</span>`;
+        }
+
+        function setChartMode(mode) {
+            currentChartMode = mode;
+            document.getElementById('btnMonthly').classList.toggle('active', mode === 'monthly');
+            document.getElementById('btnYearly').classList.toggle('active', mode === 'yearly');
+            document.getElementById('chartTitle').innerText = mode === 'monthly' ? '📈 สถิติยอดขาย (รายเดือน)' : '📈 สถิติยอดขาย (รายปี)';
+            renderChart(cachedHistory);
+        }
+
+        function renderChart(historyList) {
+            const chartContainer = document.getElementById('barChart');
             if (!historyList || historyList.length === 0) {
-                listContainer.innerHTML = '<div class="empty-state">ยังไม่มียอดขายในระบบ</div>';
+                chartContainer.innerHTML = '<div class="empty-state">ยังไม่มีข้อมูลสำหรับแสดงกราฟ</div>';
                 return;
             }
 
-            // เรียงลำดับจากใหม่ไปเก่า
-            historyList.sort((a, b) => new Date(b.checked_out_at) - new Date(a.checked_out_at));
+            const chartData = {};
 
-            // แสดงแค่ 50 รายการล่าสุดเพื่อไม่ให้หน้าจอโหลดหนักเกินไป
-            const displayList = historyList.slice(0, 50);
+            if (currentChartMode === 'monthly') {
+                const currentYear = new Date().getFullYear();
+                const monthsName = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+                monthsName.forEach((m, idx) => { chartData[idx] = { label: m, total: 0 }; });
+
+                historyList.forEach(record => {
+                    const d = new Date(record.checked_out_at);
+                    if (d.getFullYear() === currentYear) {
+                        const mIdx = d.getMonth();
+                        chartData[mIdx].total += Number(record.total_price || 0);
+                    }
+                });
+            } else {
+                historyList.forEach(record => {
+                    const d = new Date(record.checked_out_at);
+                    const yr = d.getFullYear();
+                    const yrLabel = (yr + 543).toString();
+                    if (!chartData[yr]) {
+                        chartData[yr] = { label: yrLabel, total: 0, sortKey: yr };
+                    }
+                    chartData[yr].total += Number(record.total_price || 0);
+                });
+            }
+
+            const dataArray = Object.values(chartData);
+            if (currentChartMode === 'yearly') {
+                dataArray.sort((a, b) => a.sortKey - b.sortKey);
+            }
+
+            const maxVal = Math.max(...dataArray.map(d => d.total), 1);
+            let chartHtml = '';
+            dataArray.forEach(item => {
+                const heightPercent = Math.max(Math.round((item.total / maxVal) * 100), 4);
+                const formattedMoney = item.total > 1000 ? (item.total / 1000).toFixed(1) + 'k' : item.total.toFixed(0);
+
+                chartHtml += `
+                    <div class="bar-group">
+                        <div class="bar-value">${item.total > 0 ? formattedMoney : ''}</div>
+                        <div class="bar" style="height: ${heightPercent}%;" title="${item.label}: ${item.total.toLocaleString()} ฿"></div>
+                        <div class="bar-label">${item.label}</div>
+                    </div>
+                `;
+            });
+            chartContainer.innerHTML = chartHtml;
+        }
+
+        // กรองบิลตามวันที่เริ่ม - สิ้นสุด ที่ผู้ใช้เลือก
+        function filterTransactionsByDateRange() {
+            const startStr = document.getElementById('filterStartDate').value;
+            const endStr = document.getElementById('filterEndDate').value;
+            const container = document.getElementById('filteredTransactionList');
+            const summaryLabel = document.getElementById('filterSummaryLabel');
+            const summaryAmount = document.getElementById('filterSummaryAmount');
+            const countBadge = document.getElementById('filteredCountBadge');
+
+            if (!startStr || !endStr) {
+                container.innerHTML = '<div class="empty-state">กรุณาเลือกช่วงวันที่ให้ครบถ้วน</div>';
+                return;
+            }
+
+            const startDate = new Date(startStr);
+            startDate.setHours(0, 0, 0, 0);
+
+            const endDate = new Date(endStr);
+            endDate.setHours(23, 59, 59, 999);
+
+            if (startDate > endDate) {
+                container.innerHTML = '<div class="empty-state" style="color:var(--danger);">วันที่เริ่มต้นต้องไม่มากกว่าวันที่สิ้นสุด</div>';
+                return;
+            }
+
+            // กรองข้อมูล
+            const filtered = cachedHistory.filter(record => {
+                const recordDate = new Date(record.checked_out_at);
+                return recordDate >= startDate && recordDate <= endDate;
+            });
+
+            // คำนวณยอดรวมของช่วงที่เลือก
+            let totalSum = 0;
+            filtered.forEach(r => totalSum += Number(r.total_price || 0));
+
+            summaryLabel.innerText = `ยอดรวม (${startStr === endStr ? startStr : startStr + ' ถึง ' + endStr})`;
+            summaryAmount.innerText = totalSum.toLocaleString('th-TH', {minimumFractionDigits: 2}) + ' ฿';
+            countBadge.innerText = `(${filtered.length} บิล)`;
+
+            renderTransactionListIntoContainer(filtered, container, 'filtered');
+        }
+
+        function resetDateFilter() {
+            const todayStr = new Date().toLocaleDateString('en-CA');
+            document.getElementById('filterStartDate').value = todayStr;
+            document.getElementById('filterEndDate').value = todayStr;
+            filterTransactionsByDateRange();
+        }
+
+        function renderTransactionListIntoContainer(list, containerElement, prefixId) {
+            if (!list || list.length === 0) {
+                containerElement.innerHTML = '<div class="empty-state">ไม่มีรายการบิลในช่วงเวลานี้</div>';
+                return;
+            }
+
+            list.sort((a, b) => new Date(b.checked_out_at) - new Date(a.checked_out_at));
             
             let htmlContent = '';
-
-            displayList.forEach(record => {
+            list.forEach(record => {
                 const amount = Number(record.total_price || 0);
-                const timeOpt = { hour: '2-digit', minute: '2-digit' };
-                const timeStr = new Date(record.checked_out_at).toLocaleTimeString('th-TH', timeOpt);
-                const dateStr = new Date(record.checked_out_at).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' });
+                const timeStr = new Date(record.checked_out_at).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+                const dateStr = new Date(record.checked_out_at).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' });
 
-                // สร้างรายการอาหารย่อยๆ ในบิล
                 let itemsHtml = '';
                 if (record.items && Array.isArray(record.items)) {
                     record.items.forEach(item => {
                         let note = item.notes ? ` <span style="color:#d63031; font-size:10px;">(${item.notes})</span>` : '';
                         itemsHtml += `
                             <div class="order-item-row">
-                                <div class="order-item-name">- ${item.name}${note}</div>
+                                <div class="order-item-name">• ${item.name}${note}</div>
                                 <div class="order-item-qty">x${item.quantity}</div>
                             </div>
                         `;
@@ -362,37 +608,100 @@
                     itemsHtml = '<div class="order-item-row" style="justify-content:center;">ไม่มีรายละเอียดอาหาร</div>';
                 }
 
+                const uniqueId = `${prefixId}-${record.id}`;
                 htmlContent += `
                     <div class="transaction-item">
-                        <div class="transaction-header" onclick="toggleDetails('tx-${record.id}')">
+                        <div class="transaction-header" onclick="toggleDetails('${uniqueId}')">
                             <div class="tx-info">
                                 <div class="tx-title">${record.title}</div>
-                                <div class="tx-time">📅 ${dateStr} • 🕒 ${timeStr} น.</div>
+                                <div class="tx-time">${dateStr} (${timeStr})</div>
                             </div>
-                            <div class="tx-amount-group">
+                            <div class="tx-right">
                                 <div class="tx-amount">+${amount.toLocaleString('th-TH', {minimumFractionDigits: 2})}</div>
-                                <div class="tx-hint">กดดูรายการ👇</div>
+                                <div class="tx-arrow" id="arrow-${uniqueId}">▼</div>
                             </div>
                         </div>
-                        <div class="transaction-details" id="tx-${record.id}">
-                            <div style="padding-top: 10px;">
-                                ${itemsHtml}
-                            </div>
+                        <div class="transaction-details" id="${uniqueId}">
+                            ${itemsHtml}
                         </div>
                     </div>
                 `;
             });
-
-            listContainer.innerHTML = htmlContent;
+            containerElement.innerHTML = htmlContent;
         }
 
-        // ฟังก์ชันสำหรับซ่อน/แสดงรายละเอียดรายการอาหาร
+        function openAllTransactionsModal() {
+            document.getElementById('allTransactionsModal').style.display = 'flex';
+            const modalContainer = document.getElementById('modalTransactionList');
+            renderTransactionListIntoContainer(cachedHistory, modalContainer, 'modal');
+        }
+
+        function closeAllTransactionsModal() {
+            document.getElementById('allTransactionsModal').style.display = 'none';
+        }
+
+        function renderRankingList(historyList) {
+            const rankContainer = document.getElementById('rankingList');
+            const menuStats = {};
+            
+            historyList.forEach(record => {
+                if (record.items && Array.isArray(record.items)) {
+                    record.items.forEach(item => {
+                        const cleanName = item.name.split(' (')[0].trim();
+                        const qty = Number(item.quantity || 0);
+                        const price = Number(item.price || 0) * qty;
+
+                        if (!menuStats[cleanName]) {
+                            menuStats[cleanName] = { count: 0, revenue: 0 };
+                        }
+                        menuStats[cleanName].count += qty;
+                        menuStats[cleanName].revenue += price;
+                    });
+                }
+            });
+
+            const sortedMenus = Object.keys(menuStats).map(name => ({
+                name: name,
+                count: menuStats[name].count,
+                revenue: menuStats[name].revenue
+            })).sort((a, b) => b.count - a.count);
+
+            if (sortedMenus.length === 0) {
+                rankContainer.innerHTML = '<div class="empty-state">ยังไม่มีข้อมูลการขายเพียงพอ</div>';
+                return;
+            }
+
+            let rankHtml = '';
+            sortedMenus.forEach((menu, index) => {
+                let rankClass = '';
+                if (index === 0) rankClass = 'rank-1';
+                else if (index === 1) rankClass = 'rank-2';
+                else if (index === 2) rankClass = 'rank-3';
+
+                rankHtml += `
+                    <div class="rank-item">
+                        <div class="rank-number ${rankClass}">#${index + 1}</div>
+                        <div class="rank-info">
+                            <div class="rank-name">${menu.name}</div>
+                            <div class="rank-stats">ขายไป <b>${menu.count}</b> หน่วย</div>
+                        </div>
+                        <div class="rank-sales">${menu.revenue.toLocaleString('th-TH', {minimumFractionDigits: 2})} ฿</div>
+                    </div>
+                `;
+            });
+            rankContainer.innerHTML = rankHtml;
+        }
+
         function toggleDetails(id) {
             const detailElement = document.getElementById(id);
+            const arrowElement = document.getElementById('arrow-' + id);
+            
             if (detailElement.style.display === 'block') {
                 detailElement.style.display = 'none';
+                arrowElement.style.transform = 'rotate(0deg)';
             } else {
                 detailElement.style.display = 'block';
+                arrowElement.style.transform = 'rotate(180deg)';
             }
         }
     </script>
