@@ -3,230 +3,396 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ByfranCircuit - ยอดขายเรียลไทม์</title>
-    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <title>ByfranCircuit - Executive Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --bg: #f4f7f6;
+            --text-dark: #2d3436;
+            --text-gray: #636e72;
+            --primary: #0984e3;
+            --success: #00b894;
+            --warning: #fdcb6e;
+            --danger: #d63031;
+            --card-bg: #ffffff;
+        }
+
         body {
             font-family: 'Prompt', sans-serif;
-            background-color: #f0f2f5;
+            background-color: var(--bg);
             margin: 0;
             padding: 0;
-            color: #1c1e21;
+            color: var(--text-dark);
+            -webkit-font-smoothing: antialiased;
         }
+
+        /* Header Section */
         .header {
-            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            background: linear-gradient(135deg, #2d3436 0%, #000000 100%);
             color: white;
-            padding: 20px;
-            text-align: center;
-            border-bottom-left-radius: 20px;
-            border-bottom-right-radius: 20px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            padding: 25px 20px 60px 20px;
+            border-bottom-left-radius: 30px;
+            border-bottom-right-radius: 30px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            position: relative;
         }
-        .header h1 { margin: 0; font-size: 22px; }
-        .header p { margin: 5px 0 0 0; font-size: 13px; opacity: 0.9; }
-        
+        .header h1 {
+            margin: 0;
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+        .header .subtitle {
+            margin: 5px 0 0 0;
+            font-size: 12px;
+            color: #b2bec3;
+        }
+        .header .status {
+            position: absolute;
+            top: 25px;
+            right: 20px;
+            font-size: 10px;
+            background: rgba(0, 184, 148, 0.2);
+            color: #55efc4;
+            padding: 4px 10px;
+            border-radius: 12px;
+            border: 1px solid rgba(0, 184, 148, 0.4);
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .live-dot {
+            width: 6px;
+            height: 6px;
+            background-color: #55efc4;
+            border-radius: 50%;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(85, 239, 196, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 4px rgba(85, 239, 196, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(85, 239, 196, 0); }
+        }
+
         .container {
-            padding: 20px;
-            max-width: 600px;
+            padding: 0 20px;
+            max-width: 800px;
             margin: 0 auto;
         }
-        
-        .summary-card {
-            background: white;
-            border-radius: 16px;
-            padding: 20px;
-            text-align: center;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-            margin-top: -30px;
+
+        /* KPI Cards Grid */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+            margin-top: -40px;
             position: relative;
             z-index: 10;
         }
-        .summary-card h2 {
-            margin: 0;
-            font-size: 14px;
-            color: #747d8c;
-        }
-        .total-amount {
-            font-size: 42px;
-            font-weight: 700;
-            color: #2ed573;
-            margin: 10px 0;
-        }
-        
-        .date-filter {
-            margin-top: 15px;
+
+        .kpi-card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.06);
             display: flex;
-            gap: 10px;
+            flex-direction: column;
             justify-content: center;
+            position: relative;
+            overflow: hidden;
         }
-        .date-filter input {
-            padding: 8px 12px;
-            border: 1px solid #dfe4ea;
-            border-radius: 8px;
-            font-family: inherit;
+        .kpi-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 4px; height: 100%;
+        }
+        .kpi-today::before { background: var(--success); }
+        .kpi-month::before { background: var(--primary); }
+        .kpi-year::before { background: #6c5ce7; }
+
+        .kpi-title {
+            font-size: 13px;
+            color: var(--text-gray);
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        .kpi-amount {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--text-dark);
+            display: flex;
+            align-items: baseline;
+            gap: 4px;
+        }
+        .kpi-unit {
             font-size: 14px;
+            color: var(--text-gray);
+            font-weight: 400;
         }
 
-        .list-header {
+        /* Responsive grid for larger screens */
+        @media (min-width: 600px) {
+            .kpi-grid { grid-template-columns: repeat(3, 1fr); }
+            .kpi-amount { font-size: 26px; }
+        }
+
+        /* Transaction List */
+        .section-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin: 25px 0 10px 0;
+            margin: 30px 0 15px 0;
         }
-        .list-header h3 { margin: 0; font-size: 16px; color: #2f3542; }
-        .refresh-btn {
-            background: #eccc68;
-            color: #2f3542;
+        .section-header h3 {
+            margin: 0;
+            font-size: 16px;
+            font-weight: 600;
+        }
+        .btn-refresh {
+            background: #dfe6e9;
             border: none;
+            color: var(--text-dark);
             padding: 6px 12px;
-            border-radius: 20px;
+            border-radius: 8px;
             font-size: 12px;
-            font-weight: bold;
+            font-weight: 600;
             cursor: pointer;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            transition: 0.2s;
         }
+        .btn-refresh:active { transform: scale(0.95); }
 
-        .history-list {
+        .transaction-list {
             display: flex;
             flex-direction: column;
             gap: 12px;
+            padding-bottom: 40px;
         }
-        .history-card {
-            background: white;
+
+        .transaction-item {
+            background: var(--card-bg);
             border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+            overflow: hidden;
+            transition: 0.3s ease;
+        }
+
+        .transaction-header {
             padding: 15px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
             display: flex;
             justify-content: space-between;
             align-items: center;
+            cursor: pointer;
         }
-        .history-card .info {
-            flex: 1;
+        .transaction-header:active {
+            background-color: #fafafa;
         }
-        .history-card .title {
-            font-weight: bold;
-            color: #2f3542;
-            font-size: 15px;
-            margin-bottom: 4px;
+
+        .tx-info { display: flex; flex-direction: column; gap: 4px; }
+        .tx-title { font-size: 14px; font-weight: 600; color: var(--text-dark); }
+        .tx-time { font-size: 11px; color: var(--text-gray); }
+
+        .tx-amount-group { text-align: right; }
+        .tx-amount { font-size: 16px; font-weight: 700; color: var(--success); }
+        .tx-hint { font-size: 10px; color: #b2bec3; margin-top: 2px; }
+
+        /* Accordion Details */
+        .transaction-details {
+            display: none; /* ซ่อนไว้เป็นค่าเริ่มต้น */
+            padding: 0 15px 15px 15px;
+            border-top: 1px dashed #dfe6e9;
+            background: #fafbfc;
         }
-        .history-card .time {
-            color: #747d8c;
+        .order-item-row {
+            display: flex;
+            justify-content: space-between;
             font-size: 12px;
+            padding: 6px 0;
+            border-bottom: 1px solid #f1f2f6;
+            color: var(--text-gray);
         }
-        .history-card .amount {
-            font-weight: bold;
-            color: #ff4757;
-            font-size: 18px;
+        .order-item-row:last-child { border-bottom: none; }
+        .order-item-name { flex: 1; padding-right: 10px; }
+        .order-item-qty { font-weight: 600; color: var(--text-dark); }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-gray);
+            font-size: 14px;
         }
-        
-        /* Loading Spinner */
-        .loader {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #2ed573;
-            border-radius: 50%;
-            width: 30px;
-            height: 30px;
-            animation: spin 1s linear infinite;
-            margin: 20px auto;
-        }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
 
     <div class="header">
         <h1>ByfranCircuit Dashboard</h1>
-        <p>ระบบสรุปยอดขายสำหรับผู้บริหาร</p>
-        <div style="height: 30px;"></div>
+        <p class="subtitle">ระบบวิเคราะห์ยอดขายสำหรับผู้บริหาร</p>
+        <div class="status">
+            <div class="live-dot"></div>
+            Real-time
+        </div>
     </div>
 
     <div class="container">
-        <div class="summary-card">
-            <h2 id="summary-title">ยอดขายประจำวันนี้</h2>
-            <div class="total-amount" id="totalSalesAmount">0.00</div>
-            <div style="font-size: 14px; color: #a4b0be;">บาท</div>
-            
-            <div class="date-filter">
-                <input type="date" id="filterDate" onchange="loadDashboard()">
+        <div class="kpi-grid">
+            <div class="kpi-card kpi-today">
+                <div class="kpi-title">ยอดขายวันนี้</div>
+                <div class="kpi-amount" id="salesToday">0.00 <span class="kpi-unit">฿</span></div>
+            </div>
+            <div class="kpi-card kpi-month">
+                <div class="kpi-title">ยอดขายเดือนนี้</div>
+                <div class="kpi-amount" id="salesMonth">0.00 <span class="kpi-unit">฿</span></div>
+            </div>
+            <div class="kpi-card kpi-year">
+                <div class="kpi-title">ยอดขายรวมปีนี้</div>
+                <div class="kpi-amount" id="salesYear">0.00 <span class="kpi-unit">฿</span></div>
             </div>
         </div>
 
-        <div class="list-header">
-            <h3>รายการบิลที่เช็คแล้ว</h3>
-            <button class="refresh-btn" onclick="loadDashboard()">🔄 อัปเดตข้อมูล</button>
+        <div class="section-header">
+            <h3>รายการบิลล่าสุด</h3>
+            <button class="btn-refresh" onclick="loadDashboardData()">🔄 อัปเดต</button>
         </div>
 
-        <div class="history-list" id="salesHistoryList">
-            <!-- ข้อมูลจะถูกโหลดมาใส่ตรงนี้ -->
-            <div class="loader" id="loader"></div>
+        <div class="transaction-list" id="transactionList">
+            <div class="empty-state">กำลังโหลดข้อมูล...</div>
         </div>
     </div>
 
     <script>
-        // เซ็ตวันที่ปัจจุบันเป็นค่าเริ่มต้น
         document.addEventListener("DOMContentLoaded", () => {
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('filterDate').value = today;
-            loadDashboard();
-            
-            // ให้รีเฟรชข้อมูลอัตโนมัติทุกๆ 30 วินาที เพื่อความเป็น Real-time
-            setInterval(loadDashboard, 30000); 
+            loadDashboardData();
+            // รีเฟรชอัตโนมัติทุกๆ 15 วินาที
+            setInterval(loadDashboardData, 15000);
         });
 
-        async function loadDashboard() {
-            const dateVal = document.getElementById('filterDate').value;
-            const container = document.getElementById('salesHistoryList');
-            const totalDisplay = document.getElementById('totalSalesAmount');
-            
-            totalDisplay.innerText = '...';
+        async function loadDashboardData() {
+            const listContainer = document.getElementById('transactionList');
             
             try {
-                // ดึงข้อมูลยอดขาย โดยกรองตามวันที่ที่เลือก
-                let url = '/api/admin/sales-history';
-                if (dateVal) {
-                    url += `?start_date=${dateVal}&end_date=${dateVal}`;
-                }
-
-                const res = await fetch(url);
+                // ดึงข้อมูลประวัติใบเสร็จทั้งหมด
+                const res = await fetch('/api/admin/sales-history');
                 const historyList = await res.json();
 
-                if (historyList.length === 0) {
-                    container.innerHTML = '<div style="text-align: center; color: #747d8c; margin-top: 20px;">ไม่มีบิลยอดขายในวันนี้</div>';
-                    totalDisplay.innerText = '0.00';
-                    return;
-                }
+                // ข้อมูลวันที่ปัจจุบัน
+                const now = new Date();
+                const todayStr = now.toLocaleDateString('en-CA'); // รูปแบบ YYYY-MM-DD
+                const currentMonth = now.getMonth();
+                const currentYear = now.getFullYear();
 
-                let totalSum = 0;
-                let htmlContent = '';
+                let totalToday = 0;
+                let totalMonth = 0;
+                let totalYear = 0;
 
-                // เรียงลำดับเอาบิลล่าสุดขึ้นก่อน (ถ้า API ไม่ได้เรียงมาให้)
-                historyList.sort((a, b) => new Date(b.checked_out_at) - new Date(a.checked_out_at));
-
+                // คำนวณยอดขาย
                 historyList.forEach(record => {
+                    const recordDate = new Date(record.checked_out_at);
+                    const rDateStr = recordDate.toLocaleDateString('en-CA');
+                    const rMonth = recordDate.getMonth();
+                    const rYear = recordDate.getFullYear();
                     const amount = Number(record.total_price || 0);
-                    totalSum += amount;
-                    
-                    const timeOpt = { hour: '2-digit', minute: '2-digit' };
-                    const timeStr = new Date(record.checked_out_at).toLocaleTimeString('th-TH', timeOpt);
 
-                    htmlContent += `
-                        <div class="history-card">
-                            <div class="info">
-                                <div class="title">${record.title}</div>
-                                <div class="time">เวลา: ${timeStr} น.</div>
-                            </div>
-                            <div class="amount">+${amount.toLocaleString('th-TH', { minimumFractionDigits: 2 })} ฿</div>
-                        </div>
-                    `;
+                    // ยอดปีนี้
+                    if (rYear === currentYear) {
+                        totalYear += amount;
+                        // ยอดเดือนนี้
+                        if (rMonth === currentMonth) {
+                            totalMonth += amount;
+                        }
+                    }
+                    // ยอดวันนี้
+                    if (rDateStr === todayStr) {
+                        totalToday += amount;
+                    }
                 });
 
-                container.innerHTML = htmlContent;
-                totalDisplay.innerText = totalSum.toLocaleString('th-TH', { minimumFractionDigits: 2 });
+                // อัปเดตตัวเลขขึ้นหน้าจอ
+                document.getElementById('salesToday').innerHTML = `${totalToday.toLocaleString('th-TH', {minimumFractionDigits: 2})} <span class="kpi-unit">฿</span>`;
+                document.getElementById('salesMonth').innerHTML = `${totalMonth.toLocaleString('th-TH', {minimumFractionDigits: 2})} <span class="kpi-unit">฿</span>`;
+                document.getElementById('salesYear').innerHTML = `${totalYear.toLocaleString('th-TH', {minimumFractionDigits: 2})} <span class="kpi-unit">฿</span>`;
 
-            } catch (err) {
-                console.error(err);
-                container.innerHTML = '<div style="text-align: center; color: #ff4757; margin-top: 20px;">ไม่สามารถดึงข้อมูลได้ (Offline)</div>';
-                totalDisplay.innerText = 'Error';
+                // จัดการแสดงผลรายการบิลล่าสุด (แสดงเฉพาะบิลของวันนี้ หรือล่าสุด 50 บิล)
+                renderTransactionList(historyList);
+
+            } catch (error) {
+                console.error("Error loading dashboard:", error);
+                if(listContainer.innerHTML.includes('กำลังโหลด')) {
+                    listContainer.innerHTML = '<div class="empty-state" style="color:var(--danger);">ไม่สามารถเชื่อมต่อฐานข้อมูลได้</div>';
+                }
+            }
+        }
+
+        function renderTransactionList(historyList) {
+            const listContainer = document.getElementById('transactionList');
+            listContainer.innerHTML = '';
+
+            if (!historyList || historyList.length === 0) {
+                listContainer.innerHTML = '<div class="empty-state">ยังไม่มียอดขายในระบบ</div>';
+                return;
+            }
+
+            // เรียงลำดับจากใหม่ไปเก่า
+            historyList.sort((a, b) => new Date(b.checked_out_at) - new Date(a.checked_out_at));
+
+            // แสดงแค่ 50 รายการล่าสุดเพื่อไม่ให้หน้าจอโหลดหนักเกินไป
+            const displayList = historyList.slice(0, 50);
+            
+            let htmlContent = '';
+
+            displayList.forEach(record => {
+                const amount = Number(record.total_price || 0);
+                const timeOpt = { hour: '2-digit', minute: '2-digit' };
+                const timeStr = new Date(record.checked_out_at).toLocaleTimeString('th-TH', timeOpt);
+                const dateStr = new Date(record.checked_out_at).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' });
+
+                // สร้างรายการอาหารย่อยๆ ในบิล
+                let itemsHtml = '';
+                if (record.items && Array.isArray(record.items)) {
+                    record.items.forEach(item => {
+                        let note = item.notes ? ` <span style="color:#d63031; font-size:10px;">(${item.notes})</span>` : '';
+                        itemsHtml += `
+                            <div class="order-item-row">
+                                <div class="order-item-name">- ${item.name}${note}</div>
+                                <div class="order-item-qty">x${item.quantity}</div>
+                            </div>
+                        `;
+                    });
+                } else {
+                    itemsHtml = '<div class="order-item-row" style="justify-content:center;">ไม่มีรายละเอียดอาหาร</div>';
+                }
+
+                htmlContent += `
+                    <div class="transaction-item">
+                        <div class="transaction-header" onclick="toggleDetails('tx-${record.id}')">
+                            <div class="tx-info">
+                                <div class="tx-title">${record.title}</div>
+                                <div class="tx-time">📅 ${dateStr} • 🕒 ${timeStr} น.</div>
+                            </div>
+                            <div class="tx-amount-group">
+                                <div class="tx-amount">+${amount.toLocaleString('th-TH', {minimumFractionDigits: 2})}</div>
+                                <div class="tx-hint">กดดูรายการ👇</div>
+                            </div>
+                        </div>
+                        <div class="transaction-details" id="tx-${record.id}">
+                            <div style="padding-top: 10px;">
+                                ${itemsHtml}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            listContainer.innerHTML = htmlContent;
+        }
+
+        // ฟังก์ชันสำหรับซ่อน/แสดงรายละเอียดรายการอาหาร
+        function toggleDetails(id) {
+            const detailElement = document.getElementById(id);
+            if (detailElement.style.display === 'block') {
+                detailElement.style.display = 'none';
+            } else {
+                detailElement.style.display = 'block';
             }
         }
     </script>
