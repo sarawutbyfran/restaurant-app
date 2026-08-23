@@ -569,47 +569,33 @@
         </div>
     </div>
 
-    <!-- Modal รายงานยอดขาย -->
-    <div class="modal" id="salesReportModal">
-        <div class="modal-content" style="width: 800px; max-height: 90vh;">
-            <h3 style="margin-top:0; color:var(--primary); font-size: 16px;">📊 สรุปยอดขายและประวัติใบเสร็จ</h3>
-            <div style="background: var(--light-gray); padding: 8px; border-radius: 8px; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; font-size: 11px; flex-wrap: wrap;">
-                <div>
-                    <label><b>จากวันที่:</b></label>
-                    <input type="date" id="startDate" style="padding: 3px; border: 1px solid #ccc; border-radius: 4px;">
-                </div>
-                <div>
-                    <label><b>ถึงวันที่:</b></label>
-                    <input type="date" id="endDate" style="padding: 3px; border: 1px solid #ccc; border-radius: 4px;">
-                </div>
-                <button onclick="loadSalesReport()" style="background: var(--success); color: white; border: none; padding: 5px 10px; border-radius: 4px; font-weight: bold; cursor: pointer; margin-top: 14px;">🔍 กรอง</button>
-                <button onclick="resetSalesFilter()" style="background: #ccc; border: none; padding: 5px 8px; border-radius: 4px; cursor: pointer; margin-top: 14px;">รีเซ็ต</button>
-            </div>
-            <div style="background: #e1f5fe; padding: 8px; border-radius: 8px; margin-bottom: 10px; text-align: center; border: 1px solid #b3e5fc;">
-                <div style="font-size: 11px; color: #0277bd;">ยอดขายรวมในช่วงเวลาที่เลือก</div>
-                <div id="totalSalesAmount" style="font-size: 20px; font-weight: bold; color: var(--success); margin-top: 2px;">0.00 ฿</div>
-            </div>
-            <div style="flex: 1; overflow-y: auto; max-height: 280px; border: 1px solid #ddd; border-radius: 6px; background: white;">
-                <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
-                    <thead>
-                        <tr style="background: var(--light-gray); text-align: left; border-bottom: 1px solid #ddd; position: sticky; top: 0;">
-                            <th style="padding: 6px;">เวลาเช็คบิล</th>
-                            <th style="padding: 6px;">โต๊ะ/คิว</th>
-                            <th style="padding: 6px;">รายการอาหาร</th>
-                            <th style="padding: 6px; text-align: right;">ยอดเงิน</th>
-                            <th style="padding: 6px; text-align: center;">จัดการ</th>
-                        </tr>
-                    </thead>
-                    <tbody id="salesHistoryTableBody">
-                        <tr><td colspan="5" style="text-align:center; padding:20px; color:var(--gray);">กำลังโหลดข้อมูล...</td></tr>
-                    </tbody>
-                </table>
-            </div>
-            <div style="display:flex; justify-content:flex-end; border-top:1px solid #ddd; padding-top:8px; margin-top: 10px;">
-                <button onclick="closeSalesReportModal()" style="background:#ddd; border:none; padding:6px 14px; border-radius:6px; cursor:pointer; font-size:11px;">ปิดหน้าต่าง</button>
-            </div>
+    <!-- Modal ประวัติใบเสร็จ (สำหรับพิมพ์ซ้ำ) -->
+<div class="modal" id="salesReportModal">
+    <div class="modal-content" style="width: 800px; max-height: 90vh;">
+        <h3 style="margin-top:0; color:var(--primary); font-size: 16px;">🖨️ ประวัติใบเสร็จ (พิมพ์ซ้ำ)</h3>
+        
+        <!-- ลบช่องกรองวันที่และยอดรวมออก เหลือแค่ตาราง -->
+        <div style="flex: 1; overflow-y: auto; max-height: 400px; border: 1px solid #ddd; border-radius: 6px; background: white; margin-bottom: 10px;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+                <thead>
+                    <tr style="background: var(--light-gray); text-align: left; border-bottom: 1px solid #ddd; position: sticky; top: 0;">
+                        <th style="padding: 6px;">เวลาเช็คบิล</th>
+                        <th style="padding: 6px;">โต๊ะ/คิว</th>
+                        <th style="padding: 6px;">รายการอาหาร</th>
+                        <th style="padding: 6px; text-align: right;">ยอดเงิน</th>
+                        <th style="padding: 6px; text-align: center;">จัดการ</th>
+                    </tr>
+                </thead>
+                <tbody id="salesHistoryTableBody">
+                    <tr><td colspan="5" style="text-align:center; padding:20px; color:var(--gray);">กำลังโหลดข้อมูล...</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div style="display:flex; justify-content:flex-end; border-top:1px solid #ddd; padding-top:8px;">
+            <button onclick="closeSalesReportModal()" style="background:#ddd; border:none; padding:6px 14px; border-radius:6px; cursor:pointer; font-size:11px;">ปิดหน้าต่าง</button>
         </div>
     </div>
+</div>
 
     <!-- Modal แก้ไขเมนู -->
     <div class="modal" id="editMenuModal">
@@ -672,31 +658,34 @@
     </div>
 
     <!-- Modal สำหรับเลือกการพิมพ์ตอนเช็คบิล -->
-    <div class="modal" id="checkoutModal">
-        <div class="modal-content" style="width: 700px; max-width: 95vw; text-align: center;">
-            <h3 style="margin-top:0; color: var(--primary); font-size: 18px;">💰 เลือกรูปแบบการเช็คบิล</h3>
-            <p id="checkoutTableTitle" style="font-size: 14px; font-weight: bold; margin-bottom: 20px; color: var(--text);"></p>
-            
-            <div style="display: flex; gap: 12px; width: 100%; box-sizing: border-box; margin-bottom: 15px;">
-                <button onclick="executeCheckout('ไม่ต้องพิมพ์')" style="flex: 1; background: #747d8c; color: white; padding: 25px 10px; border: none; border-radius: 12px; font-size: 15px; font-weight: bold; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: 0.2s;">
-                    <span style="font-size: 24px;">❌</span>
-                    <span>1. ไม่พิมพ์ใบเสร็จ</span>
-                </button>
-                <button onclick="executeCheckout('รอพิมพ์ใบเสร็จ')" style="flex: 1; background: #3742fa; color: white; padding: 25px 10px; border: none; border-radius: 12px; font-size: 15px; font-weight: bold; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: 0.2s;">
-                    <span style="font-size: 24px;">🖨️</span>
-                    <span>2. พิมพ์ใบเสร็จ</span>
-                </button>
-                <button onclick="executeCheckout('รอพิมพ์ใบเสร็จ+QR')" style="flex: 1; background: var(--success); color: white; padding: 25px 10px; border: none; border-radius: 12px; font-size: 15px; font-weight: bold; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: 0.2s;">
-                    <span style="font-size: 24px;">📱</span>
-                    <span>3. พิมพ์ใบเสร็จ+QRcode</span>
-                </button>
-            </div>
-            
-            <div style="margin-top: 15px; border-top: 1px solid #eee; padding-top: 15px;">
-                <button onclick="closeCheckoutModal()" style="background: #e2e8f0; color: var(--text); padding: 8px 24px; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: bold;">ยกเลิก</button>
-            </div>
+<div class="modal" id="checkoutModal">
+    <div class="modal-content" style="width: 700px; max-width: 95vw; text-align: center;">
+        <h3 style="margin-top:0; color: var(--primary); font-size: 18px;">💰 เลือกรูปแบบการเช็คบิล</h3>
+        
+        <!-- แสดงชื่อโต๊ะ และ ยอดรวมตัวใหญ่ -->
+        <p id="checkoutTableTitle" style="font-size: 16px; font-weight: bold; margin-bottom: 5px; color: var(--gray);"></p>
+        <div id="checkoutTotalAmount" style="font-size: 48px; font-weight: bold; color: #ff4757; margin-bottom: 25px; text-shadow: 1px 1px 2px rgba(0,0,0,0.1);">0.00 ฿</div>
+        
+        <div style="display: flex; gap: 12px; width: 100%; box-sizing: border-box; margin-bottom: 15px;">
+            <button onclick="executeCheckout('ไม่ต้องพิมพ์')" style="flex: 1; background: #747d8c; color: white; padding: 25px 10px; border: none; border-radius: 12px; font-size: 15px; font-weight: bold; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: 0.2s;">
+                <span style="font-size: 24px;">❌</span>
+                <span>1. ไม่พิมพ์ใบเสร็จ</span>
+            </button>
+            <button onclick="executeCheckout('รอพิมพ์ใบเสร็จ')" style="flex: 1; background: #3742fa; color: white; padding: 25px 10px; border: none; border-radius: 12px; font-size: 15px; font-weight: bold; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: 0.2s;">
+                <span style="font-size: 24px;">🖨️</span>
+                <span>2. พิมพ์ใบเสร็จ</span>
+            </button>
+            <button onclick="executeCheckout('รอพิมพ์ใบเสร็จ+QR')" style="flex: 1; background: var(--success); color: white; padding: 25px 10px; border: none; border-radius: 12px; font-size: 15px; font-weight: bold; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: 0.2s;">
+                <span style="font-size: 24px;">📱</span>
+                <span>3. พิมพ์ใบเสร็จ+QRcode</span>
+            </button>
+        </div>
+        
+        <div style="margin-top: 15px; border-top: 1px solid #eee; padding-top: 15px;">
+            <button onclick="closeCheckoutModal()" style="background: #e2e8f0; color: var(--text); padding: 8px 24px; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: bold;">ยกเลิก</button>
         </div>
     </div>
+</div>
 
     <script>
         let allMenus = [];
@@ -1519,12 +1508,31 @@
         let checkoutTargetTableId = null;
         let checkoutTargetTitle = null;
 
-        function openCheckoutModal(tableId, titleText) {
-            checkoutTargetTableId = tableId;
-            checkoutTargetTitle = titleText;
-            document.getElementById('checkoutTableTitle').innerText = `เช็คบิล: ${titleText}`;
-            document.getElementById('checkoutModal').style.display = 'flex';
-        }
+        async function openCheckoutModal(tableId, titleText) {
+    checkoutTargetTableId = tableId;
+    checkoutTargetTitle = titleText;
+    document.getElementById('checkoutTableTitle').innerText = `เช็คบิล: ${titleText}`;
+    document.getElementById('checkoutTotalAmount').innerText = 'กำลังคำนวณ...';
+    document.getElementById('checkoutModal').style.display = 'flex';
+
+    try {
+        const res = await fetch(`/api/orders/table/${tableId}`);
+        const orders = await res.json();
+        
+        let total = 0;
+        orders.forEach(ord => {
+            if (ord.items) {
+                ord.items.forEach(i => {
+                    total += Number(i.price) * Number(i.quantity);
+                });
+            }
+        });
+        
+        document.getElementById('checkoutTotalAmount').innerText = total.toLocaleString('th-TH', { minimumFractionDigits: 2 }) + ' ฿';
+    } catch(e) {
+        document.getElementById('checkoutTotalAmount').innerText = '0.00 ฿';
+    }
+}
 
         function closeCheckoutModal() {
             document.getElementById('checkoutModal').style.display = 'none';
@@ -1592,67 +1600,48 @@
         }
 
         async function loadSalesReport() {
-            const startDate = document.getElementById('startDate').value;
-            const endDate = document.getElementById('endDate').value;
-            
-            document.getElementById('totalSalesAmount').innerText = 'กำลังคำนวณ...';
-            
-            try {
-                let url = '/api/admin/sales-history';
-                let params = [];
-                if (startDate) params.push(`start_date=${startDate}`);
-                if (endDate) params.push(`end_date=${endDate}`);
-                if (params.length > 0) {
-                    url += `?${params.join('&')}`;
-                }
+    try {
+        const res = await fetch('/api/admin/sales-history'); // ดึงมาทั้งหมดเลย ไม่ส่งพารามิเตอร์วันที่
+        const historyList = await res.json();
+        
+        const tbody = document.getElementById('salesHistoryTableBody');
+        tbody.innerHTML = '';
+        salesHistoryCache = {};
 
-                const res = await fetch(url);
-                const historyList = await res.json();
-                
-                let totalSum = 0;
-                const tbody = document.getElementById('salesHistoryTableBody');
-                tbody.innerHTML = '';
-                salesHistoryCache = {};
-
-                if (historyList.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:20px; color:var(--gray);">ไม่พบประวัติยอดขายในช่วงเวลานี้</td></tr>`;
-                    document.getElementById('totalSalesAmount').innerText = '0.00 ฿';
-                    return;
-                }
-
-                let htmlContent = '';
-                historyList.forEach(record => {
-                    totalSum += Number(record.total_price || 0);
-                    salesHistoryCache[record.id] = record;
-                    
-                    let itemsSummary = '';
-                    if (record.items && Array.isArray(record.items)) {
-                        itemsSummary = record.items.map(i => `${i.name} x${i.quantity}`).join(', ');
-                    }
-
-                    const formattedDate = new Date(record.checked_out_at).toLocaleString('th-TH');
-
-                    htmlContent += `
-                        <tr style="border-bottom: 1px solid #f1f2f6;">
-                            <td style="padding: 5px 6px; color: var(--gray);">${formattedDate}</td>
-                            <td style="padding: 5px 6px; font-weight: bold; color: var(--primary);">${record.title}</td>
-                            <td style="padding: 5px 6px; max-width: 180px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${itemsSummary}">${itemsSummary}</td>
-                            <td style="padding: 5px 6px; text-align: right; font-weight: bold; color: var(--success);">${Number(record.total_price).toFixed(2)} ฿</td>
-                            <td style="padding: 5px 6px; text-align: center;">
-                                <button onclick="reprintReceiptBackend('${record.id}', '${record.title}', ${record.total_price})" style="background:#3742fa; color:white; border:none; padding:2px 5px; border-radius:4px; cursor:pointer; font-size:10px;">🖨️ พิมพ์ซ้ำ</button>
-                            </td>
-                        </tr>
-                    `;
-                });
-                
-                tbody.innerHTML = htmlContent;
-                document.getElementById('totalSalesAmount').innerText = totalSum.toFixed(2) + ' ฿';
-            } catch (e) {
-                console.error(e);
-                document.getElementById('totalSalesAmount').innerText = '0.00 ฿';
-                document.getElementById('salesHistoryTableBody').innerHTML = `<tr><td colspan="5" style="text-align:center; color:red; padding:20px;">เกิดข้อผิดพลาดในการโหลดข้อมูล</td></tr>`;
-            }
+        if (historyList.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:20px; color:var(--gray);">ไม่มีประวัติใบเสร็จ</td></tr>`;
+            return;
         }
+
+        let htmlContent = '';
+        historyList.forEach(record => {
+            salesHistoryCache[record.id] = record;
+            
+            let itemsSummary = '';
+            if (record.items && Array.isArray(record.items)) {
+                itemsSummary = record.items.map(i => `${i.name} x${i.quantity}`).join(', ');
+            }
+
+            const formattedDate = new Date(record.checked_out_at).toLocaleString('th-TH');
+
+            htmlContent += `
+                <tr style="border-bottom: 1px solid #f1f2f6;">
+                    <td style="padding: 5px 6px; color: var(--gray);">${formattedDate}</td>
+                    <td style="padding: 5px 6px; font-weight: bold; color: var(--primary);">${record.title}</td>
+                    <td style="padding: 5px 6px; max-width: 180px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${itemsSummary}">${itemsSummary}</td>
+                    <td style="padding: 5px 6px; text-align: right; font-weight: bold; color: var(--success);">${Number(record.total_price).toFixed(2)} ฿</td>
+                    <td style="padding: 5px 6px; text-align: center;">
+                        <button onclick="reprintReceiptBackend('${record.id}', '${record.title}', ${record.total_price})" style="background:#3742fa; color:white; border:none; padding:2px 5px; border-radius:4px; cursor:pointer; font-size:10px;">🖨️ พิมพ์ซ้ำ</button>
+                    </td>
+                </tr>
+            `;
+        });
+        
+        tbody.innerHTML = htmlContent;
+    } catch (e) {
+        document.getElementById('salesHistoryTableBody').innerHTML = `<tr><td colspan="5" style="text-align:center; color:red; padding:20px;">เกิดข้อผิดพลาดในการโหลดข้อมูล</td></tr>`;
+    }
+}
 
         function filterManageMenuList() {
             clearTimeout(manageMenuSearchTimeout);

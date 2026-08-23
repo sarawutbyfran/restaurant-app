@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ByfranCircuit - ยอดขายเรียลไทม์</title>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Prompt', sans-serif;
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 0;
+            color: #1c1e21;
+        }
+        .header {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            border-bottom-left-radius: 20px;
+            border-bottom-right-radius: 20px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+        .header h1 { margin: 0; font-size: 22px; }
+        .header p { margin: 5px 0 0 0; font-size: 13px; opacity: 0.9; }
+        
+        .container {
+            padding: 20px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .summary-card {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            margin-top: -30px;
+            position: relative;
+            z-index: 10;
+        }
+        .summary-card h2 {
+            margin: 0;
+            font-size: 14px;
+            color: #747d8c;
+        }
+        .total-amount {
+            font-size: 42px;
+            font-weight: 700;
+            color: #2ed573;
+            margin: 10px 0;
+        }
+        
+        .date-filter {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+        .date-filter input {
+            padding: 8px 12px;
+            border: 1px solid #dfe4ea;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 14px;
+        }
+
+        .list-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 25px 0 10px 0;
+        }
+        .list-header h3 { margin: 0; font-size: 16px; color: #2f3542; }
+        .refresh-btn {
+            background: #eccc68;
+            color: #2f3542;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .history-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .history-card {
+            background: white;
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .history-card .info {
+            flex: 1;
+        }
+        .history-card .title {
+            font-weight: bold;
+            color: #2f3542;
+            font-size: 15px;
+            margin-bottom: 4px;
+        }
+        .history-card .time {
+            color: #747d8c;
+            font-size: 12px;
+        }
+        .history-card .amount {
+            font-weight: bold;
+            color: #ff4757;
+            font-size: 18px;
+        }
+        
+        /* Loading Spinner */
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #2ed573;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>ByfranCircuit Dashboard</h1>
+        <p>ระบบสรุปยอดขายสำหรับผู้บริหาร</p>
+        <div style="height: 30px;"></div>
+    </div>
+
+    <div class="container">
+        <div class="summary-card">
+            <h2 id="summary-title">ยอดขายประจำวันนี้</h2>
+            <div class="total-amount" id="totalSalesAmount">0.00</div>
+            <div style="font-size: 14px; color: #a4b0be;">บาท</div>
+            
+            <div class="date-filter">
+                <input type="date" id="filterDate" onchange="loadDashboard()">
+            </div>
+        </div>
+
+        <div class="list-header">
+            <h3>รายการบิลที่เช็คแล้ว</h3>
+            <button class="refresh-btn" onclick="loadDashboard()">🔄 อัปเดตข้อมูล</button>
+        </div>
+
+        <div class="history-list" id="salesHistoryList">
+            <!-- ข้อมูลจะถูกโหลดมาใส่ตรงนี้ -->
+            <div class="loader" id="loader"></div>
+        </div>
+    </div>
+
+    <script>
+        // เซ็ตวันที่ปัจจุบันเป็นค่าเริ่มต้น
+        document.addEventListener("DOMContentLoaded", () => {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('filterDate').value = today;
+            loadDashboard();
+            
+            // ให้รีเฟรชข้อมูลอัตโนมัติทุกๆ 30 วินาที เพื่อความเป็น Real-time
+            setInterval(loadDashboard, 30000); 
+        });
+
+        async function loadDashboard() {
+            const dateVal = document.getElementById('filterDate').value;
+            const container = document.getElementById('salesHistoryList');
+            const totalDisplay = document.getElementById('totalSalesAmount');
+            
+            totalDisplay.innerText = '...';
+            
+            try {
+                // ดึงข้อมูลยอดขาย โดยกรองตามวันที่ที่เลือก
+                let url = '/api/admin/sales-history';
+                if (dateVal) {
+                    url += `?start_date=${dateVal}&end_date=${dateVal}`;
+                }
+
+                const res = await fetch(url);
+                const historyList = await res.json();
+
+                if (historyList.length === 0) {
+                    container.innerHTML = '<div style="text-align: center; color: #747d8c; margin-top: 20px;">ไม่มีบิลยอดขายในวันนี้</div>';
+                    totalDisplay.innerText = '0.00';
+                    return;
+                }
+
+                let totalSum = 0;
+                let htmlContent = '';
+
+                // เรียงลำดับเอาบิลล่าสุดขึ้นก่อน (ถ้า API ไม่ได้เรียงมาให้)
+                historyList.sort((a, b) => new Date(b.checked_out_at) - new Date(a.checked_out_at));
+
+                historyList.forEach(record => {
+                    const amount = Number(record.total_price || 0);
+                    totalSum += amount;
+                    
+                    const timeOpt = { hour: '2-digit', minute: '2-digit' };
+                    const timeStr = new Date(record.checked_out_at).toLocaleTimeString('th-TH', timeOpt);
+
+                    htmlContent += `
+                        <div class="history-card">
+                            <div class="info">
+                                <div class="title">${record.title}</div>
+                                <div class="time">เวลา: ${timeStr} น.</div>
+                            </div>
+                            <div class="amount">+${amount.toLocaleString('th-TH', { minimumFractionDigits: 2 })} ฿</div>
+                        </div>
+                    `;
+                });
+
+                container.innerHTML = htmlContent;
+                totalDisplay.innerText = totalSum.toLocaleString('th-TH', { minimumFractionDigits: 2 });
+
+            } catch (err) {
+                console.error(err);
+                container.innerHTML = '<div style="text-align: center; color: #ff4757; margin-top: 20px;">ไม่สามารถดึงข้อมูลได้ (Offline)</div>';
+                totalDisplay.innerText = 'Error';
+            }
+        }
+    </script>
+</body>
+</html>
