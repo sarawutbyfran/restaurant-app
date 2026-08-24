@@ -6,7 +6,6 @@
     <title>ByfranCircuit - Executive Dashboard</title>
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
-    <!-- ไอคอนสำหรับเพิ่มไปหน้าจอโฮม iOS Safari -->
     <link rel="apple-touch-icon" href="logo.png">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -42,38 +41,15 @@
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
             position: relative;
         }
-        .header h1 {
-            margin: 0;
-            font-size: 20px;
-            font-weight: 700;
-            letter-spacing: 0.5px;
-        }
-        .header .subtitle {
-            margin: 5px 0 15px 0;
-            font-size: 12px;
-            color: #b2bec3;
-        }
+        .header h1 { margin: 0; font-size: 20px; font-weight: 700; letter-spacing: 0.5px; }
+        .header .subtitle { margin: 5px 0 15px 0; font-size: 12px; color: #b2bec3; }
         .header .status {
-            position: absolute;
-            top: 25px;
-            right: 20px;
-            font-size: 10px;
-            background: rgba(0, 184, 148, 0.2);
-            color: #55efc4;
-            padding: 4px 10px;
-            border-radius: 12px;
-            border: 1px solid rgba(0, 184, 148, 0.4);
-            display: flex;
-            align-items: center;
-            gap: 5px;
+            position: absolute; top: 25px; right: 20px; font-size: 10px;
+            background: rgba(0, 184, 148, 0.2); color: #55efc4;
+            padding: 4px 10px; border-radius: 12px; border: 1px solid rgba(0, 184, 148, 0.4);
+            display: flex; align-items: center; gap: 5px;
         }
-        .live-dot {
-            width: 6px;
-            height: 6px;
-            background-color: #55efc4;
-            border-radius: 50%;
-            animation: pulse 1.5s infinite;
-        }
+        .live-dot { width: 6px; height: 6px; background-color: #55efc4; border-radius: 50%; animation: pulse 1.5s infinite; }
 
         @keyframes pulse {
             0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(85, 239, 196, 0.7); }
@@ -81,71 +57,20 @@
             100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(85, 239, 196, 0); }
         }
 
-        /* Navigation Tabs */
-        .nav-tabs {
-            display: flex;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
-            padding: 4px;
-            gap: 4px;
-            margin-top: 10px;
-        }
-        .tab-btn {
-            flex: 1;
-            background: transparent;
-            border: none;
-            color: #b2bec3;
-            padding: 8px;
-            border-radius: 8px;
-            font-family: inherit;
-            font-size: 13px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: 0.2s;
-            text-align: center;
-        }
-        .tab-btn.active {
-            background: white;
-            color: var(--text-dark);
-            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-        }
+        .nav-tabs { display: flex; background: rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 4px; gap: 4px; margin-top: 10px; }
+        .tab-btn { flex: 1; background: transparent; border: none; color: #b2bec3; padding: 8px; border-radius: 8px; font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer; transition: 0.2s; text-align: center; }
+        .tab-btn.active { background: white; color: var(--text-dark); box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
 
-        .container {
-            padding: 20px;
-            max-width: 900px;
-            margin: 0 auto;
-        }
-
+        .container { padding: 20px; max-width: 900px; margin: 0 auto; }
         .dashboard-view { display: none; }
         .dashboard-view.active { display: block; }
 
-        /* KPI Cards Grid */
-        .kpi-grid {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 15px;
-            margin-top: 20px;
-        }
-        .kpi-card {
-            background: var(--card-bg);
-            border-radius: 16px;
-            padding: 16px 20px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.04);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            position: relative;
-            overflow: hidden;
-        }
-        .kpi-card::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; width: 4px; height: 100%;
-        }
+        .kpi-grid { display: grid; grid-template-columns: 1fr; gap: 15px; margin-top: 20px; }
+        .kpi-card { background: var(--card-bg); border-radius: 16px; padding: 16px 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.04); display: flex; flex-direction: column; justify-content: center; position: relative; overflow: hidden; }
+        .kpi-card::before { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; }
         .kpi-today::before { background: var(--success); }
         .kpi-month::before { background: var(--primary); }
         .kpi-year::before { background: #6c5ce7; }
-
         .kpi-title { font-size: 12px; color: var(--text-gray); font-weight: 600; margin-bottom: 2px; }
         .kpi-amount { font-size: 28px; font-weight: 700; color: var(--text-dark); display: flex; align-items: baseline; gap: 4px; }
         .kpi-unit { font-size: 13px; color: var(--text-gray); font-weight: 400; }
@@ -155,134 +80,99 @@
             .kpi-amount { font-size: 24px; }
         }
 
-        /* Section Header */
-        .section-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin: 25px 0 10px 0;
-        }
+        .section-header { display: flex; justify-content: space-between; align-items: center; margin: 25px 0 10px 0; }
         .section-header h3 { margin: 0; font-size: 15px; font-weight: 600; }
-        .btn-action-sm {
-            background: #dfe6e9;
-            border: none;
-            color: var(--text-dark);
-            padding: 5px 10px;
-            border-radius: 8px;
-            font-size: 11px;
-            font-weight: 600;
-            cursor: pointer;
-        }
+        .btn-action-sm { background: #dfe6e9; border: none; color: var(--text-dark); padding: 5px 10px; border-radius: 8px; font-size: 11px; font-weight: 600; cursor: pointer; }
 
         /* Chart Card */
-        .chart-card {
-            background: var(--card-bg);
-            border-radius: 16px;
-            padding: 20px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.04);
-            margin-top: 15px;
-        }
+        .chart-card { background: var(--card-bg); border-radius: 16px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.04); margin-top: 15px; }
         .chart-header { display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px; }
-        @media (min-width: 500px) {
-            .chart-header { flex-direction: row; justify-content: space-between; align-items: center; }
-        }
+        @media (min-width: 500px) { .chart-header { flex-direction: row; justify-content: space-between; align-items: center; } }
         
         .chart-controls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
         .chart-toggles { display: flex; background: #f1f2f6; border-radius: 8px; padding: 3px; gap: 3px; }
         .chart-toggle-btn { background: transparent; border: none; padding: 4px 10px; font-size: 11px; font-weight: 600; border-radius: 6px; cursor: pointer; color: var(--text-gray); font-family: inherit; }
         .chart-toggle-btn.active { background: white; color: var(--primary); box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-        
         .chart-select { padding: 5px 8px; border: 1px solid #ced6e0; border-radius: 8px; font-family: inherit; font-size: 11px; background: white; font-weight: 600; color: var(--text-dark); outline: none; }
 
-        .bar-chart-container { display: flex; align-items: flex-end; gap: 6px; height: 180px; padding-top: 20px; border-bottom: 1px solid #dfe6e9; overflow-x: auto; padding-bottom: 5px; }
-        .bar-group { flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%; justify-content: flex-end; min-width: 24px; }
-        .bar-value { font-size: 8px; color: var(--text-gray); margin-bottom: 4px; white-space: nowrap; }
-        .bar { width: 100%; max-width: 20px; background: linear-gradient(180deg, var(--primary) 0%, #0652dd 100%); border-radius: 4px 4px 0 0; min-height: 2px; }
-        .bar-label { font-size: 9px; color: var(--text-gray); margin-top: 6px; text-align: center; white-space: nowrap; }
-
-        /* Split View */
-        .split-dashboard {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 15px;
-            margin-top: 10px;
+        /* การแก้ไขปัญหา 1: กราฟหายบนมือถือ */
+        .bar-chart-container { 
+            display: flex; 
+            align-items: flex-end; 
+            gap: 8px; 
+            height: 200px; 
+            padding-top: 20px; 
+            border-bottom: 1px solid #dfe6e9; 
+            overflow-x: auto; /* เปิดให้เลื่อนกราฟได้ถ้ายาวเกินจอ */
+            padding-bottom: 10px; 
         }
-        @media (min-width: 768px) {
-            .split-dashboard { grid-template-columns: 320px 1fr; }
+        .bar-group { 
+            flex: 1; 
+            flex-shrink: 0; /* ห้ามย่อกราฟจนพังในมือถือเด็ดขาด */
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            height: 100%; 
+            justify-content: flex-end; 
+            min-width: 35px; /* ล็อกความกว้างขั้นต่ำ */
         }
+        .bar-value { font-size: 8.5px; color: var(--text-gray); margin-bottom: 4px; white-space: nowrap; font-weight: 600; }
+        .bar { width: 100%; max-width: 22px; background: linear-gradient(180deg, var(--primary) 0%, #0652dd 100%); border-radius: 4px 4px 0 0; min-height: 2px; }
+        .bar-label { font-size: 9.5px; color: var(--text-gray); margin-top: 6px; text-align: center; white-space: nowrap; }
 
-        .pane-card {
-            background: var(--card-bg);
-            border-radius: 16px;
-            padding: 16px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.04);
-            display: flex;
-            flex-direction: column;
-        }
-
+        .split-dashboard { display: grid; grid-template-columns: 1fr; gap: 15px; margin-top: 10px; }
+        @media (min-width: 768px) { .split-dashboard { grid-template-columns: 320px 1fr; } }
+        .pane-card { background: var(--card-bg); border-radius: 16px; padding: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.04); display: flex; flex-direction: column; }
         .pane-title { font-size: 13px; font-weight: 600; margin-bottom: 12px; color: var(--text-dark); display: flex; justify-content: space-between; align-items: center; }
         
-        .date-range-box {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            margin-bottom: 12px;
-            background: #f8f9fa;
-            padding: 10px;
-            border-radius: 10px;
-            border: 1px solid #edf2f7;
+        .date-range-box { display: flex; flex-direction: column; gap: 12px; margin-bottom: 12px; background: #fff; padding: 12px; border-radius: 12px; border: 1px solid #edf2f7; }
+        .date-input-group { display: flex; justify-content: space-between; align-items: center; font-size: 13px; font-weight: bold; color: var(--text-dark); }
+        
+        /* การแก้ไขปัญหา 2: ปรับดีไซน์ช่องใส่วันที่เป็นสีส้มชัดเจน */
+        .date-input-group input[type="date"] { 
+            padding: 8px 12px; 
+            border: 2px solid #e17055; 
+            border-radius: 8px; 
+            font-family: inherit; 
+            font-size: 13px; 
+            background: #fff9ed; 
+            color: #d35400; 
+            font-weight: 700;
+            outline: none;
+            width: 140px;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 2px 4px rgba(225, 112, 85, 0.1);
         }
-        .date-input-group { display: flex; justify-content: space-between; align-items: center; font-size: 12px; }
-        .date-input-group input { padding: 5px; border: 1px solid #ced6e0; border-radius: 6px; font-family: inherit; font-size: 12px; }
-
-        .summary-filter-box {
-            background: #e1f5fe;
-            border: 1px solid #b3e5fc;
-            padding: 10px;
-            border-radius: 10px;
-            text-align: center;
-            margin-top: auto;
-        }
-        .summary-filter-title { font-size: 11px; color: #0277bd; }
-        .summary-filter-amount { font-size: 18px; font-weight: 700; color: #01579b; margin-top: 2px; }
-
-        .tx-scroll-pane {
-            max-height: 380px;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            padding-right: 4px;
+        .date-input-group input[type="date"]:focus {
+            background: #ffeaa7;
+            border-color: #d35400;
+            box-shadow: 0 0 8px rgba(225, 112, 85, 0.3);
         }
 
-        .transaction-item {
-            background: #fafbfc;
-            border-radius: 10px;
-            overflow: hidden;
-            border: 1px solid #edf2f7;
-        }
-        .transaction-header { padding: 10px 12px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+        .summary-filter-box { background: #e1f5fe; border: 1px solid #b3e5fc; padding: 12px; border-radius: 12px; text-align: center; margin-top: auto; }
+        .summary-filter-title { font-size: 12px; color: #0277bd; font-weight: 600; }
+        .summary-filter-amount { font-size: 22px; font-weight: 700; color: #01579b; margin-top: 4px; }
+
+        .tx-scroll-pane { max-height: 450px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding-right: 4px; min-height: 150px; }
+        .transaction-item { background: #fafbfc; border-radius: 10px; overflow: hidden; border: 1px solid #edf2f7; box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
+        .transaction-header { padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
         .transaction-header:active { background-color: #f1f2f6; }
-
         .tx-info { display: flex; align-items: center; gap: 8px; }
         .tx-title { font-size: 13px; font-weight: 600; color: var(--text-dark); }
-        .tx-time { font-size: 10px; color: var(--text-gray); }
-
+        .tx-time { font-size: 11px; color: var(--text-gray); }
         .tx-right { display: flex; align-items: center; gap: 8px; }
-        .tx-amount { font-size: 13px; font-weight: 700; color: var(--success); }
+        .tx-amount { font-size: 14px; font-weight: 700; color: var(--success); }
         .tx-arrow { font-size: 9px; color: #b2bec3; transition: transform 0.2s; }
-
         .transaction-details { display: none; padding: 10px 12px; border-top: 1px dashed #edf2f7; background: white; }
-        .order-item-row { display: flex; justify-content: space-between; font-size: 11px; padding: 3px 0; color: var(--text-gray); }
-        .order-item-name { flex: 1; padding-right: 8px; }
+        .order-item-row { display: flex; justify-content: space-between; font-size: 12px; padding: 4px 0; color: var(--text-gray); }
+        .order-item-name { flex: 1; padding-right: 8px; font-weight: 500; }
         .order-item-qty { font-weight: 600; color: var(--text-dark); }
 
-        /* Modal */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000; padding: 15px; box-sizing: border-box; }
         .modal-content { background: white; width: 100%; max-width: 700px; max-height: 85vh; border-radius: 16px; padding: 20px; display: flex; flex-direction: column; box-sizing: border-box; }
         .modal-body { flex: 1; overflow-y: auto; margin-top: 10px; display: flex; flex-direction: column; gap: 8px; }
-
-        /* Ranking */
+        
         .rank-list { display: flex; flex-direction: column; gap: 10px; padding-bottom: 40px; }
         .rank-item { background: var(--card-bg); border-radius: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.02); display: flex; align-items: center; padding: 12px 16px; gap: 12px; border: 1px solid #edf2f7; }
         .rank-number { font-size: 16px; font-weight: 700; width: 28px; text-align: center; color: var(--text-gray); }
@@ -293,7 +183,6 @@
         .rank-name { font-size: 14px; font-weight: 600; color: var(--text-dark); margin-bottom: 2px; }
         .rank-stats { font-size: 11px; color: var(--text-gray); }
         .rank-sales { font-size: 15px; font-weight: 700; color: var(--primary); text-align: right; }
-
         .empty-state { text-align: center; padding: 30px; color: var(--text-gray); font-size: 13px; }
     </style>
 </head>
@@ -306,7 +195,6 @@
             <div class="live-dot"></div>
             Real-time
         </div>
-
         <div class="nav-tabs">
             <button class="tab-btn active" onclick="switchTab('sales', this)">📊 ภาพรวม & กราฟ</button>
             <button class="tab-btn" onclick="switchTab('ranking', this)">🏆 เมนูขายดี</button>
@@ -314,7 +202,6 @@
     </div>
 
     <div class="container">
-        <!-- VIEW 1 -->
         <div id="view-sales" class="dashboard-view active">
             <div class="kpi-grid">
                 <div class="kpi-card kpi-today">
@@ -331,19 +218,15 @@
                 </div>
             </div>
 
-            <!-- กราฟแสดงยอดขายอัจฉริยะ -->
             <div class="chart-card">
                 <div class="chart-header">
                     <h3 id="chartTitle" style="margin:0; font-size:14px;">📈 สถิติยอดขาย</h3>
                     <div class="chart-controls">
-                        <!-- ตัวเลือกเดือน (แสดงเฉพาะตอนโหมดรายเดือน) -->
                         <select id="chartMonthSelect" class="chart-select" style="display:none;" onchange="renderChart(cachedHistory)"></select>
-                        <!-- ตัวเลือกปี -->
                         <select id="chartYearSelect" class="chart-select" onchange="renderChart(cachedHistory)"></select>
-                        
                         <div class="chart-toggles">
-                            <button class="chart-toggle-btn active" id="btnMonthly" onclick="setChartMode('monthly')">รายวัน (30-31 วัน)</button>
-                            <button class="chart-toggle-btn" id="btnYearly" onclick="setChartMode('yearly')">รายเดือน (12 เดือน)</button>
+                            <button class="chart-toggle-btn active" id="btnMonthly" onclick="setChartMode('monthly')">รายวัน</button>
+                            <button class="chart-toggle-btn" id="btnYearly" onclick="setChartMode('yearly')">รายเดือน</button>
                         </div>
                     </div>
                 </div>
@@ -370,7 +253,7 @@
                             <input type="date" id="filterEndDate" onchange="filterTransactionsByDateRange()">
                         </div>
                     </div>
-                    <button class="btn-action-sm" onclick="resetDateFilter()" style="margin-bottom: 12px; background: #ffeaa7; color: #d63031;">🔄 ล้างตัวกรอง (ดูวันนี้)</button>
+                    <button class="btn-action-sm" onclick="resetDateFilter()" style="margin-bottom: 12px; background: #ffeaa7; color: #d63031; width: 100%; padding: 8px;">🔄 ล้างตัวกรอง (ดูเฉพาะวันนี้)</button>
                     
                     <div class="summary-filter-box">
                         <div class="summary-filter-title" id="filterSummaryLabel">ยอดรวมช่วงวันที่เลือก</div>
@@ -384,13 +267,12 @@
                         <span id="filteredCountBadge" style="font-size: 11px; color: var(--text-gray); font-weight: normal;">(0 บิล)</span>
                     </div>
                     <div class="tx-scroll-pane" id="filteredTransactionList">
-                        <div class="empty-state">ไม่มีรายการบิลในช่วงเวลานี้</div>
+                        <div class="empty-state">กำลังโหลดข้อมูล...</div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- VIEW 2 -->
         <div id="view-ranking" class="dashboard-view">
             <div class="section-header" style="margin-top: 15px;">
                 <h3>🏆 จัดอันดับเมนูยอดฮิต (ตามจำนวนที่ขายได้)</h3>
@@ -401,7 +283,7 @@
         </div>
     </div>
 
-    <!-- Modal -->
+    <!-- Modal บิลทั้งหมด -->
     <div class="modal" id="allTransactionsModal">
         <div class="modal-content">
             <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #edf2f7; padding-bottom: 10px;">
@@ -416,7 +298,29 @@
 
     <script>
         let cachedHistory = [];
-        let currentChartMode = 'monthly'; // 'monthly' = รายวันแยกตามเดือน, 'yearly' = รายเดือนแยกตามปี
+        let currentChartMode = 'monthly'; 
+
+        // การแก้ไขปัญหา 3: เขียนตัวป้องกัน Error ขั้นสูงสุดสำหรับข้อมูลวันที่
+        function getSafeDate(dateInput) {
+            if (!dateInput) return new Date(0); // กันค่า null
+            try {
+                let d;
+                if (typeof dateInput === 'string') {
+                    // รองรับ YYYY-MM-DD HH:MM:SS ให้แปลงเป็นมาตรฐานสากล
+                    let safeStr = dateInput.trim();
+                    if (safeStr.includes(' ') && !safeStr.includes('T')) {
+                        safeStr = safeStr.replace(' ', 'T');
+                    }
+                    d = new Date(safeStr);
+                } else {
+                    d = new Date(dateInput);
+                }
+                // ถ้าแปลงแล้วเป็น Invalid ให้คืนค่าเป็นวันที่ศูนย์
+                return isNaN(d.getTime()) ? new Date(0) : d;
+            } catch (e) {
+                return new Date(0);
+            }
+        }
 
         document.addEventListener("DOMContentLoaded", () => {
             const todayStr = new Date().toLocaleDateString('en-CA');
@@ -430,7 +334,6 @@
         function switchTab(viewName, btnElement) {
             document.querySelectorAll('.dashboard-view').forEach(v => v.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-
             document.getElementById(`view-${viewName}`).classList.add('active');
             btnElement.classList.add('active');
         }
@@ -439,13 +342,11 @@
             try {
                 const res = await fetch('/api/admin/sales-history');
                 cachedHistory = await res.json();
-
                 calculateKPIs(cachedHistory);
                 populateChartSelectors(cachedHistory);
                 renderChart(cachedHistory);
                 filterTransactionsByDateRange(); 
                 renderRankingList(cachedHistory);
-
             } catch (error) {
                 console.error("Error loading dashboard:", error);
             }
@@ -456,13 +357,10 @@
             const todayStr = now.toLocaleDateString('en-CA');
             const currentMonth = now.getMonth();
             const currentYear = now.getFullYear();
-
-            let totalToday = 0;
-            let totalMonth = 0;
-            let totalYear = 0;
+            let totalToday = 0, totalMonth = 0, totalYear = 0;
 
             historyList.forEach(record => {
-                const recordDate = new Date(record.checked_out_at);
+                const recordDate = getSafeDate(record.checked_out_at);
                 const rDateStr = recordDate.toLocaleDateString('en-CA');
                 const rMonth = recordDate.getMonth();
                 const rYear = recordDate.getFullYear();
@@ -470,13 +368,9 @@
 
                 if (rYear === currentYear) {
                     totalYear += amount;
-                    if (rMonth === currentMonth) {
-                        totalMonth += amount;
-                    }
+                    if (rMonth === currentMonth) totalMonth += amount;
                 }
-                if (rDateStr === todayStr) {
-                    totalToday += amount;
-                }
+                if (rDateStr === todayStr) totalToday += amount;
             });
 
             document.getElementById('salesToday').innerHTML = `${totalToday.toLocaleString('th-TH', {minimumFractionDigits: 2})} <span class="kpi-unit">฿</span>`;
@@ -484,33 +378,29 @@
             document.getElementById('salesYear').innerHTML = `${totalYear.toLocaleString('th-TH', {minimumFractionDigits: 2})} <span class="kpi-unit">฿</span>`;
         }
 
-        // เติมข้อมูลตัวเลือกเดือนและปีใน Dropdown กราฟ
         function populateChartSelectors(historyList) {
             const yearSelect = document.getElementById('chartYearSelect');
             const monthSelect = document.getElementById('chartMonthSelect');
-            
             const yearsSet = new Set();
             const monthsMap = {};
             const monthsName = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
 
             historyList.forEach(record => {
-                const d = new Date(record.checked_out_at);
+                const d = getSafeDate(record.checked_out_at);
                 const yr = d.getFullYear();
-                yearsSet.add(yr);
+                if(!isNaN(yr) && yr > 2000) yearsSet.add(yr); // ป้องกันปีเพี้ยน
 
                 const mKey = `${yr}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-                if (!monthsMap[mKey]) {
+                if (!monthsMap[mKey] && !isNaN(d.getMonth())) {
                     monthsMap[mKey] = `${monthsName[d.getMonth()]} ${yr + 543}`;
                 }
             });
 
-            // ถ้าไม่มีข้อมูลเลย ให้ใช้วันที่ปัจจุบัน
             if (yearsSet.size === 0) yearsSet.add(new Date().getFullYear());
 
             const currentYearVal = new Date().getFullYear();
             const currentMonthKey = `${currentYearVal}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
 
-            // เติมปี
             const selectedYearBefore = yearSelect.value;
             yearSelect.innerHTML = '';
             Array.from(yearsSet).sort((a,b) => b - a).forEach(yr => {
@@ -518,7 +408,6 @@
             });
             if (selectedYearBefore) yearSelect.value = selectedYearBefore;
 
-            // เติมเดือน
             const selectedMonthBefore = monthSelect.value;
             monthSelect.innerHTML = '';
             Object.keys(monthsMap).sort().reverse().forEach(mKey => {
@@ -535,10 +424,7 @@
             currentChartMode = mode;
             document.getElementById('btnMonthly').classList.toggle('active', mode === 'monthly');
             document.getElementById('btnYearly').classList.toggle('active', mode === 'yearly');
-            
-            // สลับการแสดงผล Dropdown เดือน
             document.getElementById('chartMonthSelect').style.display = mode === 'monthly' ? 'block' : 'none';
-            
             renderChart(cachedHistory);
         }
 
@@ -551,47 +437,34 @@
             }
 
             const chartData = {};
-
             if (currentChartMode === 'monthly') {
-                // โหมดรายเดือน: เลือกเดือน แล้วแสดงยอดขายแยกตามรายวันในเดือนนั้น (1 ถึง 28/29/30/31)
                 const monthSelectVal = document.getElementById('chartMonthSelect').value;
                 const [targetYr, targetMo] = monthSelectVal ? monthSelectVal.split('-') : [new Date().getFullYear(), new Date().getMonth() + 1];
-                
                 titleEl.innerText = `📈 ยอดขายรายวัน (เดือน ${document.getElementById('chartMonthSelect').selectedOptions[0]?.text || ''})`;
 
-                // หาจำนวนวันในเดือนนั้น
                 const daysInMonth = new Date(targetYr, targetMo, 0).getDate();
-                for (let d = 1; d <= daysInMonth; d++) {
-                    chartData[d] = { label: `${d}`, total: 0 };
-                }
+                for (let d = 1; d <= daysInMonth; d++) { chartData[d] = { label: `${d}`, total: 0 }; }
 
                 historyList.forEach(record => {
-                    const d = new Date(record.checked_out_at);
+                    const d = getSafeDate(record.checked_out_at);
                     if (d.getFullYear() == targetYr && (d.getMonth() + 1) == targetMo) {
                         const dayNum = d.getDate();
-                        if (chartData[dayNum]) {
-                            chartData[dayNum].total += Number(record.total_price || 0);
-                        }
+                        if (chartData[dayNum]) chartData[dayNum].total += Number(record.total_price || 0);
                     }
                 });
-
             } else {
-                // โหมดรายปี: เลือกปี แล้วแสดงยอดขายแยกตาม 12 เดือนของปีนั้น
                 const yearSelectVal = document.getElementById('chartYearSelect').value;
                 const targetYr = yearSelectVal ? parseInt(yearSelectVal) : new Date().getFullYear();
-
                 titleEl.innerText = `📈 ยอดขายรายเดือน (ปี พ.ศ. ${targetYr + 543})`;
 
                 const monthsName = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
-                monthsName.forEach((m, idx) => {
-                    chartData[idx] = { label: m, total: 0 };
-                });
+                monthsName.forEach((m, idx) => { chartData[idx] = { label: m, total: 0 }; });
 
                 historyList.forEach(record => {
-                    const d = new Date(record.checked_out_at);
+                    const d = getSafeDate(record.checked_out_at);
                     if (d.getFullYear() === targetYr) {
                         const mIdx = d.getMonth();
-                        chartData[mIdx].total += Number(record.total_price || 0);
+                        if(chartData[mIdx]) chartData[mIdx].total += Number(record.total_price || 0);
                     }
                 });
             }
@@ -630,7 +503,6 @@
 
             const startDate = new Date(startStr);
             startDate.setHours(0, 0, 0, 0);
-
             const endDate = new Date(endStr);
             endDate.setHours(23, 59, 59, 999);
 
@@ -640,7 +512,7 @@
             }
 
             const filtered = cachedHistory.filter(record => {
-                const recordDate = new Date(record.checked_out_at);
+                const recordDate = getSafeDate(record.checked_out_at);
                 return recordDate >= startDate && recordDate <= endDate;
             });
 
@@ -661,57 +533,97 @@
             filterTransactionsByDateRange();
         }
 
+        // การแก้ไขปัญหา 3: อัปเกรดระบบแสดงผลบิล ป้องกัน Error จอดับ 100%
         function renderTransactionListIntoContainer(list, containerElement, prefixId) {
-            if (!list || list.length === 0) {
+            if (!containerElement) return;
+            if (!list || !Array.isArray(list) || list.length === 0) {
                 containerElement.innerHTML = '<div class="empty-state">ไม่มีรายการบิลในช่วงเวลานี้</div>';
                 return;
             }
 
-            const sortedList = [...list].sort((a, b) => new Date(b.checked_out_at) - new Date(a.checked_out_at));
-            
-            let htmlContent = '';
-            sortedList.forEach((record, index) => {
-                const amount = Number(record.total_price || 0);
-                const recordDateObj = new Date(record.checked_out_at);
-                const timeStr = recordDateObj.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
-                const dateStr = recordDateObj.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' });
+            try {
+                // กรองข้อมูลที่เสีย (null) ออกก่อนเรียงลำดับ
+                const validList = list.filter(item => item !== null && typeof item === 'object');
+                
+                // เรียงลำดับจากเวลาใหม่ล่าสุด -> เก่าสุด
+                const sortedList = validList.sort((a, b) => {
+                    const timeA = getSafeDate(a.checked_out_at).getTime();
+                    const timeB = getSafeDate(b.checked_out_at).getTime();
+                    return timeB - timeA;
+                });
+                
+                let htmlContent = '';
+                
+                sortedList.forEach((record, index) => {
+                    try {
+                        const amount = Number(record.total_price) || 0;
+                        const recordDateObj = getSafeDate(record.checked_out_at);
+                        const timeStr = recordDateObj.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+                        const dateStr = recordDateObj.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' });
 
-                let itemsHtml = '';
-                if (record.items && Array.isArray(record.items)) {
-                    record.items.forEach(item => {
-                        let note = item.notes ? ` <span style="color:#d63031; font-size:10px;">(${item.notes})</span>` : '';
-                        itemsHtml += `
-                            <div class="order-item-row">
-                                <div class="order-item-name">• ${item.name}${note}</div>
-                                <div class="order-item-qty">x${item.quantity}</div>
+                        let itemsHtml = '';
+                        let itemsArray = record.items;
+                        
+                        // ป้องกันกรณีฐานข้อมูลส่ง Array มาเป็น String
+                        if (typeof itemsArray === 'string') {
+                            try { itemsArray = JSON.parse(itemsArray); } catch(e) { itemsArray = []; }
+                        }
+
+                        if (itemsArray && Array.isArray(itemsArray)) {
+                            itemsArray.forEach(item => {
+                                if (!item) return; // ข้ามไอเท็มที่ว่าง
+                                let itemName = item.name || 'ไม่มีชื่อเมนู';
+                                let itemQty = item.quantity || 1;
+                                let note = item.notes ? ` <span style="color:#d63031; font-size:10px;">(${item.notes})</span>` : '';
+                                itemsHtml += `
+                                    <div class="order-item-row">
+                                        <div class="order-item-name">• ${itemName}${note}</div>
+                                        <div class="order-item-qty">x${itemQty}</div>
+                                    </div>
+                                `;
+                            });
+                        }
+                        
+                        if (!itemsHtml) {
+                            itemsHtml = '<div class="order-item-row" style="justify-content:center;">ไม่มีรายละเอียดอาหาร</div>';
+                        }
+
+                        const safeTitle = record.title || `บิล #${record.id || index}`;
+                        const uniqueId = `tx-${prefixId}-${record.id || index}-${Math.random().toString(36).substring(2, 7)}`;
+
+                        htmlContent += `
+                            <div class="transaction-item">
+                                <div class="transaction-header" onclick="toggleDetails('${uniqueId}')">
+                                    <div class="tx-info">
+                                        <div class="tx-title">${safeTitle}</div>
+                                        <div class="tx-time">${dateStr} (${timeStr})</div>
+                                    </div>
+                                    <div class="tx-right">
+                                        <div class="tx-amount">+${amount.toLocaleString('th-TH', {minimumFractionDigits: 2})}</div>
+                                        <div class="tx-arrow" id="arrow-${uniqueId}">▼</div>
+                                    </div>
+                                </div>
+                                <div class="transaction-details" id="${uniqueId}">
+                                    ${itemsHtml}
+                                </div>
                             </div>
                         `;
-                    });
+                    } catch(err) {
+                        console.warn("ข้ามรายการบิล 1 รายการที่มีปัญหาข้อมูลโครงสร้าง:", err);
+                    }
+                });
+
+                // หาก loop จบแล้วยังไม่ได้ HTML เลย ให้แสดงข้อความเตือน
+                if (!htmlContent) {
+                    containerElement.innerHTML = '<div class="empty-state">รูปแบบข้อมูลบิลมีข้อผิดพลาด ไม่สามารถแสดงผลได้</div>';
                 } else {
-                    itemsHtml = '<div class="order-item-row" style="justify-content:center;">ไม่มีรายละเอียดอาหาร</div>';
+                    containerElement.innerHTML = htmlContent;
                 }
 
-                const uniqueId = `tx-${prefixId}-${record.id || index}-${Math.random().toString(36).substring(2, 7)}`;
-
-                htmlContent += `
-                    <div class="transaction-item">
-                        <div class="transaction-header" onclick="toggleDetails('${uniqueId}')">
-                            <div class="tx-info">
-                                <div class="tx-title">${record.title}</div>
-                                <div class="tx-time">${dateStr} (${timeStr})</div>
-                            </div>
-                            <div class="tx-right">
-                                <div class="tx-amount">+${amount.toLocaleString('th-TH', {minimumFractionDigits: 2})}</div>
-                                <div class="tx-arrow" id="arrow-${uniqueId}">▼</div>
-                            </div>
-                        </div>
-                        <div class="transaction-details" id="${uniqueId}">
-                            ${itemsHtml}
-                        </div>
-                    </div>
-                `;
-            });
-            containerElement.innerHTML = htmlContent;
+            } catch (mainErr) {
+                console.error("Error in render process:", mainErr);
+                containerElement.innerHTML = '<div class="empty-state">เกิดข้อผิดพลาดในการประมวลผลข้อมูล (ระบบป้องกันการล่มทำงาน)</div>';
+            }
         }
 
         function openAllTransactionsModal() {
@@ -720,24 +632,26 @@
             renderTransactionListIntoContainer(cachedHistory, modalContainer, 'modal');
         }
 
-        function closeAllTransactionsModal() {
-            document.getElementById('allTransactionsModal').style.display = 'none';
-        }
+        function closeAllTransactionsModal() { document.getElementById('allTransactionsModal').style.display = 'none'; }
 
         function renderRankingList(historyList) {
             const rankContainer = document.getElementById('rankingList');
             const menuStats = {};
             
             historyList.forEach(record => {
-                if (record.items && Array.isArray(record.items)) {
-                    record.items.forEach(item => {
+                let itemsArray = record.items;
+                if (typeof itemsArray === 'string') {
+                    try { itemsArray = JSON.parse(itemsArray); } catch(e) { itemsArray = []; }
+                }
+
+                if (itemsArray && Array.isArray(itemsArray)) {
+                    itemsArray.forEach(item => {
+                        if(!item || !item.name) return;
                         const cleanName = item.name.split(' (')[0].trim();
                         const qty = Number(item.quantity || 0);
                         const price = Number(item.price || 0) * qty;
 
-                        if (!menuStats[cleanName]) {
-                            menuStats[cleanName] = { count: 0, revenue: 0 };
-                        }
+                        if (!menuStats[cleanName]) menuStats[cleanName] = { count: 0, revenue: 0 };
                         menuStats[cleanName].count += qty;
                         menuStats[cleanName].revenue += price;
                     });
@@ -745,9 +659,7 @@
             });
 
             const sortedMenus = Object.keys(menuStats).map(name => ({
-                name: name,
-                count: menuStats[name].count,
-                revenue: menuStats[name].revenue
+                name: name, count: menuStats[name].count, revenue: menuStats[name].revenue
             })).sort((a, b) => b.count - a.count);
 
             if (sortedMenus.length === 0) {
@@ -779,9 +691,7 @@
         function toggleDetails(id) {
             const detailElement = document.getElementById(id);
             const arrowElement = document.getElementById('arrow-' + id);
-            
             if (!detailElement || !arrowElement) return;
-
             if (detailElement.style.display === 'block') {
                 detailElement.style.display = 'none';
                 arrowElement.style.transform = 'rotate(0deg)';
