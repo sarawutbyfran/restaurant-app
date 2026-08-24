@@ -182,16 +182,23 @@
             box-shadow: 0 4px 12px rgba(0,0,0,0.04);
             margin-top: 15px;
         }
-        .chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .chart-header { display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px; }
+        @media (min-width: 500px) {
+            .chart-header { flex-direction: row; justify-content: space-between; align-items: center; }
+        }
+        
+        .chart-controls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
         .chart-toggles { display: flex; background: #f1f2f6; border-radius: 8px; padding: 3px; gap: 3px; }
         .chart-toggle-btn { background: transparent; border: none; padding: 4px 10px; font-size: 11px; font-weight: 600; border-radius: 6px; cursor: pointer; color: var(--text-gray); font-family: inherit; }
         .chart-toggle-btn.active { background: white; color: var(--primary); box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        
+        .chart-select { padding: 5px 8px; border: 1px solid #ced6e0; border-radius: 8px; font-family: inherit; font-size: 11px; background: white; font-weight: 600; color: var(--text-dark); outline: none; }
 
-        .bar-chart-container { display: flex; align-items: flex-end; gap: 8px; height: 180px; padding-top: 20px; border-bottom: 1px solid #dfe6e9; overflow-x: auto; padding-bottom: 5px; }
-        .bar-group { flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%; justify-content: flex-end; min-width: 32px; }
-        .bar-value { font-size: 9px; color: var(--text-gray); margin-bottom: 4px; white-space: nowrap; }
-        .bar { width: 100%; max-width: 24px; background: linear-gradient(180deg, var(--primary) 0%, #0652dd 100%); border-radius: 6px 6px 0 0; min-height: 2px; }
-        .bar-label { font-size: 10px; color: var(--text-gray); margin-top: 6px; text-align: center; white-space: nowrap; }
+        .bar-chart-container { display: flex; align-items: flex-end; gap: 6px; height: 180px; padding-top: 20px; border-bottom: 1px solid #dfe6e9; overflow-x: auto; padding-bottom: 5px; }
+        .bar-group { flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%; justify-content: flex-end; min-width: 24px; }
+        .bar-value { font-size: 8px; color: var(--text-gray); margin-bottom: 4px; white-space: nowrap; }
+        .bar { width: 100%; max-width: 20px; background: linear-gradient(180deg, var(--primary) 0%, #0652dd 100%); border-radius: 4px 4px 0 0; min-height: 2px; }
+        .bar-label { font-size: 9px; color: var(--text-gray); margin-top: 6px; text-align: center; white-space: nowrap; }
 
         /* Split View */
         .split-dashboard {
@@ -324,12 +331,20 @@
                 </div>
             </div>
 
+            <!-- กราฟแสดงยอดขายอัจฉริยะ -->
             <div class="chart-card">
                 <div class="chart-header">
-                    <h3 id="chartTitle" style="margin:0; font-size:14px;">📈 สถิติยอดขาย (รายเดือน)</h3>
-                    <div class="chart-toggles">
-                        <button class="chart-toggle-btn active" id="btnMonthly" onclick="setChartMode('monthly')">รายเดือน</button>
-                        <button class="chart-toggle-btn" id="btnYearly" onclick="setChartMode('yearly')">รายปี</button>
+                    <h3 id="chartTitle" style="margin:0; font-size:14px;">📈 สถิติยอดขาย</h3>
+                    <div class="chart-controls">
+                        <!-- ตัวเลือกเดือน (แสดงเฉพาะตอนโหมดรายเดือน) -->
+                        <select id="chartMonthSelect" class="chart-select" style="display:none;" onchange="renderChart(cachedHistory)"></select>
+                        <!-- ตัวเลือกปี -->
+                        <select id="chartYearSelect" class="chart-select" onchange="renderChart(cachedHistory)"></select>
+                        
+                        <div class="chart-toggles">
+                            <button class="chart-toggle-btn active" id="btnMonthly" onclick="setChartMode('monthly')">รายวัน (30-31 วัน)</button>
+                            <button class="chart-toggle-btn" id="btnYearly" onclick="setChartMode('yearly')">รายเดือน (12 เดือน)</button>
+                        </div>
                     </div>
                 </div>
                 <div class="bar-chart-container" id="barChart">
@@ -401,7 +416,7 @@
 
     <script>
         let cachedHistory = [];
-        let currentChartMode = 'monthly';
+        let currentChartMode = 'monthly'; // 'monthly' = รายวันแยกตามเดือน, 'yearly' = รายเดือนแยกตามปี
 
         document.addEventListener("DOMContentLoaded", () => {
             const todayStr = new Date().toLocaleDateString('en-CA');
@@ -426,6 +441,7 @@
                 cachedHistory = await res.json();
 
                 calculateKPIs(cachedHistory);
+                populateChartSelectors(cachedHistory);
                 renderChart(cachedHistory);
                 filterTransactionsByDateRange(); 
                 renderRankingList(cachedHistory);
@@ -468,16 +484,67 @@
             document.getElementById('salesYear').innerHTML = `${totalYear.toLocaleString('th-TH', {minimumFractionDigits: 2})} <span class="kpi-unit">฿</span>`;
         }
 
+        // เติมข้อมูลตัวเลือกเดือนและปีใน Dropdown กราฟ
+        function populateChartSelectors(historyList) {
+            const yearSelect = document.getElementById('chartYearSelect');
+            const monthSelect = document.getElementById('chartMonthSelect');
+            
+            const yearsSet = new Set();
+            const monthsMap = {};
+            const monthsName = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
+
+            historyList.forEach(record => {
+                const d = new Date(record.checked_out_at);
+                const yr = d.getFullYear();
+                yearsSet.add(yr);
+
+                const mKey = `${yr}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+                if (!monthsMap[mKey]) {
+                    monthsMap[mKey] = `${monthsName[d.getMonth()]} ${yr + 543}`;
+                }
+            });
+
+            // ถ้าไม่มีข้อมูลเลย ให้ใช้วันที่ปัจจุบัน
+            if (yearsSet.size === 0) yearsSet.add(new Date().getFullYear());
+
+            const currentYearVal = new Date().getFullYear();
+            const currentMonthKey = `${currentYearVal}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
+
+            // เติมปี
+            const selectedYearBefore = yearSelect.value;
+            yearSelect.innerHTML = '';
+            Array.from(yearsSet).sort((a,b) => b - a).forEach(yr => {
+                yearSelect.innerHTML += `<option value="${yr}">${yr + 543}</option>`;
+            });
+            if (selectedYearBefore) yearSelect.value = selectedYearBefore;
+
+            // เติมเดือน
+            const selectedMonthBefore = monthSelect.value;
+            monthSelect.innerHTML = '';
+            Object.keys(monthsMap).sort().reverse().forEach(mKey => {
+                monthSelect.innerHTML += `<option value="${mKey}">${monthsMap[mKey]}</option>`;
+            });
+            if (selectedMonthBefore) {
+                monthSelect.value = selectedMonthBefore;
+            } else if (monthsMap[currentMonthKey]) {
+                monthSelect.value = currentMonthKey;
+            }
+        }
+
         function setChartMode(mode) {
             currentChartMode = mode;
             document.getElementById('btnMonthly').classList.toggle('active', mode === 'monthly');
             document.getElementById('btnYearly').classList.toggle('active', mode === 'yearly');
-            document.getElementById('chartTitle').innerText = mode === 'monthly' ? '📈 สถิติยอดขาย (รายเดือน)' : '📈 สถิติยอดขาย (รายปี)';
+            
+            // สลับการแสดงผล Dropdown เดือน
+            document.getElementById('chartMonthSelect').style.display = mode === 'monthly' ? 'block' : 'none';
+            
             renderChart(cachedHistory);
         }
 
         function renderChart(historyList) {
             const chartContainer = document.getElementById('barChart');
+            const titleEl = document.getElementById('chartTitle');
             if (!historyList || historyList.length === 0) {
                 chartContainer.innerHTML = '<div class="empty-state">ยังไม่มีข้อมูลสำหรับแสดงกราฟ</div>';
                 return;
@@ -486,35 +553,52 @@
             const chartData = {};
 
             if (currentChartMode === 'monthly') {
-                const currentYear = new Date().getFullYear();
-                const monthsName = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
-                monthsName.forEach((m, idx) => { chartData[idx] = { label: m, total: 0 }; });
+                // โหมดรายเดือน: เลือกเดือน แล้วแสดงยอดขายแยกตามรายวันในเดือนนั้น (1 ถึง 28/29/30/31)
+                const monthSelectVal = document.getElementById('chartMonthSelect').value;
+                const [targetYr, targetMo] = monthSelectVal ? monthSelectVal.split('-') : [new Date().getFullYear(), new Date().getMonth() + 1];
+                
+                titleEl.innerText = `📈 ยอดขายรายวัน (เดือน ${document.getElementById('chartMonthSelect').selectedOptions[0]?.text || ''})`;
+
+                // หาจำนวนวันในเดือนนั้น
+                const daysInMonth = new Date(targetYr, targetMo, 0).getDate();
+                for (let d = 1; d <= daysInMonth; d++) {
+                    chartData[d] = { label: `${d}`, total: 0 };
+                }
 
                 historyList.forEach(record => {
                     const d = new Date(record.checked_out_at);
-                    if (d.getFullYear() === currentYear) {
+                    if (d.getFullYear() == targetYr && (d.getMonth() + 1) == targetMo) {
+                        const dayNum = d.getDate();
+                        if (chartData[dayNum]) {
+                            chartData[dayNum].total += Number(record.total_price || 0);
+                        }
+                    }
+                });
+
+            } else {
+                // โหมดรายปี: เลือกปี แล้วแสดงยอดขายแยกตาม 12 เดือนของปีนั้น
+                const yearSelectVal = document.getElementById('chartYearSelect').value;
+                const targetYr = yearSelectVal ? parseInt(yearSelectVal) : new Date().getFullYear();
+
+                titleEl.innerText = `📈 ยอดขายรายเดือน (ปี พ.ศ. ${targetYr + 543})`;
+
+                const monthsName = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+                monthsName.forEach((m, idx) => {
+                    chartData[idx] = { label: m, total: 0 };
+                });
+
+                historyList.forEach(record => {
+                    const d = new Date(record.checked_out_at);
+                    if (d.getFullYear() === targetYr) {
                         const mIdx = d.getMonth();
                         chartData[mIdx].total += Number(record.total_price || 0);
                     }
                 });
-            } else {
-                historyList.forEach(record => {
-                    const d = new Date(record.checked_out_at);
-                    const yr = d.getFullYear();
-                    const yrLabel = (yr + 543).toString();
-                    if (!chartData[yr]) {
-                        chartData[yr] = { label: yrLabel, total: 0, sortKey: yr };
-                    }
-                    chartData[yr].total += Number(record.total_price || 0);
-                });
             }
 
             const dataArray = Object.values(chartData);
-            if (currentChartMode === 'yearly') {
-                dataArray.sort((a, b) => a.sortKey - b.sortKey);
-            }
-
             const maxVal = Math.max(...dataArray.map(d => d.total), 1);
+
             let chartHtml = '';
             dataArray.forEach(item => {
                 const heightPercent = Math.max(Math.round((item.total / maxVal) * 100), 4);
@@ -577,14 +661,12 @@
             filterTransactionsByDateRange();
         }
 
-        // ฟังก์ชันเรนเดอร์รายการบิลพร้อมจัดการ ID ไม่ให้ซ้ำกันระหว่างหน้าหลักกับ Modal
         function renderTransactionListIntoContainer(list, containerElement, prefixId) {
             if (!list || list.length === 0) {
                 containerElement.innerHTML = '<div class="empty-state">ไม่มีรายการบิลในช่วงเวลานี้</div>';
                 return;
             }
 
-            // เรียงลำดับจากใหม่ไปเก่า
             const sortedList = [...list].sort((a, b) => new Date(b.checked_out_at) - new Date(a.checked_out_at));
             
             let htmlContent = '';
@@ -609,7 +691,6 @@
                     itemsHtml = '<div class="order-item-row" style="justify-content:center;">ไม่มีรายละเอียดอาหาร</div>';
                 }
 
-                // สร้าง ID ที่ไม่ซ้ำกันเด็ดขาด
                 const uniqueId = `tx-${prefixId}-${record.id || index}-${Math.random().toString(36).substring(2, 7)}`;
 
                 htmlContent += `
