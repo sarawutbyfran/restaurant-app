@@ -582,23 +582,38 @@ app.delete('/api/menu/:id', async (req, res) => {
 });
 
 app.post('/api/admin/sales-history', async (req, res) => {
+    const client = await pool.connect();
     try {
-        // ใช้โค้ดชุดใหม่ทั้งหมด ไม่ต้องมีบรรทัดซ้ำ
+        await client.query('BEGIN');
         const { table_id, title, total_price, items, print_status } = req.body;
         const consolidatedItems = consolidateItems(items || []);
-
-        // ถ้าไม่มีสถานะส่งมา ให้ใช้ค่าเริ่มต้นเป็น 'รอพิมพ์ใบเสร็จ'
         const statusToSave = print_status || 'รอพิมพ์ใบเสร็จ';
 
-        const result = await pool.query(
+        // 1. บันทึกประวัติการขายลง sales_history ตามปกติ
+        const result = await client.query(
             `INSERT INTO sales_history (table_id, title, total_price, items, print_status) 
              VALUES ($1, $2, $3, $4, $5) RETURNING id`,
             [table_id, title, total_price, JSON.stringify(consolidatedItems), statusToSave]
         );
         
+        // 2. ตัดสต๊อกอัตโนมัติเฉพาะรายการที่เปิดใช้งาน is_track_stock = 1 ตอนเช็คบิล
+        for (const item of consolidatedItems) {
+            if (item.menu_item_id) {
+                await client.query(`
+                    UPDATE menu_items 
+                    SET stock_quantity = stock_quantity - $1 
+                    WHERE id = $2 AND is_track_stock = 1
+                `, [item.quantity, item.menu_item_id]);
+            }
+        }
+
+        await client.query('COMMIT');
         res.status(200).json({ success: true, id: result.rows[0].id });
     } catch (err) {
+        await client.query('ROLLBACK');
         res.status(500).json({ error: err.message });
+    } finally {
+        client.release();
     }
 });
 
@@ -704,6 +719,30 @@ app.put('/api/admin/kitchen-orders/:type/printed', async (req, res) => {
     try {
         await pool.query(`UPDATE orders SET ${colName} = 1 WHERE id = ANY($1::int[])`, [order_ids]);
         res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+// API สำหรับดึงข้อมูลเมนูพร้อมสต๊อกมาแสดงในหน้าเจ้าของร้าน
+app.get('/api/admin/inventory', async (req, res) => {
+    try {
+        const result = await pool.query('SELECT id, name, price, category_name, stock_quantity, is_track_stock FROM menu_items ORDER BY category_id ASC, id ASC');
+        res.json(result.rows);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// API สำหรับอัปเดตจำนวนสต๊อกและเปิด/ปิดการนับสต๊อก
+app.put('/api/admin/inventory/:id', async (req, res) => {
+    const menuId = req.params.id;
+    const { stock_quantity, is_track_stock } = req.body;
+    try {
+        await pool.query(
+            `UPDATE menu_items SET stock_quantity = $1, is_track_stock = $2 WHERE id = $3`,
+            [stock_quantity || 0, is_track_stock || 0, menuId]
+        );
+        res.json({ success: true, message: 'อัปเดตสต๊อกสำเร็จ' });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }

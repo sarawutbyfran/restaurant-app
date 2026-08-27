@@ -196,12 +196,27 @@
             Real-time
         </div>
         <div class="nav-tabs">
-            <button class="tab-btn active" onclick="switchTab('sales', this)">📊 ภาพรวม & กราฟ</button>
-            <button class="tab-btn" onclick="switchTab('ranking', this)">🏆 เมนูขายดี</button>
-        </div>
+    <button class="tab-btn active" onclick="switchTab('sales', this)">📊 ภาพรวม & กราฟ</button>
+    <button class="tab-btn" onclick="switchTab('ranking', this)">🏆 เมนูขายดี</button>
+    <button class="tab-btn" onclick="switchTab('inventory', this); loadInventoryData();">📦 จัดการสต๊อก</button>
+</div>
     </div>
 
     <div class="container">
+        <!-- VIEW 3: จัดการสต๊อก (สำหรับเจ้าของร้าน) -->
+        <div id="view-inventory" class="dashboard-view">
+            <div class="section-header" style="margin-top: 15px;">
+                <h3>📦 บริหารและเติมสต๊อกเครื่องดื่ม/สินค้า</h3>
+            </div>
+            <div class="chart-card" style="padding: 15px;">
+                <div style="font-size: 12px; color: var(--text-gray); margin-bottom: 15px;">
+                    * เปิดใช้งาน "นับสต๊อก" เฉพาะรายการที่ต้องการให้ระบบตัดจำนวนอัตโนมัติเวลาเช็คบิล
+                </div>
+                <div id="inventoryListContainer" style="display: flex; flex-direction: column; gap: 10px;">
+                    <div class="empty-state">กำลังโหลดข้อมูลสต๊อก...</div>
+                </div>
+            </div>
+        </div>
         <div id="view-sales" class="dashboard-view active">
             <div class="kpi-grid">
                 <div class="kpi-card kpi-today">
@@ -698,6 +713,69 @@
             } else {
                 detailElement.style.display = 'block';
                 arrowElement.style.transform = 'rotate(180deg)';
+            }
+        }
+        // โหลดข้อมูลสต๊อกทั้งหมดมาแสดงในหน้าเจ้าของร้าน
+        async function loadInventoryData() {
+            const container = document.getElementById('inventoryListContainer');
+            container.innerHTML = '<div class="empty-state">กำลังโหลด...</div>';
+            try {
+                const res = await fetch('/api/admin/inventory');
+                const items = await res.json();
+
+                if (!items || items.length === 0) {
+                    container.innerHTML = '<div class="empty-state">ไม่พบรายการสินค้า</div>';
+                    return;
+                }
+
+                let html = '';
+                items.forEach(item => {
+                    const isChecked = Number(item.is_track_stock) === 1 ? 'checked' : '';
+                    html += `
+                        <div style="display: flex; justify-content: space-between; align-items: center; background: #fafbfc; padding: 12px 15px; border-radius: 10px; border: 1px solid #edf2f7; gap: 10px; flex-wrap: wrap;">
+                            <div style="flex: 1; min-width: 150px;">
+                                <div style="font-weight: 600; font-size: 14px; color: var(--text-dark);">${item.name}</div>
+                                <div style="font-size: 11px; color: var(--text-gray);">หมวดหมู่: ${item.category_name || 'ทั่วไป'} | ราคา: ${item.price} ฿</div>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                                <label style="font-size: 12px; display: flex; align-items: center; gap: 5px; cursor: pointer;">
+                                    <input type="checkbox" id="track-${item.id}" ${isChecked} style="transform: scale(1.1);"> นับสต๊อก
+                                </label>
+                                <div style="display: flex; align-items: center; gap: 5px;">
+                                    <span style="font-size: 12px; color: var(--text-gray);">คงเหลือ:</span>
+                                    <input type="number" id="stock-${item.id}" value="${item.stock_quantity || 0}" style="width: 70px; padding: 6px; border: 1px solid #ced6e0; border-radius: 6px; font-weight: bold; text-align: center; font-family: inherit;">
+                                </div>
+                                <button onclick="saveStockItem(${item.id})" style="background: var(--primary); color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer;">💾 บันทึก</button>
+                            </div>
+                        </div>
+                    `;
+                });
+                container.innerHTML = html;
+            } catch (err) {
+                container.innerHTML = '<div class="empty-state" style="color: var(--danger);">ไม่สามารถโหลดข้อมูลสต๊อกได้</div>';
+            }
+        }
+
+        // บันทึกสต๊อกรายรายการ
+        async function saveStockItem(id) {
+            const stockVal = document.getElementById(`stock-${id}`).value;
+            const trackVal = document.getElementById(`track-${id}`).checked ? 1 : 0;
+
+            try {
+                const res = await fetch(`/api/admin/inventory/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ stock_quantity: parseInt(stockVal) || 0, is_track_stock: trackVal })
+                });
+
+                if (res.ok) {
+                    alert('บันทึกสต๊อกสำเร็จ!');
+                    loadInventoryData();
+                } else {
+                    alert('บันทึกไม่สำเร็จ กรุณาลองใหม่');
+                }
+            } catch (err) {
+                alert('เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์');
             }
         }
     </script>
