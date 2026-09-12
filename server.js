@@ -581,39 +581,48 @@ app.delete('/api/menu/:id', async (req, res) => {
     }
 });
 
+// API สำหรับเช็คบิลและบันทึกประวัติการขาย (ระบบตัดสต๊อกแบบยอมให้ติดลบ)
 app.post('/api/admin/sales-history', async (req, res) => {
-    const client = await pool.connect();
-    try {
-        await client.query('BEGIN');
-        const { table_id, title, total_price, items, print_status } = req.body;
-        const consolidatedItems = consolidateItems(items || []);
-        const statusToSave = print_status || 'รอพิมพ์ใบเสร็จ';
+    const { table_id, title, total_price, items, print_status } = req.body;
 
-        // 1. บันทึกประวัติการขายลง sales_history ตามปกติ
-        const result = await client.query(
-            `INSERT INTO sales_history (table_id, title, total_price, items, print_status) 
-             VALUES ($1, $2, $3, $4, $5) RETURNING id`,
-            [table_id, title, total_price, JSON.stringify(consolidatedItems), statusToSave]
-        );
-        
-        // 2. ตัดสต๊อกอัตโนมัติเฉพาะรายการที่เปิดใช้งาน is_track_stock = 1 ตอนเช็คบิล
-        for (const item of consolidatedItems) {
-            if (item.menu_item_id) {
-                await client.query(`
-                    UPDATE menu_items 
-                    SET stock_quantity = stock_quantity - $1 
-                    WHERE id = $2 AND is_track_stock = 1
-                `, [item.quantity, item.menu_item_id]);
+    try {
+        // 1. บันทึกประวัติการขายลงตาราง sales_history
+        const insertQuery = `
+            INSERT INTO sales_history (table_id, title, total_price, items, checked_out_at)
+            VALUES ($1, $2, $3, $4, NOW()) RETURNING id
+        `;
+        const result = await pool.query(insertQuery, [table_id, title, total_price, JSON.stringify(items)]);
+
+        // 2. ระบบตัดสต๊อกอัตโนมัติ (ปล่อยให้ติดลบได้)
+        if (table_id !== 'reprint' && items && items.length > 0) {
+            for (const item of items) {
+                const qtyToDeduct = Number(item.quantity) || 0;
+                
+                if (qtyToDeduct > 0) {
+                    if (item.menu_item_id) {
+                        // อัปเดตโดยใช้ ID ของเมนู (หักลบตรงๆ ไปเลย)
+                        await pool.query(`
+                            UPDATE menu_items 
+                            SET stock_quantity = COALESCE(stock_quantity, 0) - $1 
+                            WHERE id = $2 AND is_track_stock = 1
+                        `, [qtyToDeduct, item.menu_item_id]);
+                    } else {
+                        // สำรองกรณีไม่มี ID: อัปเดตโดยอิงจากชื่อเมนู
+                        const cleanName = item.name.split(' (')[0].trim();
+                        await pool.query(`
+                            UPDATE menu_items 
+                            SET stock_quantity = COALESCE(stock_quantity, 0) - $1 
+                            WHERE name = $2 AND is_track_stock = 1
+                        `, [qtyToDeduct, cleanName]);
+                    }
+                }
             }
         }
 
-        await client.query('COMMIT');
-        res.status(200).json({ success: true, id: result.rows[0].id });
+        res.json({ success: true, id: result.rows[0].id });
     } catch (err) {
-        await client.query('ROLLBACK');
+        console.error("Error in checkout and stock deduction:", err);
         res.status(500).json({ error: err.message });
-    } finally {
-        client.release();
     }
 });
 
