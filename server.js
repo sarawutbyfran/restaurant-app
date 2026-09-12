@@ -726,8 +726,8 @@ app.put('/api/admin/kitchen-orders/:type/printed', async (req, res) => {
 // API สำหรับดึงข้อมูลเมนูพร้อมสต๊อกมาแสดงในหน้าเจ้าของร้าน
 app.get('/api/admin/inventory', async (req, res) => {
     try {
-        // เพิ่ม WHERE is_track_stock = 1 เพื่อดึงมาเฉพาะเมนูที่นับสต๊อก
-        const result = await pool.query('SELECT id, name, price, category_name, stock_quantity, is_track_stock FROM menu_items WHERE is_track_stock = 1 ORDER BY category_id ASC, id ASC');
+        // ดึงเมนูทั้งหมดพร้อม image_url เพื่อไปคัดแยกในฝั่ง Frontend
+        const result = await pool.query('SELECT id, name, price, category_name, stock_quantity, is_track_stock, image_url FROM menu_items ORDER BY category_id ASC, id ASC');
         res.json(result.rows);
     } catch (err) {
         res.status(500).json({ error: err.message });
