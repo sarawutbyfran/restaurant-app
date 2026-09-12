@@ -580,22 +580,31 @@ app.delete('/api/menu/:id', async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 });
-
-// API สำหรับเช็คบิลและบันทึกประวัติการขาย (คืนค่า print_status ให้ระบบพิมพ์ทำงานได้ และหักสต๊อกแบบติดลบ)
+// API สำหรับเช็คบิลและบันทึกประวัติการขาย (รวมระบบตัดสต๊อกและรองรับ Agent พิมพ์หลังบ้าน)
 app.post('/api/admin/sales-history', async (req, res) => {
     const { table_id, title, total_price, items, print_status } = req.body;
 
     try {
-        // 1. บันทึกประวัติการขาย (เพิ่ม $5 และ print_status กลับเข้ามาเพื่อให้ Agent นำไปพิมพ์ต่อ)
+        // จัดระเบียบรวมรายการสินค้าที่เหมือนกันให้เป็นก้อนเดียวกันเพื่อความถูกต้อง
+        const consolidatedItems = consolidateItems(items || []);
+        const statusToSave = print_status || 'รอพิมพ์ใบเสร็จ';
+
+        // 1. บันทึกประวัติการขายลง sales_history พร้อมสถานะพิมพ์และรายการที่รวมแล้ว
         const insertQuery = `
             INSERT INTO sales_history (table_id, title, total_price, items, print_status, checked_out_at)
             VALUES ($1, $2, $3, $4, $5, NOW()) RETURNING id
         `;
-        const result = await pool.query(insertQuery, [table_id, title, total_price, JSON.stringify(items), print_status]);
+        const result = await pool.query(insertQuery, [
+            table_id, 
+            title, 
+            total_price, 
+            JSON.stringify(consolidatedItems), 
+            statusToSave
+        ]);
 
-        // 2. ระบบตัดสต๊อกอัตโนมัติ (ปล่อยให้ติดลบได้ตามที่ต้องการ)
-        if (table_id !== 'reprint' && items && items.length > 0) {
-            for (const item of items) {
+        // 2. ระบบตัดสต๊อกอัตโนมัติ (เฉพาะบิลปกติ และยอมให้สต๊อกติดลบได้)
+        if (table_id !== 'reprint' && consolidatedItems.length > 0) {
+            for (const item of consolidatedItems) {
                 const qtyToDeduct = Number(item.quantity) || 0;
                 
                 if (qtyToDeduct > 0) {
