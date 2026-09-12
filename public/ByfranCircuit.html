@@ -95,7 +95,6 @@
         .chart-toggle-btn.active { background: white; color: var(--primary); box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
         .chart-select { padding: 5px 8px; border: 1px solid #ced6e0; border-radius: 8px; font-family: inherit; font-size: 11px; background: white; font-weight: 600; color: var(--text-dark); outline: none; }
 
-        /* การแก้ไขปัญหา 1: กราฟหายบนมือถือ */
         .bar-chart-container { 
             display: flex; 
             align-items: flex-end; 
@@ -103,18 +102,18 @@
             height: 200px; 
             padding-top: 20px; 
             border-bottom: 1px solid #dfe6e9; 
-            overflow-x: auto; /* เปิดให้เลื่อนกราฟได้ถ้ายาวเกินจอ */
+            overflow-x: auto; 
             padding-bottom: 10px; 
         }
         .bar-group { 
             flex: 1; 
-            flex-shrink: 0; /* ห้ามย่อกราฟจนพังในมือถือเด็ดขาด */
+            flex-shrink: 0; 
             display: flex; 
             flex-direction: column; 
             align-items: center; 
             height: 100%; 
             justify-content: flex-end; 
-            min-width: 35px; /* ล็อกความกว้างขั้นต่ำ */
+            min-width: 35px; 
         }
         .bar-value { font-size: 8.5px; color: var(--text-gray); margin-bottom: 4px; white-space: nowrap; font-weight: 600; }
         .bar { width: 100%; max-width: 22px; background: linear-gradient(180deg, var(--primary) 0%, #0652dd 100%); border-radius: 4px 4px 0 0; min-height: 2px; }
@@ -128,7 +127,6 @@
         .date-range-box { display: flex; flex-direction: column; gap: 12px; margin-bottom: 12px; background: #fff; padding: 12px; border-radius: 12px; border: 1px solid #edf2f7; }
         .date-input-group { display: flex; justify-content: space-between; align-items: center; font-size: 13px; font-weight: bold; color: var(--text-dark); }
         
-        /* การแก้ไขปัญหา 2: ปรับดีไซน์ช่องใส่วันที่เป็นสีส้มชัดเจน */
         .date-input-group input[type="date"] { 
             padding: 8px 12px; 
             border: 2px solid #e17055; 
@@ -196,27 +194,27 @@
             Real-time
         </div>
         <div class="nav-tabs">
-    <button class="tab-btn active" onclick="switchTab('sales', this)">📊 ภาพรวม & กราฟ</button>
-    <button class="tab-btn" onclick="switchTab('ranking', this)">🏆 เมนูขายดี</button>
-    <button class="tab-btn" onclick="switchTab('inventory', this); loadInventoryData();">📦 จัดการสต๊อก</button>
-</div>
+            <button class="tab-btn active" onclick="switchTab('sales', this)">📊 ภาพรวม & กราฟ</button>
+            <button class="tab-btn" onclick="switchTab('ranking', this)">🏆 เมนูขายดี</button>
+            <button class="tab-btn" onclick="switchTab('inventory', this); loadInventoryData();">📦 จัดการสต๊อก</button>
+        </div>
     </div>
 
     <div class="container">
-        <!-- VIEW 3: จัดการสต๊อก (สำหรับเจ้าของร้าน) -->
+        <!-- VIEW 3: จัดการสต๊อก -->
         <div id="view-inventory" class="dashboard-view">
             <div class="section-header" style="margin-top: 15px;">
                 <h3>📦 บริหารและเติมสต๊อกเครื่องดื่ม/สินค้า</h3>
+                <button class="btn-action-sm" style="background: var(--primary); color: white;" onclick="openStockSettingsModal()">⚙️ ตั้งค่าเมนูนับสต๊อก</button>
             </div>
             <div class="chart-card" style="padding: 15px;">
-                <div style="font-size: 12px; color: var(--text-gray); margin-bottom: 15px;">
-                    * เปิดใช้งาน "นับสต๊อก" เฉพาะรายการที่ต้องการให้ระบบตัดจำนวนอัตโนมัติเวลาเช็คบิล
-                </div>
                 <div id="inventoryListContainer" style="display: flex; flex-direction: column; gap: 10px;">
                     <div class="empty-state">กำลังโหลดข้อมูลสต๊อก...</div>
                 </div>
             </div>
         </div>
+
+        <!-- VIEW 1: ภาพรวม -->
         <div id="view-sales" class="dashboard-view active">
             <div class="kpi-grid">
                 <div class="kpi-card kpi-today">
@@ -288,9 +286,13 @@
             </div>
         </div>
 
+        <!-- VIEW 2: จัดอันดับ -->
         <div id="view-ranking" class="dashboard-view">
             <div class="section-header" style="margin-top: 15px;">
                 <h3>🏆 จัดอันดับเมนูยอดฮิต (ตามจำนวนที่ขายได้)</h3>
+                <select id="rankingMonthSelect" class="chart-select" onchange="renderRankingList(cachedHistory)">
+                    <option value="all">ทุกเดือน (ทั้งหมด)</option>
+                </select>
             </div>
             <div class="rank-list" id="rankingList">
                 <div class="empty-state">กำลังวิเคราะห์ข้อมูลเมนู...</div>
@@ -311,26 +313,45 @@
         </div>
     </div>
 
+    <!-- Modal ตั้งค่าเมนูนับสต๊อก -->
+    <div class="modal" id="stockSettingsModal">
+        <div class="modal-content">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #edf2f7; padding-bottom: 10px;">
+                <h3 style="margin: 0; font-size: 16px;">⚙️ เลือกเมนูที่ต้องการนับสต๊อก</h3>
+                <button onclick="closeStockSettingsModal()" style="background: #dfe6e9; border: none; padding: 5px 10px; border-radius: 6px; cursor: pointer; font-weight: bold;">✕ ปิด</button>
+            </div>
+            <div class="modal-body" id="stockSettingsList" style="max-height: 60vh; overflow-y: auto;">
+                <div class="empty-state">กำลังโหลด...</div>
+            </div>
+        </div>
+    </div>
+
     <script>
         let cachedHistory = [];
         let currentChartMode = 'monthly'; 
+        let allInventoryItems = [];
 
-        // การแก้ไขปัญหา 3: เขียนตัวป้องกัน Error ขั้นสูงสุดสำหรับข้อมูลวันที่
+        function isValidSale(record) {
+            if (!record) return false;
+            if (record.table_id === 'reprint') return false;
+            if (record.title && record.title.includes('(พิมพ์ซ้ำ)')) return false;
+            return true;
+        }
+
         function getSafeDate(dateInput) {
-            if (!dateInput) return new Date(0); // กันค่า null
+            if (!dateInput) return new Date(0);
             try {
                 let d;
                 if (typeof dateInput === 'string') {
-                    // รองรับ YYYY-MM-DD HH:MM:SS ให้แปลงเป็นมาตรฐานสากล
                     let safeStr = dateInput.trim();
                     if (safeStr.includes(' ') && !safeStr.includes('T')) {
                         safeStr = safeStr.replace(' ', 'T');
                     }
+                    safeStr = safeStr.replace(/(\.\d{3})\d+/, '$1');
                     d = new Date(safeStr);
                 } else {
                     d = new Date(dateInput);
                 }
-                // ถ้าแปลงแล้วเป็น Invalid ให้คืนค่าเป็นวันที่ศูนย์
                 return isNaN(d.getTime()) ? new Date(0) : d;
             } catch (e) {
                 return new Date(0);
@@ -374,7 +395,7 @@
             const currentYear = now.getFullYear();
             let totalToday = 0, totalMonth = 0, totalYear = 0;
 
-            historyList.forEach(record => {
+            historyList.filter(isValidSale).forEach(record => {
                 const recordDate = getSafeDate(record.checked_out_at);
                 const rDateStr = recordDate.toLocaleDateString('en-CA');
                 const rMonth = recordDate.getMonth();
@@ -396,14 +417,16 @@
         function populateChartSelectors(historyList) {
             const yearSelect = document.getElementById('chartYearSelect');
             const monthSelect = document.getElementById('chartMonthSelect');
+            const rankMonthSelect = document.getElementById('rankingMonthSelect');
+            
             const yearsSet = new Set();
             const monthsMap = {};
             const monthsName = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
 
-            historyList.forEach(record => {
+            historyList.filter(isValidSale).forEach(record => {
                 const d = getSafeDate(record.checked_out_at);
                 const yr = d.getFullYear();
-                if(!isNaN(yr) && yr > 2000) yearsSet.add(yr); // ป้องกันปีเพี้ยน
+                if(!isNaN(yr) && yr > 2000) yearsSet.add(yr); 
 
                 const mKey = `${yr}-${String(d.getMonth() + 1).padStart(2, '0')}`;
                 if (!monthsMap[mKey] && !isNaN(d.getMonth())) {
@@ -412,7 +435,6 @@
             });
 
             if (yearsSet.size === 0) yearsSet.add(new Date().getFullYear());
-
             const currentYearVal = new Date().getFullYear();
             const currentMonthKey = `${currentYearVal}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
 
@@ -424,15 +446,21 @@
             if (selectedYearBefore) yearSelect.value = selectedYearBefore;
 
             const selectedMonthBefore = monthSelect.value;
+            const selectedRankBefore = rankMonthSelect.value;
+            
             monthSelect.innerHTML = '';
+            rankMonthSelect.innerHTML = '<option value="all">ทุกเดือน (ทั้งหมด)</option>';
+            
             Object.keys(monthsMap).sort().reverse().forEach(mKey => {
-                monthSelect.innerHTML += `<option value="${mKey}">${monthsMap[mKey]}</option>`;
+                const optionHTML = `<option value="${mKey}">${monthsMap[mKey]}</option>`;
+                monthSelect.innerHTML += optionHTML;
+                rankMonthSelect.innerHTML += optionHTML;
             });
-            if (selectedMonthBefore) {
-                monthSelect.value = selectedMonthBefore;
-            } else if (monthsMap[currentMonthKey]) {
-                monthSelect.value = currentMonthKey;
-            }
+
+            if (selectedMonthBefore) monthSelect.value = selectedMonthBefore;
+            else if (monthsMap[currentMonthKey]) monthSelect.value = currentMonthKey;
+            
+            if (selectedRankBefore) rankMonthSelect.value = selectedRankBefore;
         }
 
         function setChartMode(mode) {
@@ -446,7 +474,9 @@
         function renderChart(historyList) {
             const chartContainer = document.getElementById('barChart');
             const titleEl = document.getElementById('chartTitle');
-            if (!historyList || historyList.length === 0) {
+            
+            const validHistory = historyList.filter(isValidSale);
+            if (!validHistory || validHistory.length === 0) {
                 chartContainer.innerHTML = '<div class="empty-state">ยังไม่มีข้อมูลสำหรับแสดงกราฟ</div>';
                 return;
             }
@@ -460,7 +490,7 @@
                 const daysInMonth = new Date(targetYr, targetMo, 0).getDate();
                 for (let d = 1; d <= daysInMonth; d++) { chartData[d] = { label: `${d}`, total: 0 }; }
 
-                historyList.forEach(record => {
+                validHistory.forEach(record => {
                     const d = getSafeDate(record.checked_out_at);
                     if (d.getFullYear() == targetYr && (d.getMonth() + 1) == targetMo) {
                         const dayNum = d.getDate();
@@ -475,7 +505,7 @@
                 const monthsName = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
                 monthsName.forEach((m, idx) => { chartData[idx] = { label: m, total: 0 }; });
 
-                historyList.forEach(record => {
+                validHistory.forEach(record => {
                     const d = getSafeDate(record.checked_out_at);
                     if (d.getFullYear() === targetYr) {
                         const mIdx = d.getMonth();
@@ -511,22 +541,15 @@
             const summaryAmount = document.getElementById('filterSummaryAmount');
             const countBadge = document.getElementById('filteredCountBadge');
 
-            if (!startStr || !endStr) {
-                container.innerHTML = '<div class="empty-state">กรุณาเลือกช่วงวันที่ให้ครบถ้วน</div>';
-                return;
-            }
+            if (!startStr || !endStr) return;
 
             const startDate = new Date(startStr);
             startDate.setHours(0, 0, 0, 0);
             const endDate = new Date(endStr);
             endDate.setHours(23, 59, 59, 999);
 
-            if (startDate > endDate) {
-                container.innerHTML = '<div class="empty-state" style="color:var(--danger);">วันที่เริ่มต้นต้องไม่มากกว่าวันที่สิ้นสุด</div>';
-                return;
-            }
-
             const filtered = cachedHistory.filter(record => {
+                if (!isValidSale(record)) return false; 
                 const recordDate = getSafeDate(record.checked_out_at);
                 return recordDate >= startDate && recordDate <= endDate;
             });
@@ -548,7 +571,6 @@
             filterTransactionsByDateRange();
         }
 
-        // การแก้ไขปัญหา 3: อัปเกรดระบบแสดงผลบิล ป้องกัน Error จอดับ 100%
         function renderTransactionListIntoContainer(list, containerElement, prefixId) {
             if (!containerElement) return;
             if (!list || !Array.isArray(list) || list.length === 0) {
@@ -557,87 +579,64 @@
             }
 
             try {
-                // กรองข้อมูลที่เสีย (null) ออกก่อนเรียงลำดับ
                 const validList = list.filter(item => item !== null && typeof item === 'object');
-                
-                // เรียงลำดับจากเวลาใหม่ล่าสุด -> เก่าสุด
-                const sortedList = validList.sort((a, b) => {
-                    const timeA = getSafeDate(a.checked_out_at).getTime();
-                    const timeB = getSafeDate(b.checked_out_at).getTime();
-                    return timeB - timeA;
-                });
+                const sortedList = validList.sort((a, b) => getSafeDate(b.checked_out_at).getTime() - getSafeDate(a.checked_out_at).getTime());
                 
                 let htmlContent = '';
-                
                 sortedList.forEach((record, index) => {
-                    try {
-                        const amount = Number(record.total_price) || 0;
-                        const recordDateObj = getSafeDate(record.checked_out_at);
-                        const timeStr = recordDateObj.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
-                        const dateStr = recordDateObj.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' });
+                    const amount = Number(record.total_price) || 0;
+                    const recordDateObj = getSafeDate(record.checked_out_at);
+                    const timeStr = recordDateObj.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+                    const dateStr = recordDateObj.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' });
 
-                        let itemsHtml = '';
-                        let itemsArray = record.items;
-                        
-                        // ป้องกันกรณีฐานข้อมูลส่ง Array มาเป็น String
-                        if (typeof itemsArray === 'string') {
-                            try { itemsArray = JSON.parse(itemsArray); } catch(e) { itemsArray = []; }
-                        }
+                    let itemsHtml = '';
+                    let itemsArray = record.items;
+                    if (typeof itemsArray === 'string') {
+                        try { itemsArray = JSON.parse(itemsArray); } catch(e) { itemsArray = []; }
+                    }
 
-                        if (itemsArray && Array.isArray(itemsArray)) {
-                            itemsArray.forEach(item => {
-                                if (!item) return; // ข้ามไอเท็มที่ว่าง
-                                let itemName = item.name || 'ไม่มีชื่อเมนู';
-                                let itemQty = item.quantity || 1;
-                                let note = item.notes ? ` <span style="color:#d63031; font-size:10px;">(${item.notes})</span>` : '';
-                                itemsHtml += `
-                                    <div class="order-item-row">
-                                        <div class="order-item-name">• ${itemName}${note}</div>
-                                        <div class="order-item-qty">x${itemQty}</div>
-                                    </div>
-                                `;
-                            });
-                        }
-                        
-                        if (!itemsHtml) {
-                            itemsHtml = '<div class="order-item-row" style="justify-content:center;">ไม่มีรายละเอียดอาหาร</div>';
-                        }
-
-                        const safeTitle = record.title || `บิล #${record.id || index}`;
-                        const uniqueId = `tx-${prefixId}-${record.id || index}-${Math.random().toString(36).substring(2, 7)}`;
-
-                        htmlContent += `
-                            <div class="transaction-item">
-                                <div class="transaction-header" onclick="toggleDetails('${uniqueId}')">
-                                    <div class="tx-info">
-                                        <div class="tx-title">${safeTitle}</div>
-                                        <div class="tx-time">${dateStr} (${timeStr})</div>
-                                    </div>
-                                    <div class="tx-right">
-                                        <div class="tx-amount">+${amount.toLocaleString('th-TH', {minimumFractionDigits: 2})}</div>
-                                        <div class="tx-arrow" id="arrow-${uniqueId}">▼</div>
-                                    </div>
+                    if (itemsArray && Array.isArray(itemsArray)) {
+                        itemsArray.forEach(item => {
+                            if (!item) return;
+                            let itemName = item.name || 'ไม่มีชื่อเมนู';
+                            let itemQty = item.quantity || 1;
+                            let note = item.notes ? ` <span style="color:#d63031; font-size:10px;">(${item.notes})</span>` : '';
+                            itemsHtml += `
+                                <div class="order-item-row">
+                                    <div class="order-item-name">• ${itemName}${note}</div>
+                                    <div class="order-item-qty">x${itemQty}</div>
                                 </div>
-                                <div class="transaction-details" id="${uniqueId}">
-                                    ${itemsHtml}
+                            `;
+                        });
+                    }
+                    if (!itemsHtml) itemsHtml = '<div class="order-item-row" style="justify-content:center;">ไม่มีรายละเอียดอาหาร</div>';
+
+                    let reprintBadge = record.table_id === 'reprint' ? '<span style="background:var(--warning); color:#fff; font-size:9px; padding:2px 4px; border-radius:4px; margin-left:5px;">พิมพ์ซ้ำ</span>' : '';
+                    const safeTitle = record.title || `บิล #${record.id || index}`;
+                    const uniqueId = `tx-${prefixId}-${record.id || index}-${Math.random().toString(36).substring(2, 7)}`;
+
+                    htmlContent += `
+                        <div class="transaction-item" style="${record.table_id === 'reprint' ? 'opacity: 0.7;' : ''}">
+                            <div class="transaction-header" onclick="toggleDetails('${uniqueId}')">
+                                <div class="tx-info">
+                                    <div class="tx-title">${safeTitle} ${reprintBadge}</div>
+                                    <div class="tx-time">${dateStr} (${timeStr})</div>
+                                </div>
+                                <div class="tx-right">
+                                    <div class="tx-amount">+${amount.toLocaleString('th-TH', {minimumFractionDigits: 2})}</div>
+                                    <div class="tx-arrow" id="arrow-${uniqueId}">▼</div>
                                 </div>
                             </div>
-                        `;
-                    } catch(err) {
-                        console.warn("ข้ามรายการบิล 1 รายการที่มีปัญหาข้อมูลโครงสร้าง:", err);
-                    }
+                            <div class="transaction-details" id="${uniqueId}">
+                                ${itemsHtml}
+                            </div>
+                        </div>
+                    `;
                 });
 
-                // หาก loop จบแล้วยังไม่ได้ HTML เลย ให้แสดงข้อความเตือน
-                if (!htmlContent) {
-                    containerElement.innerHTML = '<div class="empty-state">รูปแบบข้อมูลบิลมีข้อผิดพลาด ไม่สามารถแสดงผลได้</div>';
-                } else {
-                    containerElement.innerHTML = htmlContent;
-                }
-
+                containerElement.innerHTML = htmlContent || '<div class="empty-state">รูปแบบข้อมูลบิลมีข้อผิดพลาด</div>';
             } catch (mainErr) {
-                console.error("Error in render process:", mainErr);
-                containerElement.innerHTML = '<div class="empty-state">เกิดข้อผิดพลาดในการประมวลผลข้อมูล (ระบบป้องกันการล่มทำงาน)</div>';
+                containerElement.innerHTML = '<div class="empty-state">เกิดข้อผิดพลาดในการประมวลผลข้อมูล</div>';
             }
         }
 
@@ -652,8 +651,15 @@
         function renderRankingList(historyList) {
             const rankContainer = document.getElementById('rankingList');
             const menuStats = {};
+            const rankMonth = document.getElementById('rankingMonthSelect').value;
             
-            historyList.forEach(record => {
+            historyList.filter(isValidSale).forEach(record => {
+                if (rankMonth !== 'all') {
+                    const d = getSafeDate(record.checked_out_at);
+                    const mKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+                    if (mKey !== rankMonth) return;
+                }
+
                 let itemsArray = record.items;
                 if (typeof itemsArray === 'string') {
                     try { itemsArray = JSON.parse(itemsArray); } catch(e) { itemsArray = []; }
@@ -678,17 +684,13 @@
             })).sort((a, b) => b.count - a.count);
 
             if (sortedMenus.length === 0) {
-                rankContainer.innerHTML = '<div class="empty-state">ยังไม่มีข้อมูลการขายเพียงพอ</div>';
+                rankContainer.innerHTML = '<div class="empty-state">ยังไม่มีข้อมูลการขายในเดือนนี้</div>';
                 return;
             }
 
             let rankHtml = '';
             sortedMenus.forEach((menu, index) => {
-                let rankClass = '';
-                if (index === 0) rankClass = 'rank-1';
-                else if (index === 1) rankClass = 'rank-2';
-                else if (index === 2) rankClass = 'rank-3';
-
+                let rankClass = index === 0 ? 'rank-1' : index === 1 ? 'rank-2' : index === 2 ? 'rank-3' : '';
                 rankHtml += `
                     <div class="rank-item">
                         <div class="rank-number ${rankClass}">#${index + 1}</div>
@@ -715,37 +717,40 @@
                 arrowElement.style.transform = 'rotate(180deg)';
             }
         }
-        // โหลดข้อมูลสต๊อกทั้งหมดมาแสดงในหน้าเจ้าของร้าน
+
+        // ================== ระบบจัดการสต๊อก ==================
         async function loadInventoryData() {
             const container = document.getElementById('inventoryListContainer');
             container.innerHTML = '<div class="empty-state">กำลังโหลด...</div>';
             try {
                 const res = await fetch('/api/admin/inventory');
-                const items = await res.json();
+                allInventoryItems = await res.json();
+                
+                const trackedItems = allInventoryItems.filter(item => Number(item.is_track_stock) === 1);
 
-                if (!items || items.length === 0) {
-                    container.innerHTML = '<div class="empty-state">ไม่พบรายการสินค้า</div>';
+                if (trackedItems.length === 0) {
+                    container.innerHTML = '<div class="empty-state">ยังไม่มีรายการที่เปิดนับสต๊อก<br><br><span style="font-size:11px;">(กด "ตั้งค่าเมนูนับสต๊อก" ด้านบนเพื่อเพิ่ม)</span></div>';
                     return;
                 }
 
                 let html = '';
-                items.forEach(item => {
-                    const isChecked = Number(item.is_track_stock) === 1 ? 'checked' : '';
+                trackedItems.forEach(item => {
+                    const imgUrl = item.image_url || '/uploads/menu.jpg';
                     html += `
                         <div style="display: flex; justify-content: space-between; align-items: center; background: #fafbfc; padding: 12px 15px; border-radius: 10px; border: 1px solid #edf2f7; gap: 10px; flex-wrap: wrap;">
-                            <div style="flex: 1; min-width: 150px;">
-                                <div style="font-weight: 600; font-size: 14px; color: var(--text-dark);">${item.name}</div>
-                                <div style="font-size: 11px; color: var(--text-gray);">หมวดหมู่: ${item.category_name || 'ทั่วไป'} | ราคา: ${item.price} ฿</div>
+                            <div style="display: flex; align-items: center; gap: 12px; flex: 1; min-width: 200px;">
+                                <img src="${imgUrl}" style="width: 45px; height: 45px; object-fit: cover; border-radius: 8px; border: 1px solid #ddd;">
+                                <div>
+                                    <div style="font-weight: 600; font-size: 14px; color: var(--text-dark);">${item.name}</div>
+                                    <div style="font-size: 11px; color: var(--text-gray);">หมวดหมู่: ${item.category_name || 'ทั่วไป'} | ราคา: ${item.price} ฿</div>
+                                </div>
                             </div>
                             <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
-                                <label style="font-size: 12px; display: flex; align-items: center; gap: 5px; cursor: pointer;">
-                                    <input type="checkbox" id="track-${item.id}" ${isChecked} style="transform: scale(1.1);"> นับสต๊อก
-                                </label>
                                 <div style="display: flex; align-items: center; gap: 5px;">
                                     <span style="font-size: 12px; color: var(--text-gray);">คงเหลือ:</span>
                                     <input type="number" id="stock-${item.id}" value="${item.stock_quantity || 0}" style="width: 70px; padding: 6px; border: 1px solid #ced6e0; border-radius: 6px; font-weight: bold; text-align: center; font-family: inherit;">
                                 </div>
-                                <button onclick="saveStockItem(${item.id})" style="background: var(--primary); color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer;">💾 บันทึก</button>
+                                <button onclick="updateStockQuantity(${item.id})" style="background: var(--primary); color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer;">💾 บันทึก</button>
                             </div>
                         </div>
                     `;
@@ -756,16 +761,13 @@
             }
         }
 
-        // บันทึกสต๊อกรายรายการ
-        async function saveStockItem(id) {
+        async function updateStockQuantity(id) {
             const stockVal = document.getElementById(`stock-${id}`).value;
-            const trackVal = document.getElementById(`track-${id}`).checked ? 1 : 0;
-
             try {
                 const res = await fetch(`/api/admin/inventory/${id}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ stock_quantity: parseInt(stockVal) || 0, is_track_stock: trackVal })
+                    body: JSON.stringify({ stock_quantity: parseInt(stockVal) || 0, is_track_stock: 1 })
                 });
 
                 if (res.ok) {
@@ -776,6 +778,53 @@
                 }
             } catch (err) {
                 alert('เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์');
+            }
+        }
+
+        // ================== Modal ตั้งค่าเมนูนับสต๊อก ==================
+        function openStockSettingsModal() {
+            document.getElementById('stockSettingsModal').style.display = 'flex';
+            const container = document.getElementById('stockSettingsList');
+            
+            if (allInventoryItems.length === 0) {
+                container.innerHTML = '<div class="empty-state">ไม่พบรายการเมนูในระบบ</div>';
+                return;
+            }
+
+            let html = '';
+            allInventoryItems.forEach(item => {
+                const isChecked = Number(item.is_track_stock) === 1 ? 'checked' : '';
+                html += `
+                    <div style="display: flex; justify-content: space-between; align-items: center; background: #fafbfc; padding: 12px; border-radius: 8px; border: 1px solid #edf2f7; margin-bottom: 8px;">
+                        <div style="font-size: 14px; font-weight: 500; color: var(--text-dark);">${item.name}</div>
+                        <label style="font-size: 12px; display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            <input type="checkbox" onchange="toggleTrackStock(${item.id}, this.checked, ${item.stock_quantity || 0})" ${isChecked} style="transform: scale(1.2);"> เปิดนับสต๊อก
+                        </label>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        function closeStockSettingsModal() { 
+            document.getElementById('stockSettingsModal').style.display = 'none'; 
+        }
+
+        async function toggleTrackStock(id, isChecked, currentStock) {
+            const isTrackVal = isChecked ? 1 : 0;
+            try {
+                const res = await fetch(`/api/admin/inventory/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ stock_quantity: parseInt(currentStock) || 0, is_track_stock: isTrackVal })
+                });
+                if (res.ok) {
+                    loadInventoryData();
+                } else {
+                    alert('บันทึกไม่สำเร็จ');
+                }
+            } catch (err) {
+                alert('เกิดข้อผิดพลาด');
             }
         }
     </script>
