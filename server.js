@@ -581,33 +581,31 @@ app.delete('/api/menu/:id', async (req, res) => {
     }
 });
 
-// API สำหรับเช็คบิลและบันทึกประวัติการขาย (ระบบตัดสต๊อกแบบยอมให้ติดลบ)
+// API สำหรับเช็คบิลและบันทึกประวัติการขาย (คืนค่า print_status ให้ระบบพิมพ์ทำงานได้ และหักสต๊อกแบบติดลบ)
 app.post('/api/admin/sales-history', async (req, res) => {
     const { table_id, title, total_price, items, print_status } = req.body;
 
     try {
-        // 1. บันทึกประวัติการขายลงตาราง sales_history
+        // 1. บันทึกประวัติการขาย (เพิ่ม $5 และ print_status กลับเข้ามาเพื่อให้ Agent นำไปพิมพ์ต่อ)
         const insertQuery = `
-            INSERT INTO sales_history (table_id, title, total_price, items, checked_out_at)
-            VALUES ($1, $2, $3, $4, NOW()) RETURNING id
+            INSERT INTO sales_history (table_id, title, total_price, items, print_status, checked_out_at)
+            VALUES ($1, $2, $3, $4, $5, NOW()) RETURNING id
         `;
-        const result = await pool.query(insertQuery, [table_id, title, total_price, JSON.stringify(items)]);
+        const result = await pool.query(insertQuery, [table_id, title, total_price, JSON.stringify(items), print_status]);
 
-        // 2. ระบบตัดสต๊อกอัตโนมัติ (ปล่อยให้ติดลบได้)
+        // 2. ระบบตัดสต๊อกอัตโนมัติ (ปล่อยให้ติดลบได้ตามที่ต้องการ)
         if (table_id !== 'reprint' && items && items.length > 0) {
             for (const item of items) {
                 const qtyToDeduct = Number(item.quantity) || 0;
                 
                 if (qtyToDeduct > 0) {
                     if (item.menu_item_id) {
-                        // อัปเดตโดยใช้ ID ของเมนู (หักลบตรงๆ ไปเลย)
                         await pool.query(`
                             UPDATE menu_items 
                             SET stock_quantity = COALESCE(stock_quantity, 0) - $1 
                             WHERE id = $2 AND is_track_stock = 1
                         `, [qtyToDeduct, item.menu_item_id]);
                     } else {
-                        // สำรองกรณีไม่มี ID: อัปเดตโดยอิงจากชื่อเมนู
                         const cleanName = item.name.split(' (')[0].trim();
                         await pool.query(`
                             UPDATE menu_items 
