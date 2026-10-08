@@ -534,17 +534,21 @@
 
             <!-- Tab 2: ดูออเดอร์ค้างทั้งหมดและสั่งพิมพ์ซ้ำ -->
             <div id="tabReprintContent" style="display: none;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
-                    <label style="font-size: 12px; font-weight: bold; color:var(--primary);">📋 รายการออเดอร์ที่ยังไม่เช็คบิลทั้งหมด:</label>
-                    <button onclick="loadAllPendingOrders()" style="background: var(--light-gray); border: 1px solid #ccc; padding: 4px 8px; border-radius: 4px; font-size: 11px; cursor: pointer;">🔄 รีเฟรช</button>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
+                    <label style="font-size: 13px; font-weight: bold; color:var(--primary);">📋 ประวัติรายการออเดอร์ทั้งหมด:</label>
+                    <div style="display: flex; gap: 5px; align-items: center;">
+                        <span style="font-size: 11px; font-weight: bold; color: var(--text);">🔍 กรองโต๊ะ:</span>
+                        <select id="filterOrderTableSelect" onchange="loadAllPendingOrders()" style="padding: 4px; font-size: 12px; border: 1px solid #ccc; border-radius: 4px; outline: none; min-width: 120px;">
+                            <option value="all">-- ทุกโต๊ะ/คิว --</option>
+                        </select>
+                        <button onclick="loadAllPendingOrders()" style="background: var(--light-gray); border: 1px solid #ccc; padding: 4px 8px; border-radius: 4px; font-size: 11px; cursor: pointer; font-weight: bold;">🔄 รีเฟรช</button>
+                    </div>
                 </div>
-                <div id="allPendingOrdersList" style="background:var(--light-gray); padding:10px; border-radius:6px; min-height:260px; max-height:260px; overflow-y:auto; font-size: 12px;">
+                <div id="allPendingOrdersList" style="background:var(--light-gray); padding:10px; border-radius:6px; min-height:250px; max-height:250px; overflow-y:auto; font-size: 12px;">
                     <p style="color:var(--gray); text-align:center; padding-top:20px;">กำลังโหลดข้อมูล...</p>
                 </div>
-            </div>
-        </div>
-    </div>
-    <!-- Modal จัดการเมนูอาหาร -->
+            </div>   
+             <!-- Modal จัดการเมนูอาหาร -->
     <div class="modal" id="menuManagerModal">
         <div class="modal-content" style="width: 700px;">
             <h3 style="margin-top:0; color:var(--primary); font-size: 16px;">⚙️ ระบบจัดการเมนูอาหาร</h3>
@@ -2031,28 +2035,67 @@
                 loadAllPendingOrders(); // โหลดออเดอร์เมื่อคลิกแท็บนี้
             }
         }
-// ฟังก์ชันโหลดออเดอร์ทั้งหมด (รวมที่เสร็จแล้ว) มาแสดง
+// ฟังก์ชันโหลดออเดอร์ทั้งหมด (พร้อมระบบกรองโต๊ะอัตโนมัติ)
         async function loadAllPendingOrders() {
             const container = document.getElementById('allPendingOrdersList');
+            const tableSelect = document.getElementById('filterOrderTableSelect');
+            
+            // จำค่าโต๊ะที่กำลังเลือกอยู่ก่อนรีเฟรช
+            const selectedTable = tableSelect ? tableSelect.value : 'all'; 
+
             container.innerHTML = '<p style="color:var(--gray); text-align:center;">กำลังโหลดรายการออเดอร์...</p>';
             
             try {
-                const res = await fetch('/api/admin/orders'); // ดึงออเดอร์ทั้งหมด
+                const res = await fetch('/api/admin/orders'); 
                 const allOrders = await res.json();
 
                 if (allOrders.length === 0) {
                     container.innerHTML = '<p style="color:var(--gray); text-align:center; padding-top:20px;">ไม่มีออเดอร์ในระบบ</p>';
+                    if(tableSelect) tableSelect.innerHTML = '<option value="all">-- ทุกโต๊ะ/คิว --</option>';
                     return;
                 }
 
+                // 1. ดึงรายชื่อโต๊ะที่มีออเดอร์ทั้งหมดแบบไม่ซ้ำกัน มาใส่ใน Dropdown
+                if (tableSelect) {
+                    const uniqueTables = [...new Set(allOrders.map(o => o.table_id))].sort((a,b) => {
+                        const numA = parseInt(a.replace(/\D/g, '')) || 0;
+                        const numB = parseInt(b.replace(/\D/g, '')) || 0;
+                        return numA - numB;
+                    });
+
+                    let optionsHtml = '<option value="all">-- ทุกโต๊ะ/คิว --</option>';
+                    uniqueTables.forEach(tId => {
+                        let tLabel = String(tId).startsWith('Z') ? `ซุ้ม ${tId}` : (isNaN(tId) ? `คิว ${tId}` : `โต๊ะ ${tId}`);
+                        optionsHtml += `<option value="${tId}">${tLabel}</option>`;
+                    });
+                    tableSelect.innerHTML = optionsHtml;
+                    
+                    // เซ็ตค่ากลับไปที่ตัวที่เคยเลือก (ถ้าโต๊ะนั้นยังมีบิลอยู่)
+                    if (uniqueTables.includes(selectedTable)) {
+                        tableSelect.value = selectedTable;
+                    } else {
+                        tableSelect.value = 'all';
+                    }
+                }
+
+                // 2. กรองข้อมูลตามโต๊ะที่ผู้ใช้เลือกใน Dropdown
+                const currentFilter = tableSelect ? tableSelect.value : 'all';
+                const filteredOrders = currentFilter === 'all' 
+                    ? allOrders 
+                    : allOrders.filter(o => String(o.table_id) === String(currentFilter));
+
+                if (filteredOrders.length === 0) {
+                    container.innerHTML = '<p style="color:var(--gray); text-align:center; padding-top:20px;">ไม่พบรายการของโต๊ะนี้</p>';
+                    return;
+                }
+
+                // 3. แสดงผลรายการออเดอร์ที่ผ่านการกรองแล้ว
                 let html = '';
-                // ลบการกรอง (filter) ออก เพื่อให้แสดงออเดอร์ทุกสถานะ
-                allOrders.forEach(ord => {
+                filteredOrders.forEach(ord => {
                     let itemsStr = ord.items ? ord.items.map(i => `${i.name} <span style="color:#e74c3c;">x${i.quantity}</span>`).join(', ') : 'ไม่มีรายการ';
                     let time = new Date(ord.created_at).toLocaleTimeString('th-TH');
                     let tLabel = String(ord.table_id).startsWith('Z') ? `ซุ้ม ${ord.table_id}` : (isNaN(ord.table_id) ? `คิว ${ord.table_id}` : `โต๊ะ ${ord.table_id}`);
                     
-                    // แยกสีป้ายสถานะให้ดูง่าย
                     let statusColor = ord.status === 'เสร็จสิ้น' ? '#2ed573' : '#ffa502';
                     let statusText = ord.status === 'เสร็จสิ้น' ? '✅ เสร็จสิ้นแล้ว' : '⏳ กำลังทำอาหาร';
 
@@ -2078,7 +2121,6 @@
                 container.innerHTML = '<p style="color:red; text-align:center;">โหลดข้อมูลล้มเหลว</p>';
             }
         }
-
         // ฟังก์ชันสั่งรีเซ็ตและรีเฟรชหน้าต่างนี้ด้วยทันที
         async function resetOrderToPrintAndRefresh(orderId) {
             if(!confirm('ต้องการส่งออเดอร์นี้กลับไปสถานะ "กำลังทำอาหาร" และส่งเข้าคิวรอพิมพ์ที่เครื่องพิมพ์ครัวใหม่อีกครั้งใช่หรือไม่?')) return;
