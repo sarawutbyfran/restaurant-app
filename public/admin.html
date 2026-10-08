@@ -499,7 +499,7 @@
         </div>
     </div>
 
-<!-- Modal จัดการออเดอร์ (รวมออเดอร์ & พิมพ์ออเดอร์ซ้ำ) -->
+    <!-- Modal จัดการออเดอร์ (รวมออเดอร์ & พิมพ์ออเดอร์ซ้ำ) -->
     <div class="modal" id="mergeModal">
         <div class="modal-content" style="width: 650px; max-width: 95vw;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
@@ -513,7 +513,7 @@
                 <button id="tabReprintBtn" onclick="switchOrderTab('reprint')" style="flex:1; background:#f1f2f6; color:#747d8c; border:none; padding:10px; border-radius:6px 6px 0 0; font-size:13px; font-weight:bold; cursor:pointer;">🖨️ 2. ดูออเดอร์ & พิมพ์ซ้ำ</button>
             </div>
 
-            <!-- Tab 1: รวมออเดอร์ (อันเดิม) -->
+            <!-- Tab 1: รวมออเดอร์ -->
             <div id="tabMergeContent" style="display: block;">
                 <div class="form-group" style="background: #fdfdfd; padding: 10px; border: 1px solid #eee; border-radius: 6px;">
                     <label style="font-size:12px; font-weight:bold; color:var(--text);">📍 เลือกโต๊ะที่มีออเดอร์ค้างหลายใบ:</label>
@@ -548,7 +548,10 @@
                     <p style="color:var(--gray); text-align:center; padding-top:20px;">กำลังโหลดข้อมูล...</p>
                 </div>
             </div>   
-             <!-- Modal จัดการเมนูอาหาร -->
+        </div>
+    </div>
+
+    <!-- Modal จัดการเมนูอาหาร -->
     <div class="modal" id="menuManagerModal">
         <div class="modal-content" style="width: 700px;">
             <h3 style="margin-top:0; color:var(--primary); font-size: 16px;">⚙️ ระบบจัดการเมนูอาหาร</h3>
@@ -739,7 +742,7 @@
         // ฟังก์ชันสำหรับแสดง Toast 
         function showToast(message, isError = false) {
             const toast = document.getElementById("adminToast");
-            if(!toast) return; // ป้องกัน error ถ้าลืมใส่ tag HTML
+            if(!toast) return; 
             toast.innerText = message;
             toast.style.backgroundColor = isError ? "#d63031" : "#00b894";
             toast.className = "show";
@@ -1380,7 +1383,7 @@
                         ${currentCart.length > 0 ? `
                             <div style="display:flex; gap:6px; margin: 8px 0;">
                                 <button onclick="confirmAndSubmitOrder(true)" style="flex:1; background:#8e44ad; color:white; border:none; padding:7px; border-radius:6px; font-size:11px; cursor:pointer; font-weight:bold;">🔕 ลงบิล (ไม่พิมพ์)</button>
-                                <button onclick="confirmAndSubmitOrder(false)" style="flex:1; background:var(--success); color:white; border:none; padding:7px; border-radius:6px; font-size:11px; cursor:pointer; font-weight:bold;">🚀 พิมพ์เข้าครัว (${cartTotal.toFixed(2)}฿)</button>
+                                <button onclick="confirmAndSubmitOrder(false)" style="flex:1; background:var(--success); color:white; border:none; padding:7px; border-radius:6px; font-size:11px; cursor:pointer; font-weight:bold;">🚀 พิมพ์เข้าครัว (\${cartTotal.toFixed(2)}฿)</button>
                             </div>
                         ` : ''}
 
@@ -1661,7 +1664,7 @@
 
         async function loadSalesReport() {
             try {
-                const res = await fetch('/api/admin/sales-history'); // ดึงมาทั้งหมดเลย ไม่ส่งพารามิเตอร์วันที่
+                const res = await fetch('/api/admin/sales-history'); 
                 const historyList = await res.json();
                 
                 const tbody = document.getElementById('salesHistoryTableBody');
@@ -2015,7 +2018,8 @@
                 showToast('เชื่อมต่อเซิร์ฟเวอร์ล้มเหลว', true);
             }
         }
-// ฟังก์ชันสลับแท็บในหน้าต่างจัดการออเดอร์
+
+        // ฟังก์ชันสลับแท็บในหน้าต่างจัดการออเดอร์
         function switchOrderTab(tabName) {
             const btnMerge = document.getElementById('tabMergeBtn');
             const btnReprint = document.getElementById('tabReprintBtn');
@@ -2035,7 +2039,8 @@
                 loadAllPendingOrders(); // โหลดออเดอร์เมื่อคลิกแท็บนี้
             }
         }
-// ฟังก์ชันโหลดออเดอร์ทั้งหมด (พร้อมระบบกรองโต๊ะอัตโนมัติ)
+
+        // ฟังก์ชันโหลดออเดอร์ทั้งหมด (พร้อมระบบกรองโต๊ะอัตโนมัติ)
         async function loadAllPendingOrders() {
             const container = document.getElementById('allPendingOrdersList');
             const tableSelect = document.getElementById('filterOrderTableSelect');
@@ -2121,6 +2126,7 @@
                 container.innerHTML = '<p style="color:red; text-align:center;">โหลดข้อมูลล้มเหลว</p>';
             }
         }
+        
         // ฟังก์ชันสั่งรีเซ็ตและรีเฟรชหน้าต่างนี้ด้วยทันที
         async function resetOrderToPrintAndRefresh(orderId) {
             if(!confirm('ต้องการส่งออเดอร์นี้กลับไปสถานะ "กำลังทำอาหาร" และส่งเข้าคิวรอพิมพ์ที่เครื่องพิมพ์ครัวใหม่อีกครั้งใช่หรือไม่?')) return;
@@ -2141,6 +2147,7 @@
                 showToast('เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์', true);
             }
         }
+
         setInterval(fetchKitchenOrders, 5000);
         fetchAdminData();
     </script>
