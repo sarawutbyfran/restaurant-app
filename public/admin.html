@@ -2031,28 +2031,31 @@
                 loadAllPendingOrders(); // โหลดออเดอร์เมื่อคลิกแท็บนี้
             }
         }
-
-        // ฟังก์ชันโหลดออเดอร์ทั้งหมดที่ยังไม่เสร็จสิ้นมาแสดง
+// ฟังก์ชันโหลดออเดอร์ทั้งหมด (รวมที่เสร็จแล้ว) มาแสดง
         async function loadAllPendingOrders() {
             const container = document.getElementById('allPendingOrdersList');
             container.innerHTML = '<p style="color:var(--gray); text-align:center;">กำลังโหลดรายการออเดอร์...</p>';
             
             try {
-                const res = await fetch('/api/admin/orders'); // ดึงออเดอร์ทั้งหมดมาคัดกรอง
+                const res = await fetch('/api/admin/orders'); // ดึงออเดอร์ทั้งหมด
                 const allOrders = await res.json();
-                const pendingOrders = allOrders.filter(o => o.status !== 'เสร็จสิ้น');
 
-                if (pendingOrders.length === 0) {
-                    container.innerHTML = '<p style="color:var(--gray); text-align:center; padding-top:20px;">ไม่มีออเดอร์ที่ค้างอยู่</p>';
+                if (allOrders.length === 0) {
+                    container.innerHTML = '<p style="color:var(--gray); text-align:center; padding-top:20px;">ไม่มีออเดอร์ในระบบ</p>';
                     return;
                 }
 
                 let html = '';
-                pendingOrders.forEach(ord => {
+                // ลบการกรอง (filter) ออก เพื่อให้แสดงออเดอร์ทุกสถานะ
+                allOrders.forEach(ord => {
                     let itemsStr = ord.items ? ord.items.map(i => `${i.name} <span style="color:#e74c3c;">x${i.quantity}</span>`).join(', ') : 'ไม่มีรายการ';
                     let time = new Date(ord.created_at).toLocaleTimeString('th-TH');
                     let tLabel = String(ord.table_id).startsWith('Z') ? `ซุ้ม ${ord.table_id}` : (isNaN(ord.table_id) ? `คิว ${ord.table_id}` : `โต๊ะ ${ord.table_id}`);
                     
+                    // แยกสีป้ายสถานะให้ดูง่าย
+                    let statusColor = ord.status === 'เสร็จสิ้น' ? '#2ed573' : '#ffa502';
+                    let statusText = ord.status === 'เสร็จสิ้น' ? '✅ เสร็จสิ้นแล้ว' : '⏳ กำลังทำอาหาร';
+
                     html += `
                         <div style="background:white; border:1px solid #ddd; margin-bottom:6px; border-radius:6px; padding: 10px;">
                             <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px dashed #eee; padding-bottom:4px; margin-bottom:4px;">
@@ -2062,8 +2065,9 @@
                                 <div style="font-size:11px; color:var(--gray);">เวลาสั่ง: ${time}</div>
                             </div>
                             <div style="font-size:12px; color:var(--text); line-height:1.4; margin-bottom:8px;">${itemsStr}</div>
-                            <div style="display:flex; justify-content:flex-end;">
-                                <button onclick="resetOrderToPrint('${ord.id}')" style="background:#3742fa; color:white; border:none; padding:4px 10px; border-radius:4px; font-size:11px; cursor:pointer;">🔄 บังคับพิมพ์ใบนี้ซ้ำ</button>
+                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                                <div style="font-size:11px; font-weight:bold; color:${statusColor};">${statusText}</div>
+                                <button onclick="resetOrderToPrintAndRefresh('${ord.id}')" style="background:#3742fa; color:white; border:none; padding:4px 10px; border-radius:4px; font-size:11px; cursor:pointer; font-weight:bold;">🔄 ดึงกลับมาทำใหม่ & พิมพ์ซ้ำ</button>
                             </div>
                         </div>
                     `;
@@ -2072,6 +2076,27 @@
                 container.innerHTML = html;
             } catch(e) {
                 container.innerHTML = '<p style="color:red; text-align:center;">โหลดข้อมูลล้มเหลว</p>';
+            }
+        }
+
+        // ฟังก์ชันสั่งรีเซ็ตและรีเฟรชหน้าต่างนี้ด้วยทันที
+        async function resetOrderToPrintAndRefresh(orderId) {
+            if(!confirm('ต้องการส่งออเดอร์นี้กลับไปสถานะ "กำลังทำอาหาร" และส่งเข้าคิวรอพิมพ์ที่เครื่องพิมพ์ครัวใหม่อีกครั้งใช่หรือไม่?')) return;
+            try {
+                // เรียกใช้ API เดิมของคุณที่มีอยู่แล้ว ซึ่งจะเปลี่ยนสถานะกลับเป็น กำลังทำอาหาร ให้อัตโนมัติ
+                const res = await fetch(`/api/admin/orders/${orderId}/reset-print`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                if(res.ok) {
+                    showToast('ดึงออเดอร์กลับมาทำใหม่และส่งพิมพ์สำเร็จ!');
+                    fetchKitchenOrders(); // รีเฟรชหน้าต่างหลักของร้าน
+                    loadAllPendingOrders(); // รีเฟรชข้อมูลใน Modal แท็บนี้ด้วย
+                } else {
+                    showToast('ไม่สามารถรีเซ็ตสถานะพิมพ์ได้', true);
+                }
+            } catch(e) {
+                showToast('เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์', true);
             }
         }
         setInterval(fetchKitchenOrders, 5000);
