@@ -432,7 +432,7 @@
         <div class="kitchen-section">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                 <h3 style="margin:0; font-size:13px; color:var(--primary);">👨‍🍳 สถานะการพิมพ์ออเดอร์ในครัว</h3>
-                <button onclick="openMergeModal()" style="background: #8e44ad; color: white; border: none; padding: 5px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">🔗 รวมออเดอร์</button>
+                <button onclick="openMergeModal()" style="background: #8e44ad; color: white; border: none; padding: 5px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">🔗 จัดการออเดอร์</button>
             </div>
             <div id="kitchen-orders-list" style="max-height: calc(100vh - 160px); overflow-y: auto; padding-right: 4px;">
                 <p style="color:var(--gray); font-size:12px;">กำลังโหลดออเดอร์...</p>
@@ -499,32 +499,51 @@
         </div>
     </div>
 
-    <!-- Modal รวมออเดอร์ -->
+<!-- Modal จัดการออเดอร์ (รวมออเดอร์ & พิมพ์ออเดอร์ซ้ำ) -->
     <div class="modal" id="mergeModal">
-        <div class="modal-content" style="width: 550px; max-width: 95vw;">
-            <h3 style="margin-top:0; color:#8e44ad; font-size: 15px;">🔗 รวมใบออเดอร์ (เฉพาะโต๊ะเดียวกัน)</h3>
-            
-            <div class="form-group" style="background: #fdfdfd; padding: 10px; border: 1px solid #eee; border-radius: 6px;">
-                <label style="font-size:12px; font-weight:bold; color:var(--text);">📍 เลือกโต๊ะที่มีออเดอร์ค้างหลายใบ:</label>
-                <select id="mergeTableSelect" onchange="loadOrdersToMerge()" style="padding: 8px; font-size: 12px; width: 100%; border: 1px solid #ccc; border-radius: 4px; margin-top:5px;">
-                    <option value="">-- กำลังโหลด --</option>
-                </select>
+        <div class="modal-content" style="width: 650px; max-width: 95vw;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h3 style="margin:0; color:#8e44ad; font-size: 16px;">⚙️ ระบบจัดการออเดอร์ในครัว</h3>
+                <button onclick="closeMergeModal()" style="background:#ddd; border:none; padding:6px 14px; border-radius:6px; cursor:pointer; font-size:12px;">ปิด ✕</button>
             </div>
 
-            <div style="margin-top: 10px;">
-                <label style="font-size: 12px; font-weight: bold; color:var(--primary);">เลือกใบออเดอร์ที่ต้องการรวม (ระบบจะส่งพิมพ์ใบใหม่ใบเดียว):</label>
-                <div id="mergeOrdersList" style="background:var(--light-gray); padding:10px; border-radius:6px; min-height:180px; max-height:280px; overflow-y:auto; margin-top: 5px; font-size: 12px;">
-                    <p style="color:var(--gray); text-align:center; padding-top:20px;">กรุณาเลือกโต๊ะจากด้านบนก่อน</p>
+            <!-- Tab Buttons -->
+            <div style="display: flex; gap: 5px; border-bottom: 2px solid #eee; padding-bottom: 5px; margin-bottom: 10px;">
+                <button id="tabMergeBtn" onclick="switchOrderTab('merge')" style="flex:1; background:#8e44ad; color:white; border:none; padding:10px; border-radius:6px 6px 0 0; font-size:13px; font-weight:bold; cursor:pointer;">🔗 1. รวมออเดอร์ (โต๊ะเดียวกัน)</button>
+                <button id="tabReprintBtn" onclick="switchOrderTab('reprint')" style="flex:1; background:#f1f2f6; color:#747d8c; border:none; padding:10px; border-radius:6px 6px 0 0; font-size:13px; font-weight:bold; cursor:pointer;">🖨️ 2. ดูออเดอร์ & พิมพ์ซ้ำ</button>
+            </div>
+
+            <!-- Tab 1: รวมออเดอร์ (อันเดิม) -->
+            <div id="tabMergeContent" style="display: block;">
+                <div class="form-group" style="background: #fdfdfd; padding: 10px; border: 1px solid #eee; border-radius: 6px;">
+                    <label style="font-size:12px; font-weight:bold; color:var(--text);">📍 เลือกโต๊ะที่มีออเดอร์ค้างหลายใบ:</label>
+                    <select id="mergeTableSelect" onchange="loadOrdersToMerge()" style="padding: 8px; font-size: 12px; width: 100%; border: 1px solid #ccc; border-radius: 4px; margin-top:5px;">
+                        <option value="">-- กำลังโหลด --</option>
+                    </select>
+                </div>
+                <div style="margin-top: 10px;">
+                    <label style="font-size: 12px; font-weight: bold; color:var(--primary);">เลือกใบออเดอร์ที่ต้องการรวม (ระบบจะส่งพิมพ์ใบใหม่ใบเดียว):</label>
+                    <div id="mergeOrdersList" style="background:var(--light-gray); padding:10px; border-radius:6px; min-height:180px; max-height:280px; overflow-y:auto; margin-top: 5px; font-size: 12px;">
+                        <p style="color:var(--gray); text-align:center; padding-top:20px;">กรุณาเลือกโต๊ะจากด้านบนก่อน</p>
+                    </div>
+                </div>
+                <div style="display:flex; justify-content:flex-end; margin-top:10px;">
+                    <button onclick="executeMergeAndReprint()" style="background:#8e44ad; color:white; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; font-weight:bold; font-size:12px;">🔗 ยืนยันรวมและสั่งพิมพ์ซ้ำ</button>
                 </div>
             </div>
 
-            <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:15px; border-top:1px solid #ddd; padding-top:12px;">
-                <button onclick="closeMergeModal()" style="background:#ddd; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; font-size:12px;">ปิด</button>
-                <button onclick="executeMergeAndReprint()" style="background:#8e44ad; color:white; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; font-weight:bold; font-size:12px;">🔗 ยืนยันรวมและสั่งพิมพ์ซ้ำ</button>
+            <!-- Tab 2: ดูออเดอร์ค้างทั้งหมดและสั่งพิมพ์ซ้ำ -->
+            <div id="tabReprintContent" style="display: none;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                    <label style="font-size: 12px; font-weight: bold; color:var(--primary);">📋 รายการออเดอร์ที่ยังไม่เช็คบิลทั้งหมด:</label>
+                    <button onclick="loadAllPendingOrders()" style="background: var(--light-gray); border: 1px solid #ccc; padding: 4px 8px; border-radius: 4px; font-size: 11px; cursor: pointer;">🔄 รีเฟรช</button>
+                </div>
+                <div id="allPendingOrdersList" style="background:var(--light-gray); padding:10px; border-radius:6px; min-height:260px; max-height:260px; overflow-y:auto; font-size: 12px;">
+                    <p style="color:var(--gray); text-align:center; padding-top:20px;">กำลังโหลดข้อมูล...</p>
+                </div>
             </div>
         </div>
     </div>
-
     <!-- Modal จัดการเมนูอาหาร -->
     <div class="modal" id="menuManagerModal">
         <div class="modal-content" style="width: 700px;">
@@ -1992,7 +2011,69 @@
                 showToast('เชื่อมต่อเซิร์ฟเวอร์ล้มเหลว', true);
             }
         }
+// ฟังก์ชันสลับแท็บในหน้าต่างจัดการออเดอร์
+        function switchOrderTab(tabName) {
+            const btnMerge = document.getElementById('tabMergeBtn');
+            const btnReprint = document.getElementById('tabReprintBtn');
+            const contentMerge = document.getElementById('tabMergeContent');
+            const contentReprint = document.getElementById('tabReprintContent');
 
+            if (tabName === 'merge') {
+                btnMerge.style.background = '#8e44ad'; btnMerge.style.color = 'white';
+                btnReprint.style.background = '#f1f2f6'; btnReprint.style.color = '#747d8c';
+                contentMerge.style.display = 'block';
+                contentReprint.style.display = 'none';
+            } else {
+                btnReprint.style.background = '#8e44ad'; btnReprint.style.color = 'white';
+                btnMerge.style.background = '#f1f2f6'; btnMerge.style.color = '#747d8c';
+                contentReprint.style.display = 'block';
+                contentMerge.style.display = 'none';
+                loadAllPendingOrders(); // โหลดออเดอร์เมื่อคลิกแท็บนี้
+            }
+        }
+
+        // ฟังก์ชันโหลดออเดอร์ทั้งหมดที่ยังไม่เสร็จสิ้นมาแสดง
+        async function loadAllPendingOrders() {
+            const container = document.getElementById('allPendingOrdersList');
+            container.innerHTML = '<p style="color:var(--gray); text-align:center;">กำลังโหลดรายการออเดอร์...</p>';
+            
+            try {
+                const res = await fetch('/api/admin/orders'); // ดึงออเดอร์ทั้งหมดมาคัดกรอง
+                const allOrders = await res.json();
+                const pendingOrders = allOrders.filter(o => o.status !== 'เสร็จสิ้น');
+
+                if (pendingOrders.length === 0) {
+                    container.innerHTML = '<p style="color:var(--gray); text-align:center; padding-top:20px;">ไม่มีออเดอร์ที่ค้างอยู่</p>';
+                    return;
+                }
+
+                let html = '';
+                pendingOrders.forEach(ord => {
+                    let itemsStr = ord.items ? ord.items.map(i => `${i.name} <span style="color:#e74c3c;">x${i.quantity}</span>`).join(', ') : 'ไม่มีรายการ';
+                    let time = new Date(ord.created_at).toLocaleTimeString('th-TH');
+                    let tLabel = String(ord.table_id).startsWith('Z') ? `ซุ้ม ${ord.table_id}` : (isNaN(ord.table_id) ? `คิว ${ord.table_id}` : `โต๊ะ ${ord.table_id}`);
+                    
+                    html += `
+                        <div style="background:white; border:1px solid #ddd; margin-bottom:6px; border-radius:6px; padding: 10px;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px dashed #eee; padding-bottom:4px; margin-bottom:4px;">
+                                <div style="font-size:13px; font-weight:bold; color:var(--primary);">
+                                    📍 ${tLabel} (ออเดอร์ #${ord.id})
+                                </div>
+                                <div style="font-size:11px; color:var(--gray);">เวลาสั่ง: ${time}</div>
+                            </div>
+                            <div style="font-size:12px; color:var(--text); line-height:1.4; margin-bottom:8px;">${itemsStr}</div>
+                            <div style="display:flex; justify-content:flex-end;">
+                                <button onclick="resetOrderToPrint('${ord.id}')" style="background:#3742fa; color:white; border:none; padding:4px 10px; border-radius:4px; font-size:11px; cursor:pointer;">🔄 บังคับพิมพ์ใบนี้ซ้ำ</button>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                container.innerHTML = html;
+            } catch(e) {
+                container.innerHTML = '<p style="color:red; text-align:center;">โหลดข้อมูลล้มเหลว</p>';
+            }
+        }
         setInterval(fetchKitchenOrders, 5000);
         fetchAdminData();
     </script>
