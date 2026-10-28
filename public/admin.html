@@ -393,7 +393,12 @@
         </div>
 
         <div style="display: flex; flex-direction: column; gap: 4px; margin-top: auto; padding-top: 10px;">
-            <button class="btn-manage-menu-corner" style="background: var(--success);" onclick="openSalesReportModal()">📊 สรุปยอดขาย</button>
+            <button class="btn-manage-menu-corner" style="background: var(--success); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; min-height: 52px; padding: 6px 4px;" onclick="openSalesReportModal()">
+                <div style="font-size: 11px;">📊 สรุปยอดขาย</div>
+                <div id="latestSalesSummaryBtnInfo" style="font-size: 10px; color: #fff; opacity: 0.95; font-weight: normal; line-height: 1.2; text-align: center;">
+                    (ยังไม่มีการเช็คบิล)
+                </div>
+            </button>
             <button class="btn-manage-menu-corner" onclick="openMenuManagerModal()">⚙️ จัดการเมนูอาหาร</button>
         </div>
     </div>
@@ -1237,6 +1242,7 @@
                 currentCart = [];
                 document.getElementById('tableSummaryBox').innerHTML = `<div style="font-size:11px; color:var(--gray); text-align:center; padding:30px 0;">ยังไม่ได้เลือกโต๊ะหรือคิว<br>(กรุณาคลิกเลือกจากด้านล่าง)</div>`;
                 fetchKitchenOrders();
+                loadSalesReport(); // อัปเดตข้อมูลบนปุ่มสรุปยอดขายทันทีหลังเช็คบิล
 
             } catch(e) {
                 console.error(e);
@@ -1311,7 +1317,7 @@
             renderSummaryBox();
         }
 
-async function renderSummaryBox() {
+        async function renderSummaryBox() {
             const summaryBox = document.getElementById('tableSummaryBox');
             if(!activeTableId) {
                 summaryBox.innerHTML = `<div style="font-size:11px; color:var(--gray); text-align:center; padding:40px 0;">ยังไม่ได้เลือกโต๊ะหรือคิว<br>(กรุณาคลิกเลือกจากด้านล่าง)</div>`;
@@ -1370,7 +1376,6 @@ async function renderSummaryBox() {
                     `;
                 });
 
-                // สร้าง HTML ของปุ่มแยกออกมาก่อน เพื่อป้องกันตัวแปรไม่ทำงาน
                 let submitButtonsHtml = '';
                 if (currentCart.length > 0) {
                     submitButtonsHtml = `
@@ -1406,6 +1411,7 @@ async function renderSummaryBox() {
                 summaryBox.innerHTML = '<p style="color:var(--primary); font-size:11px; text-align:center;">โหลดข้อมูลไม่สำเร็จ</p>';
             }
         }
+
         async function deleteAggregatedOrderItem(tableId, itemName) {
             if(!confirm(`ต้องการลบเมนู "${itemName}" ทั้งหมดออกจากโต๊ะนี้ใช่หรือไม่?`)) return;
             try {
@@ -1675,6 +1681,22 @@ async function renderSummaryBox() {
                 const tbody = document.getElementById('salesHistoryTableBody');
                 tbody.innerHTML = '';
                 salesHistoryCache = {};
+
+                // อัปเดตข้อมูลบิลล่าสุดบนปุ่ม "สรุปยอดขาย"
+                const latestSummaryInfo = document.getElementById('latestSalesSummaryBtnInfo');
+                if (historyList && historyList.length > 0) {
+                    const sortedHistory = [...historyList].sort((a, b) => new Date(b.checked_out_at) - new Date(a.checked_out_at));
+                    const latestRecord = sortedHistory[0];
+                    
+                    if (latestSummaryInfo) {
+                        latestSummaryInfo.innerHTML = `
+                            ล่าสุด: ${latestRecord.title}<br>
+                            ยอดเงิน: ${Number(latestRecord.total_price).toFixed(2)} ฿
+                        `;
+                    }
+                } else {
+                    if (latestSummaryInfo) latestSummaryInfo.innerHTML = '(ยังไม่มีประวัติ)';
+                }
 
                 if (historyList.length === 0) {
                     tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:20px; color:var(--gray);">ไม่มีประวัติใบเสร็จ</td></tr>`;
@@ -2136,15 +2158,14 @@ async function renderSummaryBox() {
         async function resetOrderToPrintAndRefresh(orderId) {
             if(!confirm('ต้องการส่งออเดอร์นี้กลับไปสถานะ "กำลังทำอาหาร" และส่งเข้าคิวรอพิมพ์ที่เครื่องพิมพ์ครัวใหม่อีกครั้งใช่หรือไม่?')) return;
             try {
-                // เรียกใช้ API เดิมของคุณที่มีอยู่แล้ว ซึ่งจะเปลี่ยนสถานะกลับเป็น กำลังทำอาหาร ให้อัตโนมัติ
                 const res = await fetch(`/api/admin/orders/${orderId}/reset-print`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' }
                 });
                 if(res.ok) {
                     showToast('ดึงออเดอร์กลับมาทำใหม่และส่งพิมพ์สำเร็จ!');
-                    fetchKitchenOrders(); // รีเฟรชหน้าต่างหลักของร้าน
-                    loadAllPendingOrders(); // รีเฟรชข้อมูลใน Modal แท็บนี้ด้วย
+                    fetchKitchenOrders(); 
+                    loadAllPendingOrders(); 
                 } else {
                     showToast('ไม่สามารถรีเซ็ตสถานะพิมพ์ได้', true);
                 }
@@ -2155,6 +2176,7 @@ async function renderSummaryBox() {
 
         setInterval(fetchKitchenOrders, 5000);
         fetchAdminData();
+        loadSalesReport();
     </script>
 </body>
 </html>
