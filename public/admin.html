@@ -392,13 +392,18 @@
             <button class="cat-menu-btn" onclick="selectCategory('AdminController', this)">10. AdminController</button>
         </div>
 
-        <div style="display: flex; flex-direction: column; gap: 4px; margin-top: auto; padding-top: 10px;">
-            <button class="btn-manage-menu-corner" style="background: var(--success); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; min-height: 52px; padding: 6px 4px;" onclick="openSalesReportModal()">
-                <div style="font-size: 11px;">📊 สรุปยอดขาย</div>
-                <div id="latestSalesSummaryBtnInfo" style="font-size: 10px; color: #fff; opacity: 0.95; font-weight: normal; line-height: 1.2; text-align: center;">
-                    (ยังไม่มีการเช็คบิล)
+        <div style="display: flex; flex-direction: column; gap: 6px; margin-top: auto; padding-top: 10px;">
+            <!-- กล่องแสดงรายการเช็คบิลล่าสุด 3-4 บรรทัด (ตามกรอบสีแดงในรูป) -->
+            <div style="background: #ffffff; border: 1px solid #ced6e0; border-radius: 8px; padding: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                <div style="font-size: 11px; font-weight: bold; color: var(--primary); margin-bottom: 5px; border-bottom: 1px dashed #e2e8f0; padding-bottom: 3px; text-align: center;">
+                    🧾 ยอดเช็คบิลล่าสุด
                 </div>
-            </button>
+                <div id="recentSalesList" style="display: flex; flex-direction: column; gap: 4px;">
+                    <div style="color: var(--gray); text-align: center; font-size: 10px; padding: 4px 0;">(ยังไม่มีรายการ)</div>
+                </div>
+            </div>
+
+            <button class="btn-manage-menu-corner" style="background: var(--success);" onclick="openSalesReportModal()">📊 สรุปยอดขาย</button>
             <button class="btn-manage-menu-corner" onclick="openMenuManagerModal()">⚙️ จัดการเมนูอาหาร</button>
         </div>
     </div>
@@ -1242,7 +1247,7 @@
                 currentCart = [];
                 document.getElementById('tableSummaryBox').innerHTML = `<div style="font-size:11px; color:var(--gray); text-align:center; padding:30px 0;">ยังไม่ได้เลือกโต๊ะหรือคิว<br>(กรุณาคลิกเลือกจากด้านล่าง)</div>`;
                 fetchKitchenOrders();
-                loadSalesReport(); // อัปเดตข้อมูลบนปุ่มสรุปยอดขายทันทีหลังเช็คบิล
+                loadSalesReport(); // อัปเดตข้อมูลแสดงผลประวัติเช็คบิลทันที
 
             } catch(e) {
                 console.error(e);
@@ -1682,20 +1687,24 @@
                 tbody.innerHTML = '';
                 salesHistoryCache = {};
 
-                // อัปเดตข้อมูลบิลล่าสุดบนปุ่ม "สรุปยอดขาย"
-                const latestSummaryInfo = document.getElementById('latestSalesSummaryBtnInfo');
+                // อัปเดตรายการเช็คบิลล่าสุด 4 รายการ (1 บิล ต่อ 1 บรรทัด) ในกล่องแถบด้านซ้าย
+                const recentSalesList = document.getElementById('recentSalesList');
                 if (historyList && historyList.length > 0) {
                     const sortedHistory = [...historyList].sort((a, b) => new Date(b.checked_out_at) - new Date(a.checked_out_at));
-                    const latestRecord = sortedHistory[0];
+                    const topRecent = sortedHistory.slice(0, 4); // ดึง 4 บิลล่าสุด
                     
-                    if (latestSummaryInfo) {
-                        latestSummaryInfo.innerHTML = `
-                            ล่าสุด: ${latestRecord.title}<br>
-                            ยอดเงิน: ${Number(latestRecord.total_price).toFixed(2)} ฿
+                    let recentHtml = '';
+                    topRecent.forEach(record => {
+                        recentHtml += `
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 3px 4px; background: #f8f9fa; border-radius: 4px; border: 1px solid #edf2f7; font-size: 11px;">
+                                <span style="font-weight: bold; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${record.title}</span>
+                                <strong style="color: var(--success); font-size: 11px; margin-left: 4px; white-space: nowrap;">${Number(record.total_price).toFixed(0)}฿</strong>
+                            </div>
                         `;
-                    }
+                    });
+                    if (recentSalesList) recentSalesList.innerHTML = recentHtml;
                 } else {
-                    if (latestSummaryInfo) latestSummaryInfo.innerHTML = '(ยังไม่มีประวัติ)';
+                    if (recentSalesList) recentSalesList.innerHTML = '<div style="color: var(--gray); text-align: center; font-size: 10px; padding: 4px 0;">(ยังไม่มีรายการ)</div>';
                 }
 
                 if (historyList.length === 0) {
@@ -2062,8 +2071,8 @@
                 btnReprint.style.background = '#8e44ad'; btnReprint.style.color = 'white';
                 btnMerge.style.background = '#f1f2f6'; btnMerge.style.color = '#747d8c';
                 contentReprint.style.display = 'block';
-                contentMerge.style.display = 'none';
-                loadAllPendingOrders(); // โหลดออเดอร์เมื่อคลิกแท็บนี้
+                contentReprint.style.display = 'none';
+                loadAllPendingOrders(); 
             }
         }
 
@@ -2072,7 +2081,6 @@
             const container = document.getElementById('allPendingOrdersList');
             const tableSelect = document.getElementById('filterOrderTableSelect');
             
-            // จำค่าโต๊ะที่กำลังเลือกอยู่ก่อนรีเฟรช
             const selectedTable = tableSelect ? tableSelect.value : 'all'; 
 
             container.innerHTML = '<p style="color:var(--gray); text-align:center;">กำลังโหลดรายการออเดอร์...</p>';
@@ -2087,7 +2095,6 @@
                     return;
                 }
 
-                // 1. ดึงรายชื่อโต๊ะที่มีออเดอร์ทั้งหมดแบบไม่ซ้ำกัน มาใส่ใน Dropdown
                 if (tableSelect) {
                     const uniqueTables = [...new Set(allOrders.map(o => o.table_id))].sort((a,b) => {
                         const numA = parseInt(a.replace(/\D/g, '')) || 0;
@@ -2102,7 +2109,6 @@
                     });
                     tableSelect.innerHTML = optionsHtml;
                     
-                    // เซ็ตค่ากลับไปที่ตัวที่เคยเลือก (ถ้าโต๊ะนั้นยังมีบิลอยู่)
                     if (uniqueTables.includes(selectedTable)) {
                         tableSelect.value = selectedTable;
                     } else {
@@ -2110,7 +2116,6 @@
                     }
                 }
 
-                // 2. กรองข้อมูลตามโต๊ะที่ผู้ใช้เลือกใน Dropdown
                 const currentFilter = tableSelect ? tableSelect.value : 'all';
                 const filteredOrders = currentFilter === 'all' 
                     ? allOrders 
@@ -2121,7 +2126,6 @@
                     return;
                 }
 
-                // 3. แสดงผลรายการออเดอร์ที่ผ่านการกรองแล้ว
                 let html = '';
                 filteredOrders.forEach(ord => {
                     let itemsStr = ord.items ? ord.items.map(i => `${i.name} <span style="color:#e74c3c;">x${i.quantity}</span>`).join(', ') : 'ไม่มีรายการ';
@@ -2154,7 +2158,6 @@
             }
         }
         
-        // ฟังก์ชันสั่งรีเซ็ตและรีเฟรชหน้าต่างนี้ด้วยทันที
         async function resetOrderToPrintAndRefresh(orderId) {
             if(!confirm('ต้องการส่งออเดอร์นี้กลับไปสถานะ "กำลังทำอาหาร" และส่งเข้าคิวรอพิมพ์ที่เครื่องพิมพ์ครัวใหม่อีกครั้งใช่หรือไม่?')) return;
             try {
