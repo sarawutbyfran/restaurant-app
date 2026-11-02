@@ -2055,7 +2055,7 @@
             }
         }
 
-        // ฟังก์ชันสลับแท็บในหน้าต่างจัดการออเดอร์
+// ฟังก์ชันสลับแท็บในหน้าต่างจัดการออเดอร์
         function switchOrderTab(tabName) {
             const btnMerge = document.getElementById('tabMergeBtn');
             const btnReprint = document.getElementById('tabReprintBtn');
@@ -2070,12 +2070,36 @@
             } else {
                 btnReprint.style.background = '#8e44ad'; btnReprint.style.color = 'white';
                 btnMerge.style.background = '#f1f2f6'; btnMerge.style.color = '#747d8c';
-                contentReprint.style.display = 'block';
-                contentReprint.style.display = 'none';
+                
+                contentReprint.style.display = 'block'; 
+                contentMerge.style.display = 'none'; // แก้ไขบรรทัดนี้ จากเดิมที่พิมพ์ผิดเป็น contentReprint
+                
                 loadAllPendingOrders(); 
             }
         }
+                    
+// ฟังก์ชันสลับแท็บในหน้าต่างจัดการออเดอร์
+        function switchOrderTab(tabName) {
+            const btnMerge = document.getElementById('tabMergeBtn');
+            const btnReprint = document.getElementById('tabReprintBtn');
+            const contentMerge = document.getElementById('tabMergeContent');
+            const contentReprint = document.getElementById('tabReprintContent');
 
+            if (tabName === 'merge') {
+                btnMerge.style.background = '#8e44ad'; btnMerge.style.color = 'white';
+                btnReprint.style.background = '#f1f2f6'; btnReprint.style.color = '#747d8c';
+                contentMerge.style.display = 'block';
+                contentReprint.style.display = 'none';
+            } else {
+                btnReprint.style.background = '#8e44ad'; btnReprint.style.color = 'white';
+                btnMerge.style.background = '#f1f2f6'; btnMerge.style.color = '#747d8c';
+                
+                contentReprint.style.display = 'block'; 
+                contentMerge.style.display = 'none'; // แก้ไขบรรทัดนี้ จากเดิมที่พิมพ์ผิดเป็น contentReprint
+                
+                loadAllPendingOrders(); 
+            }
+        }
         // ฟังก์ชันโหลดออเดอร์ทั้งหมด (พร้อมระบบกรองโต๊ะอัตโนมัติ)
         async function loadAllPendingOrders() {
             const container = document.getElementById('allPendingOrdersList');
