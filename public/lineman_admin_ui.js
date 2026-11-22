@@ -46,7 +46,7 @@
     host.innerHTML = '<span style="color:#2d8752;">🛵 LINE MAN: ● เชื่อมต่อ Windows</span>';
   }
 
-  function cardOf(order) {
+  function cardOf(order, duplicateIndex = 1, duplicateCount = 1) {
     const statusKey = String(order.printStatus || 'pending');
     const printed = statusKey === 'printed';
     const status = printed ? '🖨️ พิมพ์แล้ว' : statusKey === 'printing' ? '⏳ กำลังพิมพ์' :
@@ -65,24 +65,48 @@
     const orderId = escapeHTML(order.id);
     const shortId = escapeHTML(order.shortId || order.orderKey || order.id);
     const disableActions = pending || !online;
+    const isDuplicateGroup = duplicateCount > 1;
+    const duplicateNote = duplicateIndex > 1
+      ? ' <span style="font-size:10px;color:#d35400;">· ส่งซ้ำใบที่ '+duplicateIndex+'</span>' : '';
+    const removeDuplicateButton = isDuplicateGroup
+      ? `<button class="btn-print" style="background:#9b4040;" type="button" data-lmq-id="${orderId}" data-lmq-action="discard_duplicate" ${disableActions ? 'disabled' : ''}>🗑️ ลบคิวซ้ำ</button>` : '';
     const cardHTML = `<div class="kitchen-card ${printed ? '' : 'unprinted-blink'}" style="${printed ? 'border-left-color:#3742fa; background:#f0f4ff;' : ''}">
       <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px dashed #eee;padding-bottom:3px;margin-bottom:3px;">
-        <span style="font-weight:bold;color:var(--primary);font-size:12px;">🛵 ออเดอร์ #${shortId}</span>
+        <span style="font-weight:bold;color:var(--primary);font-size:12px;">🛵 ออเดอร์ #${shortId}${duplicateNote}</span>
         <span style="font-size:10px;color:var(--gray);">${topStatus}</span>
       </div>
       <div style="color:var(--text);margin:4px 0;line-height:1.4;">${items}</div>
       <div style="font-size:10px;margin-top:2px;">LINE MAN: ${status}${order.printMessage ? ' · '+escapeHTML(order.printMessage) : ''}</div>
       ${pending ? '<div style="color:#d35400;font-size:10px;">⏳ รอ Windows ดำเนินการ: '+escapeHTML(order.commandPending)+'</div>' : ''}
-      <div style="display:flex;justify-content:flex-end;gap:4px;margin-top:6px;border-top:1px solid #eee;padding-top:4px;">
+      <div style="display:flex;justify-content:flex-end;flex-wrap:wrap;gap:4px;margin-top:6px;border-top:1px solid #eee;padding-top:4px;">
         <button class="btn-action" type="button" data-lmq-id="${orderId}" data-lmq-action="complete" ${disableActions ? 'disabled' : ''}>✔️ เสร็จ</button>
         <button class="btn-print" type="button" data-lmq-id="${orderId}" data-lmq-action="reprint" ${disableActions ? 'disabled' : ''}>🔄 พิมพ์ใหม่</button>
+        ${removeDuplicateButton}
       </div>
     </div>`;
     return {source:'lineman',createdAt:order.createdAt,html:cardHTML};
   }
 
   window.LineManKitchenQueue = {
-    getCards: () => loggedIn ? queue.map(cardOf) : []
+    getCards: () => {
+      if (!loggedIn) return [];
+      const counts = new Map();
+      const occurrenceById = new Map();
+      const inOriginalOrder = queue.slice().sort((a,b) => {
+        const left=Date.parse(a.createdAt || '') || 0;
+        const right=Date.parse(b.createdAt || '') || 0;
+        return left-right || String(a.id).localeCompare(String(b.id));
+      });
+      for (const order of inOriginalOrder) {
+        const key = String(order.orderKey || order.shortId || order.id);
+        const n=(counts.get(key)||0)+1;
+        counts.set(key,n);
+        occurrenceById.set(order.id,n);
+      }
+      return queue.map(order => cardOf(order,
+        occurrenceById.get(order.id) || 1,
+        counts.get(String(order.orderKey || order.shortId || order.id)) || 1));
+    }
   };
 
   async function refresh() {
@@ -134,6 +158,8 @@
   async function takeAction(orderId, action, button) {
     if (action === 'reprint' && !confirm('ต้องการพิมพ์ใบ LINE MAN นี้ซ้ำอีกหนึ่งใบใช่หรือไม่?')) return;
     if (action === 'complete' && !confirm('ยืนยันว่าอาหารออเดอร์ LINE MAN นี้ทำเสร็จแล้ว?')) return;
+    if (action === 'discard_duplicate' &&
+        !confirm('ลบเฉพาะการ์ด LINE MAN ที่ส่งซ้ำใบนี้ใช่หรือไม่?\nจะเหลือออเดอร์จริงอย่างน้อยหนึ่งใบ ไม่ยกเลิกออเดอร์บน Wongnai และไม่ย้อนกระดาษที่พิมพ์ไปแล้ว')) return;
     button.disabled = true;
     try {
       const res = await fetch('/api/lineman/orders/'+encodeURIComponent(orderId)+'/action', {

@@ -117,8 +117,13 @@ function setupLineManRelay(app) {
     if (!lastSyncAt || Date.now()-lastSyncAt>20000) return res.status(503).json({error:'Windows Bridge ไม่ออนไลน์'});
     const orderId=String(req.params.id || '');
     const action=String(req.body?.action || '');
-    if (!['complete','reprint'].includes(action)) return res.status(400).json({error:'Invalid action'});
+    if (!['complete','reprint','discard_duplicate'].includes(action)) return res.status(400).json({error:'Invalid action'});
     if (!orders.has(orderId)) return res.status(404).json({error:'ไม่พบคิวนี้'});
+    if (action==='discard_duplicate') {
+      const key=String(orders.get(orderId)?.orderKey || '');
+      const siblings=[...orders.values()].filter(o=>String(o.orderKey || '')===key);
+      if (!key || siblings.length<2) return res.status(409).json({error:'ไม่มีคิวซ้ำที่ลบได้'});
+    }
     const existing=[...commands.values()].find(c=>c.orderId===orderId);
     if (existing) return res.status(409).json({error:'มีคำสั่งของคิวนี้กำลังดำเนินการ'});
     const id=crypto.randomUUID();
