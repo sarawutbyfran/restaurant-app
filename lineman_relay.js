@@ -8,7 +8,12 @@ function setupLineManRelay(app) {
   const adminPin = process.env.LINEMAN_ADMIN_PASSCODE || '';
   const configured = bridgeKey.length >= 20 && adminPin.length >= 8;
   const sessionSecret = crypto.createHash('sha256').update('lmq2|' + bridgeKey + '|' + adminPin).digest();
-  const sessionAgeMs = 12 * 60 * 60 * 1000;
+  // The browser remembers this authorized shop device for up to 30 days.
+  // Rotate LINEMAN_ADMIN_PASSCODE to revoke ALL existing sessions.
+  const sessionAgeMs = 30 * 24 * 60 * 60 * 1000;
+  const cookieMaxAgeSec = 30 * 24 * 60 * 60;
+  const renewalAgeMs = 24 * 60 * 60 * 1000;
+  const relayBootAt = Date.now();
   const orders = new Map();
   const commands = new Map();
   let lastSyncAt = 0;
@@ -35,11 +40,21 @@ function setupLineManRelay(app) {
       .find(x => x.startsWith(name + '='));
     return cookie ? cookie.slice(name.length + 1) : '';
   }
+  function setAdminCookie(req, res, timestamp) {
+    // Signed, HttpOnly cookie: PIN never appears in JavaScript/localStorage.
+    const secure = (req.secure || req.get('x-forwarded-proto') === 'https') ? '; Secure' : '';
+    res.setHeader('Set-Cookie', `lmq_session=${timestamp}.${sign(timestamp)}; Path=/api/lineman; HttpOnly; SameSite=Strict; Max-Age=${cookieMaxAgeSec}${secure}`);
+  }
   function gateAdmin(req, res, next) {
     const [ts, signature] = getCookie(req, 'lmq_session').split('.');
     const issued = Number(ts);
-    if (!Number.isSafeInteger(issued) || issued > Date.now() + 60000 || Date.now() - issued > sessionAgeMs ||
+    const now = Date.now();
+    if (!Number.isSafeInteger(issued) || issued <= 0 || issued > now + 60000 || now - issued > sessionAgeMs ||
         !safeEq(signature, sign(ts))) return res.status(401).json({error:'LINE MAN admin login required'});
+    // Extend valid sessions no more than once per day. Also migrate a still-valid
+    // 12-hour V2.3 cookie to 30 days upon its first visit after this deploy.
+    // This preserves logins across ordinary Render restarts and browser restarts.
+    if (issued < relayBootAt || now - issued >= renewalAgeMs) setAdminCookie(req, res, String(now));
     next();
   }
   function gateSameOrigin(req, res, next) {
@@ -99,8 +114,7 @@ function setupLineManRelay(app) {
   app.post('/api/lineman/session', gateConfigured, gateSameOrigin, (req,res) => {
     if (!safeEq(req.body?.passcode, adminPin)) return res.status(403).json({error:'รหัสคิว LINE MAN ไม่ถูกต้อง'});
     const t = String(Date.now());
-    const secure = (req.secure || req.get('x-forwarded-proto') === 'https') ? '; Secure' : '';
-    res.setHeader('Set-Cookie', `lmq_session=${t}.${sign(t)}; Path=/api/lineman; HttpOnly; SameSite=Strict; Max-Age=43200${secure}`);
+    setAdminCookie(req, res, t);
     res.json({ok:true});
   });
 

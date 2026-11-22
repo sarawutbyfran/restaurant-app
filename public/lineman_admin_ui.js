@@ -19,6 +19,26 @@
   let online = false;
   let loggedIn = false;
   let fetching = false;
+  // Immediate UI feedback only. Canonical queue remains on Windows and is
+  // restored if Windows has not confirmed within the timeout.
+  const pendingHide = new Map();
+  const pendingHideTimeoutMs = 30000;
+  function notifyUnconfirmed() {
+    const message = 'Windows ยังไม่ยืนยันการนำคิว LINE MAN ออก กรุณาตรวจสอบก่อนกดซ้ำ';
+    if (typeof window.showToast === 'function') window.showToast(message, true);
+    else alert(message);
+  }
+  function reconcilePending(currentIds = null) {
+    let timedOut = false;
+    for (const [id, entry] of pendingHide) {
+      if (currentIds && !currentIds.has(id)) pendingHide.delete(id);
+      else if (Date.now() - entry.since >= pendingHideTimeoutMs) {
+        pendingHide.delete(id);
+        timedOut = true;
+      }
+    }
+    if (timedOut) notifyUnconfirmed();
+  }
 
   function refreshMergedList() {
     if (typeof window.renderCombinedKitchenCards === 'function') {
@@ -90,9 +110,10 @@
   window.LineManKitchenQueue = {
     getCards: () => {
       if (!loggedIn) return [];
+      const activeQueue = queue.filter(order => !pendingHide.has(String(order.id)));
       const counts = new Map();
       const occurrenceById = new Map();
-      const inOriginalOrder = queue.slice().sort((a,b) => {
+      const inOriginalOrder = activeQueue.slice().sort((a,b) => {
         const left=Date.parse(a.createdAt || '') || 0;
         const right=Date.parse(b.createdAt || '') || 0;
         return left-right || String(a.id).localeCompare(String(b.id));
@@ -103,7 +124,7 @@
         counts.set(key,n);
         occurrenceById.set(order.id,n);
       }
-      return queue.map(order => cardOf(order,
+      return activeQueue.map(order => cardOf(order,
         occurrenceById.get(order.id) || 1,
         counts.get(String(order.orderKey || order.shortId || order.id)) || 1));
     }
@@ -115,6 +136,7 @@
     try {
       const res = await fetch('/api/lineman/orders', {cache:'no-store', credentials:'same-origin'});
       if (res.status === 401) {
+        pendingHide.clear();
         loggedIn = false;
         online = false;
         queue = [];
@@ -123,6 +145,7 @@
         return;
       }
       if (!res.ok) {
+        reconcilePending();
         online = false;
         renderToolbar(res.status === 503 ? 'disabled' : 'error');
         refreshMergedList();
@@ -130,11 +153,14 @@
       }
       const data = await res.json();
       queue = Array.isArray(data.orders) ? data.orders : [];
+      // Missing ID confirms Windows has removed the entry from its snapshot.
+      reconcilePending(new Set(queue.map(order => String(order.id))));
       online = Boolean(data.online);
       loggedIn = true;
       renderToolbar(online ? 'online' : 'offline');
       refreshMergedList();
     } catch (error) {
+      reconcilePending();
       online = false;
       renderToolbar('error');
       refreshMergedList();
@@ -144,7 +170,7 @@
   }
 
   async function login() {
-    const passcode = prompt('รหัสเข้าจัดการคิว LINE MAN (ระบบจะจำสิทธิ์ไว้ 12 ชั่วโมง):');
+    const passcode = prompt('รหัสเข้าจัดการคิว LINE MAN (จดจำคอมพิวเตอร์ร้าน 30 วัน และต่ออายุระหว่างใช้งาน):');
     if (!passcode) return;
     try {
       const response = await fetch('/api/lineman/session', {
@@ -169,6 +195,12 @@
       if (!res.ok) {
         let error = {}; try {error = await res.json();} catch {}
         alert(error.error || 'สั่งงาน LINE MAN ไม่สำเร็จ');
+        button.disabled = false;
+      } else if (res.status === 202 && (action === 'complete' || action === 'discard_duplicate')) {
+        // 202 = relay accepted the command, NOT Windows confirmation.
+        // Hide the selected card now, while Windows remains authoritative.
+        pendingHide.set(String(orderId), {since:Date.now(), action});
+        refreshMergedList();
       }
       await refresh();
     } catch {
