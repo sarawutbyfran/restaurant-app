@@ -370,6 +370,20 @@
             bottom: 50px;
         }
     </style>
+<style>
+  .lmq-head {display:flex;justify-content:space-between;align-items:center;font-size:12px;font-weight:700;color:#ff4757;margin:8px 0 6px;padding:5px 0;border-top:1px dashed #ddd}
+  .lmq-head span {font-size:10px;font-weight:500;color:#747d8c}
+  .lmq-access {padding:8px;font-size:11px;color:#747d8c;background:#fff;border:1px dashed #ddd;border-radius:6px;margin:4px 0}
+  .lmq-access button {font:inherit;padding:5px 10px;border:0;border-radius:5px;background:#3742fa;color:white;cursor:pointer}
+  .lmq-card-head {display:flex;justify-content:space-between;align-items:center;padding-bottom:3px;margin-bottom:3px;border-bottom:1px dashed #eee}
+  .lmq-card-head b {font-size:12px;color:#ff4757}
+  .lmq-card-head span {font-size:10px;color:#747d8c}
+  .lmq-items {color:#2f3542;margin:4px 0;line-height:1.4}
+  .lmq-note {color:#d35400;font-size:10.5px;margin-left:8px}
+  .lmq-status {font-size:10px;color:#747d8c;margin-top:2px}
+  .lmq-actions {display:flex;justify-content:flex-end;gap:4px;margin-top:6px;border-top:1px solid #eee;padding-top:4px}
+  .lmq-actions button:disabled {opacity:.45;cursor:not-allowed}
+</style>
 </head>
 <body>
 
@@ -444,6 +458,7 @@
                 <h3 style="margin:0; font-size:13px; color:var(--primary);">👨‍🍳 สถานะการพิมพ์ออเดอร์ในครัว</h3>
                 <button onclick="openMergeModal()" style="background: #8e44ad; color: white; border: none; padding: 5px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">🔗 จัดการออเดอร์</button>
             </div>
+            <div id="lineman-queue-host" style="margin-bottom:8px"></div>
             <div id="kitchen-orders-list" style="max-height: calc(100vh - 160px); overflow-y: auto; padding-right: 4px;">
                 <p style="color:var(--gray); font-size:12px;">กำลังโหลดออเดอร์...</p>
             </div>
@@ -2205,5 +2220,6 @@
         fetchAdminData();
         loadSalesReport();
     </script>
+    <script src="/lineman_admin_ui.js"></script>
 </body>
 </html>

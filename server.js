@@ -765,6 +765,9 @@ app.put('/api/admin/inventory/:id', async (req, res) => {
     }
 });
 
+// LINE MAN kitchen relay: transient RAM only; sales routes remain unchanged.
+require('./lineman_relay')(app);
+
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
 });
