@@ -1,89 +1,166 @@
 'use strict';
-// LINE MAN queue only. Does not mutate the existing restaurant orders, UI, or inventory.
+// LINE MAN renders cards into the SAME kitchen timeline as restaurant orders.
+// All LINE MAN actions use /api/lineman/*; none call restaurant order/status APIs.
 (() => {
-  const el = document.getElementById('lineman-queue-host');
-  if (!el) return;
-  const esc = value => String(value ?? '').replace(/[&<>"']/g, c=>({
-    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  const host = document.getElementById('lineman-queue-host');
+  const kitchenList = document.getElementById('kitchen-orders-list');
+  if (!host || !kitchenList) return;
+
+  const escapeHTML = value => String(value ?? '').replace(/[&<>"']/g, c => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
   })[c]);
-  function time(s) {
-    const date=new Date(s);
-    return Number.isNaN(date.getTime()) ? '' : date.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});
-  }
-  async function refresh() {
-    try {
-      const response = await fetch('/api/lineman/orders',{cache:'no-store'});
-      if (response.status===401) {
-        el.innerHTML='<div class="lmq-access">🛵 LINE MAN — <button type="button" data-login="1">เข้าสู่คิว LINE MAN</button></div>';
-        return;
-      }
-      if (!response.ok) {
-        el.innerHTML='<div class="lmq-access">⚠️ คิว LINE MAN ยังไม่ได้ตั้งค่าบน Render</div>';
-        return;
-      }
-      const data=await response.json();
-      let html='<div class="lmq-head">🛵 LINE MAN <span>'+ (data.online ? '🟢 เชื่อมต่อ Windows' : '⚠️ Windows ไม่ออนไลน์') +'</span></div>';
-      const rows=Array.isArray(data.orders)?data.orders:[];
-      if (!rows.length) html+='<div class="lmq-access">ไม่มีคิว LINE MAN ค้างอยู่</div>';
-      for (const order of rows) {
-        const st=order.printStatus;
-        const pending=Boolean(order.commandPending);
-        const status=st==='printed' ? '🖨️ พิมพ์แล้ว' : st==='printing' ? '⏳ กำลังพิมพ์' :
-          st==='pending' ? '⏳ รอพิมพ์' : st==='uncertain' ? '⚠️ สถานะไม่แน่นอน' : '⚠️ พิมพ์ไม่สำเร็จ';
-        const isPrinted=st==='printed';
-        const parts=(order.items || []).map(i => {
-          const qty=Number(i.quantity) || 1;
-          const note=i.notes ? '<div class="lmq-note">-(โน๊ต: '+esc(i.notes)+')</div>' : '';
-          const opts=Array.isArray(i.options) ? i.options.map(o=>'<div class="lmq-note">- '+esc(o)+'</div>').join('') : '';
-          return '<div style="padding:3px 0">• '+esc(i.name)+' <strong>x'+qty+'</strong>'+note+opts+'</div>';
-        }).join('');
-        html += `<div class="kitchen-card ${isPrinted ? '' : 'unprinted-blink'}" style="${isPrinted ? 'border-left-color:#3742fa;background:#f0f4ff;' : ''}">
-          <div class="lmq-card-head"><b>🛵 LINE MAN #${esc(order.shortId || order.orderKey || order.id)}</b><span>${esc(time(order.createdAt))}</span></div>
-          <div class="lmq-items">${parts}</div>
-          <div class="lmq-status">${status}${order.printMessage ? ' · '+esc(order.printMessage) : ''}</div>
-          ${pending ? '<div class="lmq-status">⏳ รอ Windows ดำเนินการ: '+esc(order.commandPending)+'</div>' : ''}
-          <div class="lmq-actions">
-            <button class="btn-action" data-lmq-id="${esc(order.id)}" data-lmq-action="complete" ${pending || !data.online ? 'disabled' : ''}>✔️ เสร็จ</button>
-            <button class="btn-print" data-lmq-id="${esc(order.id)}" data-lmq-action="reprint" ${pending || !data.online ? 'disabled' : ''}>🔄 พิมพ์ใหม่</button>
-          </div>
-        </div>`;
-      }
-      el.innerHTML=html;
-    } catch(e) {
-      el.innerHTML='<div class="lmq-access">⚠️ โหลดคิว LINE MAN ไม่ได้ (คิวร้านยังทำงานปกติ)</div>';
+  const formatTime = s => {
+    const d = new Date(s);
+    return Number.isNaN(d.getTime()) ? '' : d.toLocaleTimeString('th-TH', {
+      hour: '2-digit', minute: '2-digit'
+    });
+  };
+  let queue = [];
+  let online = false;
+  let loggedIn = false;
+  let fetching = false;
+
+  function refreshMergedList() {
+    if (typeof window.renderCombinedKitchenCards === 'function') {
+      window.renderCombinedKitchenCards();
     }
   }
+  function renderToolbar(mode) {
+    if (mode === 'login') {
+      host.innerHTML = '<span style="color:#747d8c;">🛵 LINE MAN:</span> ' +
+        '<button class="btn-print" type="button" data-lmq-login="1">เข้าสู่ระบบคิว</button>';
+      return;
+    }
+    if (mode === 'offline') {
+      host.innerHTML = '<span style="color:#d35400;">🛵 LINE MAN: ⚠️ Windows ไม่ออนไลน์ · แสดงคิวล่าสุด</span>';
+      return;
+    }
+    if (mode === 'error') {
+      host.innerHTML = '<span style="color:#d35400;">🛵 LINE MAN: ⚠️ เชื่อมต่อคิวไม่ได้</span>';
+      return;
+    }
+    if (mode === 'disabled') {
+      host.innerHTML = '<span style="color:#d35400;">🛵 LINE MAN: ยังไม่ตั้งค่า Render</span>';
+      return;
+    }
+    host.innerHTML = '<span style="color:#2d8752;">🛵 LINE MAN: ● เชื่อมต่อ Windows</span>';
+  }
+
+  function cardOf(order) {
+    const statusKey = String(order.printStatus || 'pending');
+    const printed = statusKey === 'printed';
+    const status = printed ? '🖨️ พิมพ์แล้ว' : statusKey === 'printing' ? '⏳ กำลังพิมพ์' :
+      statusKey === 'pending' ? '⏳ รอพิมพ์' : statusKey === 'uncertain' ? '⚠️ สถานะไม่แน่นอน' :
+      '⚠️ พิมพ์ไม่สำเร็จ';
+    const topStatus = printed ? '✅ พิมพ์ครบแล้ว' : statusKey === 'error' ? '⚠️ พิมพ์ไม่สำเร็จ' :
+      statusKey === 'uncertain' ? '⚠️ ตรวจใบพิมพ์' : '⏳ กำลังพิมพ์';
+    const pending = Boolean(order.commandPending);
+    const items = (Array.isArray(order.items) ? order.items : []).map(i => {
+      const qty = Math.max(1, Number(i.quantity) || 1);
+      const note = i.notes ? '<div style="color:#d35400;font-size:10.5px;margin-left:8px;">-(โน๊ต: '+escapeHTML(i.notes)+')</div>' : '';
+      const options = Array.isArray(i.options) ? i.options.map(opt =>
+        '<div style="color:#d35400;font-size:10.5px;margin-left:8px;">- '+escapeHTML(opt)+'</div>').join('') : '';
+      return '<div style="padding:3px 0;">• '+escapeHTML(i.name)+' <strong>x'+escapeHTML(qty)+'</strong>'+note+options+'</div>';
+    }).join('');
+    const orderId = escapeHTML(order.id);
+    const shortId = escapeHTML(order.shortId || order.orderKey || order.id);
+    const disableActions = pending || !online;
+    const cardHTML = `<div class="kitchen-card ${printed ? '' : 'unprinted-blink'}" style="${printed ? 'border-left-color:#3742fa; background:#f0f4ff;' : ''}">
+      <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px dashed #eee;padding-bottom:3px;margin-bottom:3px;">
+        <span style="font-weight:bold;color:var(--primary);font-size:12px;">🛵 ออเดอร์ #${shortId}</span>
+        <span style="font-size:10px;color:var(--gray);">${topStatus}</span>
+      </div>
+      <div style="color:var(--text);margin:4px 0;line-height:1.4;">${items}</div>
+      <div style="font-size:10px;margin-top:2px;">LINE MAN: ${status}${order.printMessage ? ' · '+escapeHTML(order.printMessage) : ''}</div>
+      ${pending ? '<div style="color:#d35400;font-size:10px;">⏳ รอ Windows ดำเนินการ: '+escapeHTML(order.commandPending)+'</div>' : ''}
+      <div style="display:flex;justify-content:flex-end;gap:4px;margin-top:6px;border-top:1px solid #eee;padding-top:4px;">
+        <button class="btn-action" type="button" data-lmq-id="${orderId}" data-lmq-action="complete" ${disableActions ? 'disabled' : ''}>✔️ เสร็จ</button>
+        <button class="btn-print" type="button" data-lmq-id="${orderId}" data-lmq-action="reprint" ${disableActions ? 'disabled' : ''}>🔄 พิมพ์ใหม่</button>
+      </div>
+    </div>`;
+    return {source:'lineman',createdAt:order.createdAt,html:cardHTML};
+  }
+
+  window.LineManKitchenQueue = {
+    getCards: () => loggedIn ? queue.map(cardOf) : []
+  };
+
+  async function refresh() {
+    if (fetching) return;
+    fetching = true;
+    try {
+      const res = await fetch('/api/lineman/orders', {cache:'no-store', credentials:'same-origin'});
+      if (res.status === 401) {
+        loggedIn = false;
+        online = false;
+        queue = [];
+        renderToolbar('login');
+        refreshMergedList();
+        return;
+      }
+      if (!res.ok) {
+        online = false;
+        renderToolbar(res.status === 503 ? 'disabled' : 'error');
+        refreshMergedList();
+        return;
+      }
+      const data = await res.json();
+      queue = Array.isArray(data.orders) ? data.orders : [];
+      online = Boolean(data.online);
+      loggedIn = true;
+      renderToolbar(online ? 'online' : 'offline');
+      refreshMergedList();
+    } catch (error) {
+      online = false;
+      renderToolbar('error');
+      refreshMergedList();
+    } finally {
+      fetching = false;
+    }
+  }
+
   async function login() {
-    const passcode=prompt('รหัสเข้าหน้าจัดการคิว LINE MAN (ตั้งไว้ใน Render):');
+    const passcode = prompt('รหัสเข้าจัดการคิว LINE MAN (ระบบจะจำสิทธิ์ไว้ 12 ชั่วโมง):');
     if (!passcode) return;
     try {
-      const response=await fetch('/api/lineman/session',{
-        method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({passcode})
+      const response = await fetch('/api/lineman/session', {
+        method:'POST', credentials:'same-origin',
+        headers:{'content-type':'application/json'},body:JSON.stringify({passcode})
       });
       if (!response.ok) {alert('เข้าสู่ระบบคิว LINE MAN ไม่สำเร็จ');return;}
       await refresh();
     } catch {alert('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์คิว LINE MAN');}
   }
-  async function action(orderId, type, btn) {
-    if (type==='reprint' && !confirm('ต้องการพิมพ์ใบ LINE MAN นี้ซ้ำอีกหนึ่งใบใช่หรือไม่?')) return;
-    if (type==='complete' && !confirm('ยืนยันว่าอาหารออเดอร์ LINE MAN นี้ทำเสร็จแล้ว?')) return;
-    btn.disabled=true;
+  async function takeAction(orderId, action, button) {
+    if (action === 'reprint' && !confirm('ต้องการพิมพ์ใบ LINE MAN นี้ซ้ำอีกหนึ่งใบใช่หรือไม่?')) return;
+    if (action === 'complete' && !confirm('ยืนยันว่าอาหารออเดอร์ LINE MAN นี้ทำเสร็จแล้ว?')) return;
+    button.disabled = true;
     try {
-      const response=await fetch('/api/lineman/orders/'+encodeURIComponent(orderId)+'/action',{
-        method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({action:type})
+      const res = await fetch('/api/lineman/orders/'+encodeURIComponent(orderId)+'/action', {
+        method:'POST',credentials:'same-origin',headers:{'content-type':'application/json'},
+        body:JSON.stringify({action})
       });
-      if (!response.ok) {
-        let data={};try{data=await response.json();}catch{}
-        alert(data.error || 'สั่งงานไม่สำเร็จ');
+      if (!res.ok) {
+        let error = {}; try {error = await res.json();} catch {}
+        alert(error.error || 'สั่งงาน LINE MAN ไม่สำเร็จ');
       }
       await refresh();
-    } catch {alert('เชื่อมต่อคำสั่ง LINE MAN ไม่สำเร็จ');btn.disabled=false;}
+    } catch {
+      alert('เชื่อมต่อคำสั่ง LINE MAN ไม่สำเร็จ');
+      button.disabled = false;
+    }
   }
-  el.addEventListener('click', e=>{
-    const btn=e.target.closest('button'); if (!btn) return;
-    if (btn.dataset.login) login();
-    else if (btn.dataset.lmqAction) action(btn.dataset.lmqId,btn.dataset.lmqAction,btn);
+
+  // LINE MAN actions are delegated to the kitchen list; restaurant buttons keep their original onclick.
+  kitchenList.addEventListener('click', event => {
+    const button = event.target.closest('button[data-lmq-action]');
+    if (!button || !kitchenList.contains(button)) return;
+    takeAction(button.dataset.lmqId, button.dataset.lmqAction, button);
   });
-  setInterval(refresh,5000);
+  host.addEventListener('click', event => {
+    const button = event.target.closest('button[data-lmq-login]');
+    if (button) login();
+  });
+  setInterval(refresh, 5000);
   refresh();
 })();

@@ -458,7 +458,7 @@
                 <h3 style="margin:0; font-size:13px; color:var(--primary);">👨‍🍳 สถานะการพิมพ์ออเดอร์ในครัว</h3>
                 <button onclick="openMergeModal()" style="background: #8e44ad; color: white; border: none; padding: 5px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">🔗 จัดการออเดอร์</button>
             </div>
-            <div id="lineman-queue-host" style="margin-bottom:8px"></div>
+            <div id="lineman-queue-host" style="margin-bottom:5px; font-size:10px;"></div>
             <div id="kitchen-orders-list" style="max-height: calc(100vh - 160px); overflow-y: auto; padding-right: 4px;">
                 <p style="color:var(--gray); font-size:12px;">กำลังโหลดออเดอร์...</p>
             </div>
@@ -1073,6 +1073,28 @@
             }
         }
 
+        // Kitchen list is ONE mixed timeline. Restaurant orders retain their original HTML/cards.
+        // LINE MAN cards come from the independent, authenticated RAM relay, never PostgreSQL.
+        let restaurantKitchenCards = [];
+        function renderCombinedKitchenCards() {
+            const container = document.getElementById('kitchen-orders-list');
+            if (!container) return;
+            const lineManCards = window.LineManKitchenQueue
+                ? window.LineManKitchenQueue.getCards() : [];
+            const cards = restaurantKitchenCards.concat(lineManCards).map((card, index) => ({
+                ...card,
+                // Both APIs provide ISO timestamps. Keep unknown dates last (do not guess).
+                sortMs: Number.isFinite(Date.parse(card.createdAt)) ? Date.parse(card.createdAt) : -Infinity,
+                originalIndex: index
+            }));
+            cards.sort((a, b) => (b.sortMs - a.sortMs) || (a.originalIndex - b.originalIndex));
+            container.innerHTML = cards.length
+                ? cards.map(card => card.html).join('')
+                : '<p style="color:var(--gray); font-size:11px;">ไม่มีออเดอร์ค้างในครัว</p>';
+        }
+        // Allow the LINE MAN view to refresh the SAME kitchen list without refetching restaurant orders.
+        window.renderCombinedKitchenCards = renderCombinedKitchenCards;
+
         async function fetchKitchenOrders() {
             try {
                 const res = await fetch('/api/admin/orders');
@@ -1085,12 +1107,7 @@
                 const container = document.getElementById('kitchen-orders-list');
                 const pendingKitchenOrders = orders.filter(ord => ord.status !== 'เสร็จสิ้น');
 
-                if (pendingKitchenOrders.length === 0) {
-                    container.innerHTML = '<p style="color:var(--gray); font-size:11px;">ไม่มีออเดอร์ค้างในครัว</p>';
-                    return;
-                }
-
-                let htmlContent = '';
+                const pendingRestaurantCards = [];
 
                 pendingKitchenOrders.forEach(ord => {
                     let tableStr = String(ord.table_id);
@@ -1144,7 +1161,7 @@
 
                     let cardStyle = allPrinted ? 'border-left-color: #3742fa; background: #f0f4ff;' : '';
 
-                    htmlContent += `
+                    const restaurantCardHtml = `
                         <div class="kitchen-card ${isBlinking ? 'unprinted-blink' : ''}" style="${cardStyle}">
                             <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 1px dashed #eee; padding-bottom: 3px; margin-bottom: 3px;">
                                 <span style="font-weight:bold; color:var(--primary); font-size: 12px;">📍 ${locationLabel}</span>
@@ -1160,9 +1177,14 @@
                             </div>
                         </div>
                     `;
+                    pendingRestaurantCards.push({
+                        source: 'restaurant',
+                        createdAt: ord.created_at,
+                        html: restaurantCardHtml
+                    });
                 });
-                
-                container.innerHTML = htmlContent;
+                restaurantKitchenCards = pendingRestaurantCards;
+                renderCombinedKitchenCards();
 
             } catch (err) {
                 console.error(err);
